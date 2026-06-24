@@ -60,6 +60,7 @@ export const ClientesService = {
   },
 
   async getById(id: string): Promise<Cliente | null> {
+    if (!id) return null;
     const docRef = doc(db, "clientes", id);
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;
@@ -140,6 +141,7 @@ export const EquiposService = {
   },
 
   async getById(id: string): Promise<Equipo | null> {
+    if (!id) return null;
     const docRef = doc(db, "equipos", id);
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;
@@ -162,6 +164,7 @@ export const ServiciosService = {
   },
 
   async getById(id: string): Promise<Servicio | null> {
+    if (!id) return null;
     const docRef = doc(db, "servicios", id);
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;

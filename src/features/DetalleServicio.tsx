@@ -101,20 +101,7 @@ export default function DetalleServicio() {
       }
       setServicio(serv);
 
-      // Load related client, equipment, tech list, and historical timeline
-      const [cli, eq, tecList, histList] = await Promise.all([
-        ClientesService.getById(serv.clienteId),
-        EquiposService.getById(serv.equipoId),
-        TecnicosService.getAll(),
-        ServiciosService.getHistorial(selectedId)
-      ]);
-
-      setCliente(cli);
-      setEquipo(eq);
-      setTecnicos(tecList);
-      setHistorial(histList);
-
-      // Sync form fields with DB
+      // Sync form fields with DB immediately (doesn't depend on other documents)
       setEditEstado(serv.estado);
       setEditTecnicoId(serv.tecnicoId || "");
       setEditDiagnostico(serv.diagnostico || "");
@@ -136,12 +123,66 @@ export default function DetalleServicio() {
       setEditInfoLogistica(serv.infoLogistica || "");
       
       // Sync Logistics dates
-      if (serv.citaDia) setEditCitaDia(toDate(serv.citaDia)?.toISOString().split("T")[0] || "");
-      if (serv.citaEntrega) setEditCitaEntrega(toDate(serv.citaEntrega)?.toISOString().split("T")[0] || "");
+      if (serv.citaDia) {
+        try {
+          const dateVal = toDate(serv.citaDia);
+          if (dateVal && !isNaN(dateVal.getTime())) {
+            setEditCitaDia(dateVal.toISOString().split("T")[0]);
+          }
+        } catch (dateErr) {
+          console.warn("Error parsing citaDia:", dateErr);
+        }
+      }
+      if (serv.citaEntrega) {
+        try {
+          const dateVal = toDate(serv.citaEntrega);
+          if (dateVal && !isNaN(dateVal.getTime())) {
+            setEditCitaEntrega(dateVal.toISOString().split("T")[0]);
+          }
+        } catch (dateErr) {
+          console.warn("Error parsing citaEntrega:", dateErr);
+        }
+      }
       setEditHoraEntregaDesde(serv.horaEntregaDesde || "");
       setEditHoraEntregaHasta(serv.horaEntregaHasta || "");
 
-      // Load uploaded files list from Firebase Storage
+      // Load related client (Isolated)
+      if (serv.clienteId) {
+        try {
+          const cli = await ClientesService.getById(serv.clienteId);
+          setCliente(cli);
+        } catch (cliErr) {
+          console.error("Error loading related client:", cliErr);
+        }
+      }
+
+      // Load related equipment (Isolated)
+      if (serv.equipoId) {
+        try {
+          const eq = await EquiposService.getById(serv.equipoId);
+          setEquipo(eq);
+        } catch (eqErr) {
+          console.error("Error loading related equipment:", eqErr);
+        }
+      }
+
+      // Load technicians list (Isolated)
+      try {
+        const tecList = await TecnicosService.getAll();
+        setTecnicos(tecList);
+      } catch (tecErr) {
+        console.error("Error loading technicians list:", tecErr);
+      }
+
+      // Load historical logs (Isolated)
+      try {
+        const histList = await ServiciosService.getHistorial(selectedId);
+        setHistorial(histList);
+      } catch (histErr) {
+        console.error("Error loading historical timeline:", histErr);
+      }
+
+      // Load uploaded files list from Firebase Storage (Isolated)
       try {
         const storageRef = ref(storage, `servicios/${selectedId}`);
         const result = await listAll(storageRef);
@@ -152,11 +193,11 @@ export default function DetalleServicio() {
         const resolvedFiles = await Promise.all(filePromises);
         setFilesList(resolvedFiles);
       } catch (storageErr) {
-        console.warn("Storage bucket list error (not initialized or mock environment):", storageErr);
+        console.warn("Storage bucket list error:", storageErr);
       }
 
     } catch (err) {
-      console.error("Error loading service details:", err);
+      console.error("Error loading primary service details:", err);
     } finally {
       setLoading(false);
     }
