@@ -3,6 +3,7 @@ import { collection, getDocs, doc, updateDoc, query, orderBy } from "firebase/fi
 import { db } from "../lib/firebase";
 import { useAuth } from "../providers/AuthProvider";
 import { UserProfile, Role } from "../types";
+import { DriveService } from "../services/drive";
 import { 
   Users, 
   ShieldCheck, 
@@ -13,7 +14,10 @@ import {
   AlertTriangle,
   User,
   Shield,
-  Clock
+  Clock,
+  FolderOpen,
+  Save,
+  HardDrive
 } from "lucide-react";
 
 export default function Usuarios() {
@@ -25,6 +29,43 @@ export default function Usuarios() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isSuperadmin = profile?.rol === "superadmin";
+
+  // Drive Config states
+  const [folderId, setFolderId] = useState("");
+  const [savingDriveConfig, setSavingDriveConfig] = useState(false);
+  const [driveSuccessMsg, setDriveSuccessMsg] = useState<string | null>(null);
+  const [driveErrorMsg, setDriveErrorMsg] = useState<string | null>(null);
+
+  const fetchDriveConfig = async () => {
+    try {
+      const id = await DriveService.getFolderId();
+      setFolderId(id);
+    } catch (err) {
+      console.error("Error fetching drive config:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isSuperadmin) {
+      fetchDriveConfig();
+    }
+  }, [isSuperadmin]);
+
+  const handleSaveDriveConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingDriveConfig(true);
+    setDriveSuccessMsg(null);
+    setDriveErrorMsg(null);
+    try {
+      await DriveService.setFolderId(folderId.trim());
+      setDriveSuccessMsg("ID de carpeta de Google Drive actualizado con éxito.");
+    } catch (err: any) {
+      console.error("Error saving drive config:", err);
+      setDriveErrorMsg("No se pudo guardar la configuración de Google Drive.");
+    } finally {
+      setSavingDriveConfig(false);
+    }
+  };
 
   const fetchUsuarios = async () => {
     setLoading(true);
@@ -341,6 +382,72 @@ export default function Usuarios() {
           </div>
         )}
       </div>
+
+      {/* Google Drive Folder ID Configuration Panel - visible/editable only by Superadmin */}
+      {isSuperadmin && (
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-gray-100 dark:border-gray-800">
+            <HardDrive className="w-5 h-5 text-indigo-600" />
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Configuración de Google Drive
+              </h2>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Especifique la carpeta de Google Drive donde se almacenarán las fotos tomadas por el personal de logística.
+              </p>
+            </div>
+          </div>
+
+          {driveSuccessMsg && (
+            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-150 dark:border-emerald-900/50 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+              <Check className="w-4 h-4 shrink-0" />
+              <span>{driveSuccessMsg}</span>
+            </div>
+          )}
+
+          {driveErrorMsg && (
+            <div className="p-3.5 bg-red-50 dark:bg-red-950/20 border border-red-150 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{driveErrorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveDriveConfig} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                ID de la Carpeta de Google Drive
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ej. 1A2b3C4d5E6f7G8h9I0j..."
+                  value={folderId}
+                  onChange={(e) => setFolderId(e.target.value)}
+                  className="flex-1 px-3.5 py-2 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                />
+                <button
+                  type="submit"
+                  disabled={savingDriveConfig}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingDriveConfig ? "Guardando..." : "Guardar ID"}
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-900 rounded-xl text-xs text-slate-500 leading-relaxed space-y-2">
+              <span className="font-bold text-slate-700 dark:text-slate-300 block">¿Cómo encontrar el ID de una carpeta de Google Drive?</span>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>Abra la carpeta que desea usar en su Google Drive en el navegador web.</li>
+                <li>Mire la barra de direcciones URL del navegador.</li>
+                <li>La URL tendrá este formato: <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-700 dark:text-gray-300 text-[11px]">https://drive.google.com/drive/folders/&lt;ID_DE_CARPETA&gt;</code></li>
+                <li>Copie todo el texto que viene después de <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-700 dark:text-gray-300 text-[11px]">/folders/</code> y péguelo en el campo de arriba.</li>
+              </ol>
+            </div>
+          </form>
+        </div>
+      )}
 
     </div>
   );

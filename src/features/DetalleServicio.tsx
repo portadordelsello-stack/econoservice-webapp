@@ -22,7 +22,9 @@ import {
   Upload,
   FileDown,
   Paperclip,
-  Trash2
+  Trash2,
+  HardDrive,
+  ExternalLink
 } from "lucide-react";
 
 type TabType = 
@@ -1024,6 +1026,47 @@ export default function DetalleServicio() {
               ))
             )}
           </div>
+
+          {/* Fotos del Equipo en Google Drive */}
+          {servicio?.fotosDrive && servicio.fotosDrive.length > 0 && (
+            <div className="pt-6 border-t border-gray-150 dark:border-gray-800 space-y-4">
+              <div>
+                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                  <HardDrive className="w-4 h-4 text-emerald-600" />
+                  Fotos del Equipo en Google Drive
+                </h3>
+                <p className="text-xs text-gray-400">Estas imágenes se subieron automáticamente a la carpeta de Google Drive al ingresar el equipo.</p>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {servicio.fotosDrive.map((photo, i) => (
+                  <div key={photo.id || i} className="group relative aspect-square bg-gray-50 dark:bg-gray-850 border border-gray-150 dark:border-gray-800 rounded-xl overflow-hidden shadow-xs hover:border-emerald-500/50 transition-all">
+                    <img
+                      src={photo.url}
+                      alt={photo.name}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-3 text-center gap-2">
+                      <span className="text-[10px] font-medium text-white line-clamp-1 truncate w-full px-1">{photo.name}</span>
+                      <a
+                        href={photo.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg shadow-sm transition-colors cursor-pointer"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Ver en Drive
+                      </a>
+                    </div>
+                    <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 bg-black/60 text-[9px] text-white font-mono rounded-md">
+                      Foto #{i + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

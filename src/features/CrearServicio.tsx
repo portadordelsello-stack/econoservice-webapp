@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ServicioSchema } from "../schemas";
 import { ServiciosService, ClientesService, EquiposService, TecnicosService } from "../services/db";
+import { DriveService } from "../services/drive";
 import { Cliente, Equipo, Tecnico } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
@@ -13,12 +14,126 @@ import {
   User, 
   Laptop, 
   PlusCircle, 
-  AlertTriangle 
+  AlertTriangle,
+  Camera,
+  Upload,
+  Image as ImageIcon,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  ExternalLink,
+  Loader2
 } from "lucide-react";
 
 export default function CrearServicio() {
   const { profile } = useAuth();
   const { navigate } = useNavigation();
+
+  // Google Drive photo states
+  const [driveToken, setDriveToken] = useState<string | null>(null);
+  const [targetFolderId, setTargetFolderId] = useState("");
+  const [photos, setPhotos] = useState<{ id: string; name: string; url: string }[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  
+  // Camera capture stream
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    // Sync current token
+    setDriveToken(DriveService.getAccessToken());
+    
+    // Get target Folder ID
+    DriveService.getFolderId().then(id => {
+      setTargetFolderId(id);
+    });
+  }, []);
+
+  const handleConnectDrive = async () => {
+    try {
+      setUploadError(null);
+      const token = await DriveService.connect();
+      setDriveToken(token);
+    } catch (err: any) {
+      console.error("Error connecting to Google Drive:", err);
+      setUploadError("No se pudo conectar a Google Drive. Intente de nuevo.");
+    }
+  };
+
+  const uploadFileToDrive = async (file: File | Blob) => {
+    setUploadingPhoto(true);
+    setUploadError(null);
+    try {
+      const filename = `equipo_${Date.now()}.jpg`;
+      const result = await DriveService.uploadPhoto(file, filename);
+      setPhotos(prev => [...prev, result]);
+    } catch (err: any) {
+      console.error("Error uploading to Google Drive:", err);
+      setUploadError(err.message || "Error al subir la foto a Google Drive.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFileToDrive(file);
+  };
+
+  const startCamera = async () => {
+    try {
+      setUploadError(null);
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } 
+      });
+      setStream(mediaStream);
+      setShowCameraModal(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      }, 100);
+    } catch (err: any) {
+      console.error("Error accessing camera:", err);
+      setUploadError("No se pudo acceder a la cámara del dispositivo. Puede que los permisos estén bloqueados en este navegador o iframe. Use el botón 'Subir Foto Nativa' que funciona siempre.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setShowCameraModal(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          stopCamera();
+          await uploadFileToDrive(blob);
+        }
+      }, "image/jpeg", 0.85);
+    }
+  };
+
+  const handleRemovePhoto = (photoId: string) => {
+    setPhotos(prev => prev.filter(p => p.id !== photoId));
+  };
 
   // DB options
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -178,7 +293,8 @@ export default function CrearServicio() {
         {
           ...data,
           createdBy: profile.uid,
-          presupuesto: Number(data.presupuesto) || 0
+          presupuesto: Number(data.presupuesto) || 0,
+          fotosDrive: photos
         },
         profile.uid,
         profile.nombre
@@ -481,6 +597,158 @@ export default function CrearServicio() {
 
           </div>
 
+          {/* Card 4: Fotos del Equipo (Google Drive Integration) */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-50 dark:border-gray-800 pb-3">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Camera className="w-5 h-5 text-indigo-600" />
+                4. Fotos del Equipo (Google Drive)
+              </h2>
+              {/* Connection state */}
+              <div className="flex items-center gap-1.5">
+                {driveToken ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    Drive Conectado
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30">
+                    <AlertCircle className="w-3 h-3 text-amber-500" />
+                    Drive Desconectado
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Error notifications */}
+            {uploadError && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-150 dark:border-red-900/40 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            {!targetFolderId && (
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-150 dark:border-amber-900/40 rounded-xl text-xs text-amber-800 dark:text-amber-400 leading-relaxed">
+                ⚠️ <strong>Falta configuración del Administrador:</strong> El administrador general aún no ha configurado el ID de la carpeta de destino de Google Drive. Por favor, pídale que lo asigne en el panel de "Usuarios Sistema".
+              </div>
+            )}
+
+            {targetFolderId && (
+              <div className="space-y-4">
+                {/* Auth section if not signed in */}
+                {!driveToken ? (
+                  <div className="p-5 bg-indigo-500/5 border border-indigo-500/10 rounded-xl flex flex-col items-center justify-center text-center gap-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed max-w-sm">
+                      Para subir las fotos de ingreso directamente a la carpeta de Google Drive de la empresa, autorice el acceso de su cuenta a Google Drive.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleConnectDrive}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer transition-all"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Conectar Google Drive
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Camera and Upload trigger panel */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Access Device Camera */}
+                      <button
+                        type="button"
+                        onClick={startCamera}
+                        disabled={uploadingPhoto}
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <Camera className="w-4 h-4" />
+                        Acceder a la Cámara
+                      </button>
+
+                      {/* Native / Upload File fallback */}
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="drive-image-upload"
+                          accept="image/*"
+                          capture="environment"
+                          disabled={uploadingPhoto}
+                          onChange={handleFileInputChange}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="drive-image-upload"
+                          className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs cursor-pointer transition-all text-center"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Subir Foto Nativa / Archivo
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Upload progress state */}
+                    {uploadingPhoto && (
+                      <div className="p-3.5 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-150 dark:border-indigo-900/30 rounded-xl flex items-center justify-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">
+                        <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                        <span>Subiendo foto directamente a Google Drive...</span>
+                      </div>
+                    )}
+
+                    {/* Previews Grid */}
+                    <div className="space-y-2">
+                      <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        Fotos capturadas para esta orden ({photos.length})
+                      </span>
+                      
+                      {photos.length === 0 ? (
+                        <div className="p-8 border border-dashed border-gray-150 dark:border-gray-800 rounded-2xl text-center text-xs text-gray-400 flex flex-col items-center justify-center gap-2">
+                          <ImageIcon className="w-8 h-8 text-gray-300 dark:text-gray-700" />
+                          <span>No se han tomado fotos para este equipo todavía.</span>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {photos.map((photo, index) => (
+                            <div key={photo.id} className="group relative aspect-square bg-gray-50 dark:bg-gray-850 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-xs">
+                              <img
+                                src={photo.url}
+                                alt={`Capture ${index + 1}`}
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <a
+                                  href={photo.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                                  title="Ver en Google Drive"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePhoto(photo.id)}
+                                  className="p-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-lg transition-colors cursor-pointer"
+                                  title="Eliminar de la orden"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 bg-black/65 text-[9px] text-white font-mono rounded">
+                                #{index + 1}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* Right Side: Assignment & Logistics */}
@@ -560,6 +828,61 @@ export default function CrearServicio() {
         </div>
 
       </form>
+
+      {/* CAMERA OVERLAY MODAL */}
+      {showCameraModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+              <div className="flex items-center gap-2">
+                <Camera className="w-5 h-5 text-indigo-400" />
+                <span className="font-bold text-sm text-white">Capturar Foto del Equipo</span>
+              </div>
+              <button
+                type="button"
+                onClick={stopCamera}
+                className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Video Viewport */}
+            <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 rounded text-[9px] font-mono text-indigo-300 border border-indigo-500/20 tracking-wider">
+                CÁMARA TRASERA
+              </div>
+            </div>
+
+            {/* Modal Footer Controls */}
+            <div className="p-5 bg-slate-950 flex items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={stopCamera}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
+              >
+                Cancelar
+              </button>
+              
+              <button
+                type="button"
+                onClick={capturePhoto}
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-600/10 cursor-pointer"
+              >
+                <Camera className="w-4 h-4" />
+                Capturar y Subir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

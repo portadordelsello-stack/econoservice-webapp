@@ -95,6 +95,7 @@ export interface Servicio {
   createdAt: any;
   updatedAt: any;
   createdBy: string;
+  fotosDrive?: { id: string; name: string; url: string }[];
 }
 
 export interface Historial {
