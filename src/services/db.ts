@@ -76,10 +76,47 @@ export const TecnicosService = {
     const colRef = collection(db, "tecnicos");
     const q = query(colRef, orderBy("nombre", "asc"));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const list = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Tecnico[];
+
+    try {
+      // Also fetch users from the "users" collection with role "tecnico"
+      const usersColRef = collection(db, "users");
+      const usersQ = query(usersColRef, where("rol", "==", "tecnico"));
+      const usersSnapshot = await getDocs(usersQ);
+      const usersList = usersSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          nombre: data.nombre || data.nombreApellido || "Técnico de Sistema",
+          telefono: data.telefono || data.telCel || "",
+          especialidad: data.especialidad || "",
+          activo: data.activo !== false,
+          createdAt: data.createdAt || null
+        } as Tecnico;
+      });
+
+      // Merge both lists, deduplicating by ID/uid
+      const mergedMap = new Map<string, Tecnico>();
+      list.forEach(t => {
+        if (t.id) mergedMap.set(t.id, t);
+      });
+      usersList.forEach(t => {
+        if (t.id && !mergedMap.has(t.id)) {
+          mergedMap.set(t.id, t);
+        }
+      });
+
+      const mergedList = Array.from(mergedMap.values());
+      // Sort by name case-insensitive
+      mergedList.sort((a, b) => a.nombre.toLowerCase().localeCompare(b.nombre.toLowerCase()));
+      return mergedList;
+    } catch (e) {
+      console.error("Error fetching system technicians:", e);
+      return list;
+    }
   },
 
   async create(tecnico: Omit<Tecnico, "id" | "createdAt">): Promise<string> {
@@ -227,8 +264,16 @@ export const ServiciosService = {
     }
 
     if (fields.tecnicoId && fields.tecnicoId !== original.tecnicoId) {
+      let tecName = "Técnico";
       const tecSnap = await getDoc(doc(db, "tecnicos", fields.tecnicoId));
-      const tecName = tecSnap.exists() ? (tecSnap.data() as Tecnico).nombre : "Técnico";
+      if (tecSnap.exists()) {
+        tecName = (tecSnap.data() as Tecnico).nombre;
+      } else {
+        const userSnap = await getDoc(doc(db, "users", fields.tecnicoId));
+        if (userSnap.exists()) {
+          tecName = (userSnap.data() as any).nombre;
+        }
+      }
       await this.registrarHistorial(id, usuarioId, usuarioNombre, "ASIGNACION_TECNICO", `Técnico asignado: ${tecName}`);
     }
 
