@@ -269,16 +269,6 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
         .addTo(mapInstance)
         .bindPopup("<strong>Móvil de EconoService</strong><br/>En camino para entregar tu equipo.");
       bounds.push([driverTracking.lat, driverTracking.lng]);
-
-      // Draw dotted route lines connecting them
-      if (clientHomeCoords) {
-        routeLineRef.current = L.polyline([[driverTracking.lat, driverTracking.lng], [clientHomeCoords.lat, clientHomeCoords.lng]], {
-          color: "#f59e0b",
-          dashArray: "6, 8",
-          weight: 3,
-          opacity: 0.8
-        }).addTo(mapInstance);
-      }
     }
 
     // Fit map bounds neatly if markers are available
