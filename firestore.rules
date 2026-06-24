@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             getUserData().rol == role && 
+             getUserData().activo == true;
+    }
+    
+    function isGlobalAdminEmail() {
+      return isAuthenticated() && 
+             'email' in request.auth.token &&
+             request.auth.token.email.lower() == 'portadordelsello@gmail.com';
+    }
+    
+    function isAdmin() {
+      return hasRole('admin') || isGlobalAdminEmail();
+    }
+    
+    function isRecepcion() {
+      return hasRole('recepcion') || isAdmin();
+    }
+    
+    function isTecnico() {
+      return hasRole('tecnico') || isAdmin();
+    }
+    
+    function isConsulta() {
+      return isAuthenticated() && (
+        hasRole('consulta') || 
+        hasRole('recepcion') || 
+        hasRole('tecnico') || 
+        isAdmin()
+      );
+    }
+
+    // Rules for collections
+    
+    // 1. Users
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Allow creation of own profile on first register
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // Allow updates to own profile (except rol and activo, unless they are admin)
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (request.auth.uid == userId && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol', 'activo']))
+      );
+      allow delete: if isAdmin();
+    }
+    
+    // 2. Clientes
+    match /clientes/{clienteId} {
+      allow read: if isConsulta();
+      allow write: if isRecepcion();
+    }
+    
+    // 3. Tecnicos
+    match /tecnicos/{tecnicoId} {
+      allow read: if isConsulta();
+      allow write: if isAdmin();
+    }
+    
+    // 4. Equipos
+    match /equipos/{equipoId} {
+      allow read: if isConsulta();
+      allow write: if isRecepcion();
+    }
+    
+    // 5. Servicios
+    match /servicios/{servicioId} {
+      allow read: if isConsulta();
+      allow create: if isRecepcion();
+      allow delete: if isAdmin();
+      allow update: if isRecepcion() || (
+        hasRole('tecnico') && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'diagnostico', 'estado', 'repuestosComprar', 'repuestosComprados', 'updatedAt'
+        ])
+      );
+      
+      // Historial Subcollection
+      match /historial/{historialId} {
+        allow read: if isConsulta();
+        allow create: if isRecepcion() || isTecnico();
+        allow update, delete: if isAdmin();
+      }
+    }
+    
+    // 6. Presupuestos
+    match /presupuestos/{presupuestoId} {
+      allow read: if isConsulta();
+      allow write: if isRecepcion();
+      
+      // Items Subcollection
+      match /items/{itemId} {
+        allow read: if isConsulta();
+        allow write: if isRecepcion();
+      }
+    }
+    
+    // 7. Gastos
+    match /gastos/{gastoId} {
+      allow read: if isConsulta();
+      allow write: if isAdmin();
+    }
+  }
+}
