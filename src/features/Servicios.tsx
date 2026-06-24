@@ -136,7 +136,7 @@ export default function Servicios() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-display">
-            Órdenes de Servicio
+            Taller
           </h1>
           <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
             Gestión integral del flujo de reparaciones, estados e historial del taller.

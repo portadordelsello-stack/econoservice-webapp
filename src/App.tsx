@@ -8,7 +8,6 @@ import Login from "./features/Login";
 import Dashboard from "./features/Dashboard";
 import Clientes from "./features/Clientes";
 import Equipos from "./features/Equipos";
-import Tecnicos from "./features/Tecnicos";
 import Servicios from "./features/Servicios";
 import CrearServicio from "./features/CrearServicio";
 import DetalleServicio from "./features/DetalleServicio";
@@ -44,13 +43,12 @@ function MainLayout() {
   // Sidebar link details
   const navigationLinks = [
     { view: "dashboard", label: "Dashboard", icon: Activity, roles: ["superadmin", "administracion", "admin"] },
-    { view: "servicios", label: "Órdenes de Trabajo", icon: Wrench, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "servicios", label: "Taller", icon: Wrench, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
     { view: "clientes", label: "Clientes", icon: User, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "equipos", label: "Equipos", icon: Laptop, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "presupuestos", label: "Presupuestos", icon: FileSpreadsheet, roles: ["superadmin", "administracion", "admin", "recepcion", "consulta"] },
     { view: "agenda", label: "Agenda", icon: Calendar, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "gastos", label: "Gastos", icon: TrendingDown, roles: ["superadmin", "administracion", "admin"] },
-    { view: "tecnicos", label: "Staff", icon: Users2, roles: ["superadmin", "administracion", "admin"] },
     { view: "usuarios", label: "Usuarios Sistema", icon: FolderLock, roles: ["superadmin", "administracion", "admin"] }
   ];
 
@@ -159,7 +157,7 @@ function MainLayout() {
                 EconoService
               </span>
               <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest block">
-                Taller de Lavarropas
+                Agente de Gestión
               </span>
             </div>
           </div>
@@ -248,7 +246,6 @@ function MainLayout() {
         {currentView === "presupuestos" && <Presupuestos />}
         {currentView === "agenda" && <Agenda />}
         {currentView === "gastos" && <Gastos />}
-        {currentView === "tecnicos" && <Tecnicos />}
         {currentView === "usuarios" && <Usuarios />}
       </main>
 

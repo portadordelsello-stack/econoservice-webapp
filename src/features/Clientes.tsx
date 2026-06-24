@@ -437,7 +437,7 @@ export default function Clientes() {
 
       {/* Slide Modal for Create / Edit */}
       {isFormOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-end z-50 p-0 sm:p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center sm:items-start sm:pt-[12vh] justify-end z-50 p-0 sm:p-4">
           <div className="bg-white dark:bg-gray-900 w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-in">
             
             {/* Modal Header */}

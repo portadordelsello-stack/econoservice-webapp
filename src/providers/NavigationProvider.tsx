@@ -4,7 +4,6 @@ export type ViewType =
   | "dashboard"
   | "clientes"
   | "equipos"
-  | "tecnicos"
   | "servicios"
   | "crear-servicio"
   | "detalle-servicio"
@@ -74,7 +73,6 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
       "dashboard",
       "clientes",
       "equipos",
-      "tecnicos",
       "servicios",
       "crear-servicio",
       "detalle-servicio",

@@ -238,7 +238,7 @@ export default function Tecnicos() {
 
       {/* Create / Edit Modal */}
       {isFormOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center sm:items-start sm:pt-[12vh] justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-in">
             
             {/* Header */}
