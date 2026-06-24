@@ -106,6 +106,7 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
   // Geocoded home coordinates
   const [clientHomeCoords, setClientHomeCoords] = useState<{lat: number, lng: number} | null>(null);
   const [geocodingDone, setGeocodingDone] = useState(false);
+  const [mapInstance, setMapInstance] = useState<any>(null);
 
   // Map references
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -195,7 +196,7 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
     const defaultCenter = [-31.6420, -60.7200];
 
     if (!mapInstanceRef.current) {
-      mapInstanceRef.current = L.map(mapContainerRef.current, {
+      const map = L.map(mapContainerRef.current, {
         zoomControl: true,
         attributionControl: true
       }).setView(defaultCenter, 13);
@@ -203,13 +204,16 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         maxZoom: 20,
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-      }).addTo(mapInstanceRef.current);
+      }).addTo(map);
+
+      mapInstanceRef.current = map;
+      setMapInstance(map);
     }
-  }, [leafletLoaded]);
+  }, [leafletLoaded, loading]);
 
   // Update Markers on Map
   useEffect(() => {
-    if (!leafletLoaded || !mapInstanceRef.current) return;
+    if (!leafletLoaded || !mapInstance) return;
     const L = (window as any).L;
     if (!L) return;
 
@@ -254,7 +258,7 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
     // Plot Client Home Marker
     if (clientHomeCoords) {
       clientMarkerRef.current = L.marker([clientHomeCoords.lat, clientHomeCoords.lng], { icon: homeIcon })
-        .addTo(mapInstanceRef.current)
+        .addTo(mapInstance)
         .bindPopup(`<strong>Tu Domicilio</strong><br/>${cliente?.calle || ""} ${cliente?.numero || ""}, ${cliente?.localidad || ""}`);
       bounds.push([clientHomeCoords.lat, clientHomeCoords.lng]);
     }
@@ -262,7 +266,7 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
     // Plot Mobile Driver Marker
     if (driverTracking?.activo && driverTracking?.lat && driverTracking?.lng) {
       driverMarkerRef.current = L.marker([driverTracking.lat, driverTracking.lng], { icon: truckIcon })
-        .addTo(mapInstanceRef.current)
+        .addTo(mapInstance)
         .bindPopup("<strong>Móvil de EconoService</strong><br/>En camino para entregar tu equipo.");
       bounds.push([driverTracking.lat, driverTracking.lng]);
 
@@ -273,20 +277,20 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
           dashArray: "6, 8",
           weight: 3,
           opacity: 0.8
-        }).addTo(mapInstanceRef.current);
+        }).addTo(mapInstance);
       }
     }
 
     // Fit map bounds neatly if markers are available
     if (bounds.length > 0) {
-      mapInstanceRef.current.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+      mapInstance.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
     } else if (clientHomeCoords) {
-      mapInstanceRef.current.setView([clientHomeCoords.lat, clientHomeCoords.lng], 14);
+      mapInstance.setView([clientHomeCoords.lat, clientHomeCoords.lng], 14);
     } else {
-      mapInstanceRef.current.setView([-31.6420, -60.7200], 13);
+      mapInstance.setView([-31.6420, -60.7200], 13);
     }
 
-  }, [clientHomeCoords, driverTracking, leafletLoaded, geocodingDone]);
+  }, [clientHomeCoords, driverTracking, leafletLoaded, geocodingDone, mapInstance]);
 
   // Handle Loading Screen
   if (loading) {
