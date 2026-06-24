@@ -18,7 +18,8 @@ import {
   Laptop, 
   X, 
   Check,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from "lucide-react";
 
 export default function Clientes() {
@@ -198,7 +199,7 @@ export default function Clientes() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left column: Search and List */}
-        <div className="lg:col-span-1 space-y-4">
+        <div className={`lg:col-span-1 space-y-4 ${selectedCliente ? "hidden lg:block" : "block"}`}>
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
             <input
@@ -250,10 +251,19 @@ export default function Clientes() {
         </div>
 
         {/* Right column: Cliente Details */}
-        <div className="lg:col-span-2">
+        <div className={`lg:col-span-2 ${selectedCliente ? "block" : "hidden lg:block"}`}>
           {selectedCliente ? (
             <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
               
+              {/* Volver button for mobile */}
+              <button
+                onClick={() => setSelectedCliente(null)}
+                className="lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mb-2 cursor-pointer bg-gray-50 dark:bg-gray-850 rounded-lg border border-gray-100 dark:border-gray-800"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Volver al listado
+              </button>
+
               {/* Header Details */}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 border-b border-gray-100 dark:border-gray-800 pb-5">
                 <div className="space-y-2">

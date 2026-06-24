@@ -237,8 +237,9 @@ export default function Servicios() {
 
       </div>
 
-      {/* Main Table */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+      {/* Main Table & Mobile Cards */}
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -336,6 +337,76 @@ export default function Servicios() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card Layout */}
+      <div className="md:hidden space-y-4">
+        {filteredServicios.length === 0 ? (
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+            No se encontraron órdenes de servicio que coincidan con la búsqueda.
+          </div>
+        ) : (
+          filteredServicios.map((s) => {
+            const client = clientNames[s.clienteId];
+            return (
+              <div
+                key={s.id}
+                onClick={() => navigate("detalle-servicio", s.id)}
+                className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-3 cursor-pointer hover:border-indigo-500/50 transition-all active:scale-[0.98]"
+              >
+                {/* Card Header: order number & status */}
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-extrabold text-indigo-600 dark:text-indigo-400">
+                    #{s.numeroServicio}
+                  </span>
+                  <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full border ${getStatusColor(s.estado)}`}>
+                    {s.estado}
+                  </span>
+                </div>
+
+                {/* Apparatus & Brand */}
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 text-sm">
+                    <Wrench className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <span>{s.aparato}</span>
+                  </h3>
+                  <p className="text-xs text-gray-450 dark:text-gray-400 pl-5">{s.marcaModelo}</p>
+                </div>
+
+                {/* Propietario (Client) */}
+                <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-850 p-2.5 rounded-xl border border-gray-100/30 dark:border-gray-800/20">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <User className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="font-medium truncate">{client ? client.name : "Cargando..."}</span>
+                    {client?.problematic && (
+                      <span className="text-red-500 inline-flex" title="Cliente Conflictivo">
+                        <AlertTriangle className="w-3.5 h-3.5 fill-red-100 dark:fill-red-950/20" />
+                      </span>
+                    )}
+                  </div>
+                  {s.esReclamoGarantia && (
+                    <span className="text-[9px] font-bold bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 px-1.5 py-0.2 rounded uppercase tracking-wider">
+                      Garantía
+                    </span>
+                  )}
+                </div>
+
+                {/* Footer details: Date & assigned technician */}
+                <div className="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-50 dark:border-gray-800/50">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {toDate(s.fechaIngreso)?.toLocaleDateString() || "Sin fecha"}
+                  </span>
+                  <span className="flex items-center gap-1 font-semibold text-gray-700 dark:text-gray-300">
+                    <UserCheck className="w-3.5 h-3.5 text-indigo-500" />
+                    {s.tecnicoId ? tecnicNames[s.tecnicoId] || "Asignado" : "Sin asignar"}
+                  </span>
+                </div>
+
+              </div>
+            );
+          })
+        )}
       </div>
 
     </div>

@@ -167,7 +167,7 @@ export default function Agenda() {
           </div>
 
           {/* Weekday Titles */}
-          <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">
             <span>Dom</span>
             <span>Lun</span>
             <span>Mar</span>
@@ -178,10 +178,10 @@ export default function Agenda() {
           </div>
 
           {/* Calendar Cells */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {cells.map((cell, idx) => {
               if (cell === null) {
-                return <div key={idx} className="aspect-square bg-gray-50/20 dark:bg-gray-850/10 rounded-xl" />;
+                return <div key={idx} className="aspect-square bg-gray-50/20 dark:bg-gray-850/10 rounded-lg sm:rounded-xl" />;
               }
 
               const count = getEventsCountForDay(cell);
@@ -193,15 +193,15 @@ export default function Agenda() {
                 <button
                   key={idx}
                   onClick={() => handleDayClick(cell)}
-                  className={`aspect-square p-2 rounded-xl flex flex-col justify-between items-center transition-all cursor-pointer relative border ${
+                  className={`aspect-square p-1 sm:p-2 rounded-lg sm:rounded-xl flex flex-col justify-between items-center transition-all cursor-pointer relative border ${
                     isSelected 
                       ? "bg-indigo-600 border-indigo-600 text-white font-extrabold shadow-md"
                       : "bg-gray-50/50 dark:bg-gray-850 border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100"
                   }`}
                 >
-                  <span className="text-xs font-semibold">{cell}</span>
+                  <span className="text-[10px] sm:text-xs font-semibold">{cell}</span>
                   {count > 0 && (
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? "bg-white" : "bg-indigo-600"}`} />
+                    <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${isSelected ? "bg-white" : "bg-indigo-600"}`} />
                   )}
                 </button>
               );

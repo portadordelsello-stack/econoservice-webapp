@@ -117,7 +117,7 @@ function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-gray-150 flex flex-col md:flex-row font-sans">
+    <div className="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-gray-150 flex flex-col md:flex-row font-sans">
       
       {/* MOBILE HEADER */}
       <header className="md:hidden flex items-center justify-between p-4 bg-[#0f172a] text-white border-b border-slate-800">
@@ -238,7 +238,7 @@ function MainLayout() {
       )}
 
       {/* MAIN VIEWPORT */}
-      <main className="flex-1 p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full overflow-y-auto h-screen">
+      <main className="flex-1 p-4 md:p-8 lg:p-10 max-w-7xl mx-auto w-full overflow-y-auto">
         {currentView === "dashboard" && <Dashboard />}
         {currentView === "servicios" && <Servicios />}
         {currentView === "crear-servicio" && <CrearServicio />}
