@@ -7,43 +7,29 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-    
-    function hasRole(role) {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             getUserData().rol == role && 
-             getUserData().activo == true;
-    }
-    
     function isGlobalAdminEmail() {
       return isAuthenticated() && 
              'email' in request.auth.token &&
-             request.auth.token.email.lower() == 'portadordelsello@gmail.com';
+             (request.auth.token.email.lower() == 'portadordelsello@gmail.com' ||
+              request.auth.token.email == 'portadordelsello@gmail.com');
     }
-    
-    function isAdmin() {
-      return hasRole('superadmin') || hasRole('admin') || isGlobalAdminEmail();
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol;
     }
-    
-    function isRecepcion() {
-      return hasRole('logistica') || hasRole('recepcion') || isAdmin();
+
+    function isUserActive() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.activo == true;
     }
-    
-    function isTecnico() {
-      return hasRole('tecnico') || isAdmin();
-    }
-    
-    function isConsulta() {
+
+    // Unified helper that reads the document at most once and handles role-checking safely.
+    // It short-circuits for the global admin so no document fetch is required for them.
+    function hasAnyRole(roles) {
       return isAuthenticated() && (
-        hasRole('administracion') ||
-        hasRole('consulta') || 
-        hasRole('logistica') ||
-        hasRole('recepcion') || 
-        hasRole('tecnico') || 
-        isAdmin()
+        isGlobalAdminEmail() || (
+          isUserActive() && getUserRole() in roles
+        )
       );
     }
 
@@ -56,38 +42,38 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.auth.uid == userId;
       // Allow updates to own profile (except rol and activo, unless they are admin)
       allow update: if isAuthenticated() && (
-        isAdmin() || 
+        hasAnyRole(['superadmin', 'admin']) || 
         (request.auth.uid == userId && 
          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol', 'activo']))
       );
-      allow delete: if isAdmin();
+      allow delete: if hasAnyRole(['superadmin', 'admin']);
     }
     
     // 2. Clientes
     match /clientes/{clienteId} {
-      allow read: if isConsulta();
-      allow write: if isRecepcion();
+      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
     }
     
     // 3. Tecnicos
     match /tecnicos/{tecnicoId} {
-      allow read: if isConsulta();
-      allow write: if isAdmin();
+      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+      allow write: if hasAnyRole(['superadmin', 'admin']);
     }
     
     // 4. Equipos
     match /equipos/{equipoId} {
-      allow read: if isConsulta();
-      allow write: if isRecepcion();
+      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
     }
     
     // 5. Servicios
     match /servicios/{servicioId} {
-      allow read: if isConsulta();
-      allow create: if isRecepcion();
-      allow delete: if isAdmin();
-      allow update: if isRecepcion() || (
-        hasRole('tecnico') && 
+      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+      allow create: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
+      allow delete: if hasAnyRole(['superadmin', 'admin']);
+      allow update: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']) || (
+        hasAnyRole(['tecnico']) && 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'diagnostico', 'estado', 'repuestosComprar', 'repuestosComprados', 'updatedAt'
         ])
@@ -95,28 +81,28 @@ service cloud.firestore {
       
       // Historial Subcollection
       match /historial/{historialId} {
-        allow read: if isConsulta();
-        allow create: if isRecepcion() || isTecnico();
-        allow update, delete: if isAdmin();
+        allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+        allow create: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
+        allow update, delete: if hasAnyRole(['superadmin', 'admin']);
       }
     }
     
     // 6. Presupuestos
     match /presupuestos/{presupuestoId} {
-      allow read: if isConsulta();
-      allow write: if isRecepcion();
+      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+      allow write: if hasAnyRole(['superadmin', 'admin', 'recepcion', 'logistica']);
       
       // Items Subcollection
       match /items/{itemId} {
-        allow read: if isConsulta();
-        allow write: if isRecepcion();
+        allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+        allow write: if hasAnyRole(['superadmin', 'admin', 'recepcion', 'logistica']);
       }
     }
     
     // 7. Gastos
     match /gastos/{gastoId} {
-      allow read: if isConsulta();
-      allow write: if isAdmin();
+      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion']);
+      allow write: if hasAnyRole(['superadmin', 'admin']);
     }
   }
 }
