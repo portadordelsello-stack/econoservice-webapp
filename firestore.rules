@@ -50,7 +50,8 @@ service cloud.firestore {
     
     // 2. Clientes
     match /clientes/{clienteId} {
-      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+      allow get: if true;
+      allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
       allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
     }
     
@@ -62,13 +63,15 @@ service cloud.firestore {
     
     // 4. Equipos
     match /equipos/{equipoId} {
-      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+      allow get: if true;
+      allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
       allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
     }
     
     // 5. Servicios
     match /servicios/{servicioId} {
-      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
+      allow get: if true;
+      allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
       allow create: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
       allow delete: if hasAnyRole(['superadmin', 'admin']);
       allow update: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']) || (
@@ -108,6 +111,12 @@ service cloud.firestore {
     match /config/{configId} {
       allow read: if isAuthenticated();
       allow write: if hasAnyRole(['superadmin', 'admin']);
+    }
+
+    // 9. Tracking de Envíos (Public read, driver write)
+    match /tracking_envios/{servicioId} {
+      allow read, get: if true;
+      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica']);
     }
   }
 }

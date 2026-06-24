@@ -6,6 +6,7 @@ export type EstadoServicio =
   | "PENDIENTE_APROBACION"
   | "EN_REPARACION"
   | "LISTO_PARA_ENTREGA"
+  | "ENTREGA_EN_PROGRESO"
   | "ENTREGADO"
   | "CANCELADO";
 

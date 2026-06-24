@@ -15,6 +15,8 @@ import Presupuestos from "./features/Presupuestos";
 import Agenda from "./features/Agenda";
 import Gastos from "./features/Gastos";
 import Usuarios from "./features/Usuarios";
+import Tracker from "./features/Tracker";
+import TrackingCliente from "./features/TrackingCliente";
 
 import { 
   Wrench, 
@@ -31,7 +33,8 @@ import {
   X,
   FileSpreadsheet,
   ShieldCheck,
-  FolderLock
+  FolderLock,
+  Truck
 } from "lucide-react";
 
 function MainLayout() {
@@ -48,6 +51,7 @@ function MainLayout() {
     { view: "equipos", label: "Equipos", icon: Laptop, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "presupuestos", label: "Presupuestos", icon: FileSpreadsheet, roles: ["superadmin", "administracion", "admin", "recepcion", "consulta"] },
     { view: "agenda", label: "Agenda", icon: Calendar, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "tracker", label: "Tracker", icon: Truck, roles: ["superadmin", "administracion", "logistica", "tecnico", "admin", "recepcion", "consulta"] },
     { view: "gastos", label: "Gastos", icon: TrendingDown, roles: ["superadmin", "administracion", "admin"] },
     { view: "usuarios", label: "Usuarios Sistema", icon: FolderLock, roles: ["superadmin", "administracion", "admin"] }
   ];
@@ -67,6 +71,14 @@ function MainLayout() {
       }
     }
   }, [profile, currentView, user]);
+
+  // If public tracking route is requested via URL hash, completely bypass the login screen for clients!
+  const isPublicTracking = window.location.hash.startsWith("#tracking/");
+  if (isPublicTracking) {
+    const parts = window.location.hash.split("/");
+    const id = parts[1] || "";
+    return <TrackingCliente servicioId={id} />;
+  }
 
   // If not logged in, force Login screen
   if (!user) {
@@ -247,6 +259,7 @@ function MainLayout() {
         {currentView === "agenda" && <Agenda />}
         {currentView === "gastos" && <Gastos />}
         {currentView === "usuarios" && <Usuarios />}
+        {currentView === "tracker" && <Tracker />}
       </main>
 
     </div>

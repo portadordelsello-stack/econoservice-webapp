@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ServiciosService, ClientesService, EquiposService, TecnicosService, toDate } from "../services/db";
 import { Servicio, Cliente, Equipo, Tecnico, Historial, EstadoServicio } from "../types";
 import { useAuth } from "../providers/AuthProvider";
@@ -25,7 +25,9 @@ import {
   Trash2,
   HardDrive,
   ExternalLink,
-  FileImage
+  FileImage,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 type TabType = 
@@ -53,6 +55,17 @@ export default function DetalleServicio() {
 
   // Active Tab state
   const [activeTab, setActiveTab] = useState<TabType>("generales");
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollTabs = (direction: "left" | "right") => {
+    if (tabsContainerRef.current) {
+      const scrollAmount = 200;
+      tabsContainerRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth"
+      });
+    }
+  };
 
   // Form field edit states
   const [editEstado, setEditEstado] = useState<EstadoServicio>("RECIBIDO");
@@ -325,6 +338,8 @@ export default function DetalleServicio() {
         return "bg-orange-500 text-white";
       case "LISTO_PARA_ENTREGA":
         return "bg-indigo-500 text-white";
+      case "ENTREGA_EN_PROGRESO":
+        return "bg-amber-500 text-white";
       case "ENTREGADO":
         return "bg-emerald-500 text-white";
       case "CANCELADO":
@@ -379,34 +394,58 @@ export default function DetalleServicio() {
       </div>
 
       {/* Tabs list selector */}
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-gray-100 dark:border-gray-800 pb-px scrollbar-none">
-        {[
-          { id: "generales", label: "Datos Generales", icon: Activity },
-          { id: "cliente", label: "Cliente", icon: User },
-          { id: "equipo", label: "Equipo", icon: Laptop },
-          { id: "diagnostico", label: "Diagnóstico", icon: ShieldCheck },
-          { id: "presupuesto", label: "Presupuesto", icon: DollarSign },
-          { id: "repuestos", label: "Repuestos", icon: Wrench },
-          { id: "logistica", label: "Logística", icon: Truck },
-          { id: "archivos", label: "Archivos", icon: FileText },
-          { id: "historial", label: "Historial", icon: History }
-        ].map((tab) => {
-          const IconComponent = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
-              className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeTab === tab.id
-                  ? "border-indigo-600 text-indigo-600 font-bold"
-                  : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-100"
-              }`}
-            >
-              <IconComponent className="w-4 h-4" />
-              {tab.label}
-            </button>
-          );
-        })}
+      <div className="relative flex items-center">
+        {/* Left Scroll Arrow */}
+        <button
+          onClick={() => scrollTabs("left")}
+          className="absolute left-0 z-10 p-1.5 rounded-full border border-gray-150 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white shadow-sm hover:shadow-md cursor-pointer transition-all hover:scale-110 active:scale-95 flex items-center justify-center mr-1"
+          title="Desplazar a la izquierda"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+
+        {/* Scrollable tab bar */}
+        <div 
+          ref={tabsContainerRef}
+          className="flex-1 flex items-center gap-1.5 overflow-x-auto border-b border-gray-100 dark:border-gray-800 pb-px scrollbar-none mx-8 scroll-smooth"
+        >
+          {[
+            { id: "generales", label: "Datos Generales", icon: Activity },
+            { id: "cliente", label: "Cliente", icon: User },
+            { id: "equipo", label: "Equipo", icon: Laptop },
+            { id: "diagnostico", label: "Diagnóstico", icon: ShieldCheck },
+            { id: "presupuesto", label: "Presupuesto", icon: DollarSign },
+            { id: "repuestos", label: "Repuestos", icon: Wrench },
+            { id: "logistica", label: "Logística", icon: Truck },
+            { id: "archivos", label: "Archivos", icon: FileText },
+            { id: "historial", label: "Historial", icon: History }
+          ].map((tab) => {
+            const IconComponent = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as TabType)}
+                className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeTab === tab.id
+                    ? "border-indigo-600 text-indigo-600 font-bold"
+                    : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-100"
+                }`}
+              >
+                <IconComponent className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right Scroll Arrow */}
+        <button
+          onClick={() => scrollTabs("right")}
+          className="absolute right-0 z-10 p-1.5 rounded-full border border-gray-150 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white shadow-sm hover:shadow-md cursor-pointer transition-all hover:scale-110 active:scale-95 flex items-center justify-center ml-1"
+          title="Desplazar a la derecha"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* TAB 1: DATOS GENERALES */}
@@ -433,6 +472,7 @@ export default function DetalleServicio() {
                   <option value="PENDIENTE_APROBACION">PENDIENTE_APROBACION</option>
                   <option value="EN_REPARACION">EN_REPARACION</option>
                   <option value="LISTO_PARA_ENTREGA">LISTO_PARA_ENTREGA</option>
+                  <option value="ENTREGA_EN_PROGRESO">ENTREGA_EN_PROGRESO</option>
                   <option value="ENTREGADO">ENTREGADO</option>
                   <option value="CANCELADO">CANCELADO</option>
                 </select>
