@@ -115,7 +115,7 @@ service cloud.firestore {
 
     // 9. Tracking de Envíos (Public read, driver write)
     match /tracking_envios/{servicioId} {
-      allow read, get: if true;
+      allow read: if true;
       allow write: if hasAnyRole(['superadmin', 'admin', 'logistica']);
     }
   }
