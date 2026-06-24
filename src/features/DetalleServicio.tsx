@@ -24,7 +24,8 @@ import {
   Paperclip,
   Trash2,
   HardDrive,
-  ExternalLink
+  ExternalLink,
+  FileImage
 } from "lucide-react";
 
 type TabType = 
@@ -182,19 +183,23 @@ export default function DetalleServicio() {
         console.error("Error loading historical timeline:", histErr);
       }
 
-      // Load uploaded files list from Firebase Storage (Isolated)
-      try {
-        const storageRef = ref(storage, `servicios/${selectedId}`);
-        const result = await listAll(storageRef);
-        const filePromises = result.items.map(async (item) => {
-          const url = await getDownloadURL(item);
-          return { name: item.name, url };
-        });
-        const resolvedFiles = await Promise.all(filePromises);
-        setFilesList(resolvedFiles);
-      } catch (storageErr) {
-        console.warn("Storage bucket list error:", storageErr);
-      }
+      // Load uploaded files list from Firebase Storage (Asynchronously in background)
+      const fetchStorageFiles = async () => {
+        try {
+          const storageRef = ref(storage, `servicios/${selectedId}`);
+          const result = await listAll(storageRef);
+          const filePromises = result.items.map(async (item) => {
+            const url = await getDownloadURL(item);
+            return { name: item.name, url };
+          });
+          const resolvedFiles = await Promise.all(filePromises);
+          setFilesList(resolvedFiles);
+        } catch (storageErr) {
+          console.warn("Storage bucket list error:", storageErr);
+        }
+      };
+      
+      fetchStorageFiles();
 
     } catch (err) {
       console.error("Error loading primary service details:", err);
@@ -1081,13 +1086,20 @@ export default function DetalleServicio() {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {servicio.fotosDrive.map((photo, i) => (
-                  <div key={photo.id || i} className="group relative aspect-square bg-gray-50 dark:bg-gray-850 border border-gray-150 dark:border-gray-800 rounded-xl overflow-hidden shadow-xs hover:border-emerald-500/50 transition-all">
-                    <img
-                      src={photo.url}
-                      alt={photo.name}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                    />
+                  <div key={photo.id || i} className="group relative aspect-square bg-gray-50 dark:bg-gray-800 border border-gray-150 dark:border-gray-850 rounded-xl overflow-hidden shadow-xs hover:border-emerald-500/50 transition-all flex flex-col items-center justify-center p-4">
+                    {/* Icon representing the image file */}
+                    <div className="w-12 h-12 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center mb-2">
+                      <FileImage className="w-6 h-6 text-emerald-600 dark:text-emerald-500" />
+                    </div>
+                    {/* Name/Label */}
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center line-clamp-1 truncate w-full px-1">
+                      {photo.name || `Foto_${i + 1}.jpg`}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-mono mt-1">
+                      Foto #{i + 1}
+                    </span>
+
+                    {/* Hover Overlay with Ver en Drive */}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-3 text-center gap-2">
                       <span className="text-[10px] font-medium text-white line-clamp-1 truncate w-full px-1">{photo.name}</span>
                       <a
@@ -1100,9 +1112,6 @@ export default function DetalleServicio() {
                         Ver en Drive
                       </a>
                     </div>
-                    <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 bg-black/60 text-[9px] text-white font-mono rounded-md">
-                      Foto #{i + 1}
-                    </span>
                   </div>
                 ))}
               </div>
