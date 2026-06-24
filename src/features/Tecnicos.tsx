@@ -112,7 +112,7 @@ export default function Tecnicos() {
     (t.especialidad && t.especialidad.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const isAdmin = profile?.rol === "admin";
+  const isAdmin = profile?.rol === "superadmin";
 
   if (loading && tecnicos.length === 0) {
     return (
@@ -129,10 +129,10 @@ export default function Tecnicos() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Staff de Técnicos
+            Staff de la Empresa
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gestión de especialistas asignados a diagnósticos y reparaciones.
+            Gestión de especialistas y personal del taller de reparaciones.
           </p>
         </div>
         {isAdmin && (
@@ -141,7 +141,7 @@ export default function Tecnicos() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Nuevo Técnico
+            Nuevo Integrante
           </button>
         )}
       </div>
@@ -150,7 +150,7 @@ export default function Tecnicos() {
       {!isAdmin && (
         <div className="p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/40 rounded-xl text-indigo-700 dark:text-indigo-400 text-xs flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 shrink-0" />
-          <span>Tiene acceso de solo lectura. Únicamente los administradores pueden añadir o modificar personal técnico.</span>
+          <span>Tiene acceso de solo lectura. Únicamente el Superadmin puede añadir o modificar personal de staff.</span>
         </div>
       )}
 

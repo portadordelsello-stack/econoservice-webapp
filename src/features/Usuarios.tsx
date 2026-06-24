@@ -24,6 +24,8 @@ export default function Usuarios() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const isSuperadmin = profile?.rol === "superadmin";
+
   const fetchUsuarios = async () => {
     setLoading(true);
     setErrorMessage(null);
@@ -106,16 +108,22 @@ export default function Usuarios() {
 
   const getRoleLabel = (rol: Role) => {
     switch (rol) {
-      case "admin":
-        return "Administrador";
-      case "recepcion":
-        return "Recepcionista";
+      case "superadmin":
+        return "Superadmin";
+      case "administracion":
+        return "Administración";
       case "tecnico":
         return "Técnico";
+      case "logistica":
+        return "Logística";
+      case "admin":
+        return "Administrador (Legacy)";
+      case "recepcion":
+        return "Recepcionista (Legacy)";
       case "consulta":
-        return "Consulta / Auditor";
+        return "Consulta / Auditor (Legacy)";
       default:
-        return "Desconocido";
+        return rol || "Desconocido";
     }
   };
 
@@ -200,6 +208,14 @@ export default function Usuarios() {
         </div>
       )}
 
+      {/* Access Restriction Warning */}
+      {!isSuperadmin && (
+        <div className="p-4 bg-indigo-50 dark:bg-indigo-950/25 border border-indigo-150 dark:border-indigo-900/40 rounded-xl text-indigo-700 dark:text-indigo-400 text-sm flex items-center gap-2">
+          <Shield className="w-5 h-5 shrink-0" />
+          <span>Tiene acceso de solo lectura. Únicamente el Superadmin puede activar cuentas o cambiar roles del sistema.</span>
+        </div>
+      )}
+
       {/* Users List */}
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
         {loading && usuarios.length === 0 ? (
@@ -279,14 +295,17 @@ export default function Usuarios() {
                       <td className="p-4">
                         <select
                           value={user.rol}
-                          disabled={isPrimaryAdmin || updatingId === user.uid}
+                          disabled={!isSuperadmin || isPrimaryAdmin || updatingId === user.uid}
                           onChange={(e) => handleChangeRol(user, e.target.value as Role)}
                           className="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-850 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer disabled:opacity-50"
                         >
-                          <option value="admin">Administrador</option>
-                          <option value="recepcion">Recepcionista</option>
-                          <option value="tecnico">Técnico de Taller</option>
-                          <option value="consulta">Consulta / Auditor</option>
+                          <option value="superadmin">Superadmin</option>
+                          <option value="administracion">Administración</option>
+                          <option value="tecnico">Técnico</option>
+                          <option value="logistica">Logística</option>
+                          <option value="admin">Administrador (Legacy)</option>
+                          <option value="recepcion">Recepcionista (Legacy)</option>
+                          <option value="consulta">Consulta / Auditor (Legacy)</option>
                         </select>
                       </td>
 
@@ -294,7 +313,7 @@ export default function Usuarios() {
                       <td className="p-4 pr-6 text-right">
                         <button
                           onClick={() => handleToggleActivo(user)}
-                          disabled={isPrimaryAdmin || isSelf || updatingId === user.uid}
+                          disabled={!isSuperadmin || isPrimaryAdmin || isSelf || updatingId === user.uid}
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border cursor-pointer transition-all disabled:opacity-40 ${
                             user.activo
                               ? "bg-red-50 dark:bg-red-950/10 text-red-600 dark:text-red-400 border-red-100 dark:border-red-950/30 hover:bg-red-100"

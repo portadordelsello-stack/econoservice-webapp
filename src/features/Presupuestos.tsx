@@ -183,7 +183,7 @@ export default function Presupuestos() {
     }
   };
 
-  const canWrite = profile?.rol === "admin" || profile?.rol === "recepcion";
+  const canWrite = profile?.rol === "superadmin";
 
   if (loading && presupuestos.length === 0) {
     return (

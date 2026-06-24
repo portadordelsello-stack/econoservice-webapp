@@ -25,11 +25,11 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return hasRole('admin') || isGlobalAdminEmail();
+      return hasRole('superadmin') || hasRole('admin') || isGlobalAdminEmail();
     }
     
     function isRecepcion() {
-      return hasRole('recepcion') || isAdmin();
+      return hasRole('logistica') || hasRole('recepcion') || isAdmin();
     }
     
     function isTecnico() {
@@ -38,7 +38,9 @@ service cloud.firestore {
     
     function isConsulta() {
       return isAuthenticated() && (
+        hasRole('administracion') ||
         hasRole('consulta') || 
+        hasRole('logistica') ||
         hasRole('recepcion') || 
         hasRole('tecnico') || 
         isAdmin()

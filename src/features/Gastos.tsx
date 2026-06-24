@@ -121,7 +121,7 @@ export default function Gastos() {
   // Compute Total Sum of Expenses
   const totalExpensesSum = filteredGastos.reduce((sum, g) => sum + g.monto, 0);
 
-  const isAdmin = profile?.rol === "admin";
+  const isAdmin = profile?.rol === "superadmin";
 
   if (loading && gastos.length === 0) {
     return (

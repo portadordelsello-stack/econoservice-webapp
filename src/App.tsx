@@ -36,57 +36,81 @@ import {
 } from "lucide-react";
 
 function MainLayout() {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, signOut: logout } = useAuth();
   const { currentView, navigate } = useNavigation();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
+  // Sidebar link details
+  const navigationLinks = [
+    { view: "dashboard", label: "Dashboard", icon: Activity, roles: ["superadmin", "administracion", "admin"] },
+    { view: "servicios", label: "Órdenes de Trabajo", icon: Wrench, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "clientes", label: "Clientes", icon: User, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "equipos", label: "Equipos", icon: Laptop, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "presupuestos", label: "Presupuestos", icon: FileSpreadsheet, roles: ["superadmin", "administracion", "admin", "recepcion", "consulta"] },
+    { view: "agenda", label: "Agenda", icon: Calendar, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "gastos", label: "Gastos", icon: TrendingDown, roles: ["superadmin", "administracion", "admin"] },
+    { view: "tecnicos", label: "Staff", icon: Users2, roles: ["superadmin", "administracion", "admin"] },
+    { view: "usuarios", label: "Usuarios Sistema", icon: FolderLock, roles: ["superadmin", "administracion", "admin"] }
+  ];
+
+  // Automatic authorized view redirection
+  React.useEffect(() => {
+    if (!user) return;
+    if (profile) {
+      const allowedLinks = navigationLinks.filter(link => link.roles.includes(profile.rol));
+      if (allowedLinks.length > 0) {
+        const isAllowed = navigationLinks.find(link => link.view === currentView)?.roles.includes(profile.rol);
+        const isSubViewAllowed = (currentView === "crear-servicio" || currentView === "detalle-servicio") && 
+                                 navigationLinks.find(link => link.view === "servicios")?.roles.includes(profile.rol);
+        if (!isAllowed && !isSubViewAllowed) {
+          navigate(allowedLinks[0].view as any);
+        }
+      }
+    }
+  }, [profile, currentView, user]);
 
   // If not logged in, force Login screen
   if (!user) {
     return <Login />;
   }
 
-  // Sidebar link details
-  const navigationLinks = [
-    { view: "dashboard", label: "Dashboard", icon: Activity, roles: ["admin", "recepcion", "tecnico", "consulta"] },
-    { view: "servicios", label: "Órdenes de Trabajo", icon: Wrench, roles: ["admin", "recepcion", "tecnico", "consulta"] },
-    { view: "clientes", label: "Clientes", icon: User, roles: ["admin", "recepcion", "tecnico", "consulta"] },
-    { view: "equipos", label: "Equipos", icon: Laptop, roles: ["admin", "recepcion", "tecnico", "consulta"] },
-    { view: "presupuestos", label: "Presupuestos", icon: FileSpreadsheet, roles: ["admin", "recepcion", "tecnico", "consulta"] },
-    { view: "agenda", label: "Agenda", icon: Calendar, roles: ["admin", "recepcion", "tecnico", "consulta"] },
-    { view: "gastos", label: "Gastos", icon: TrendingDown, roles: ["admin", "recepcion", "tecnico", "consulta"] },
-    { view: "tecnicos", label: "Técnicos", icon: Users2, roles: ["admin"] },
-    { view: "usuarios", label: "Usuarios Sistema", icon: FolderLock, roles: ["admin"] }
-  ];
-
   const handleNavLinkClick = (view: string) => {
-    navigate(view);
+    navigate(view as any);
     setMobileMenuOpen(false);
   };
 
   const getRoleLabel = (rol?: string) => {
     switch (rol) {
+      case "superadmin":
+        return "Superadmin";
+      case "administracion":
+        return "Administración";
+      case "tecnico":
+        return "Técnico";
+      case "logistica":
+        return "Logística";
       case "admin":
-        return "Administrador";
+        return "Administrador (Legacy)";
       case "recepcion":
         return "Secretaría / Recepción";
-      case "tecnico":
-        return "Técnico de Taller";
-      case "consulta":
-        return "Consulta / Auditor";
       default:
-        return "Usuario";
+        return rol || "Usuario";
     }
   };
 
   const getRoleColor = (rol?: string) => {
     switch (rol) {
-      case "admin":
+      case "superadmin":
         return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
-      case "recepcion":
-        return "bg-slate-700/50 text-slate-300 border-slate-600/30";
+      case "administracion":
+        return "bg-purple-500/10 text-purple-400 border-purple-500/20";
       case "tecnico":
         return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      case "logistica":
+        return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+      case "admin":
+        return "bg-slate-700/50 text-slate-300 border-slate-600/30";
       default:
         return "bg-slate-800 text-slate-400 border-slate-700";
     }

@@ -165,10 +165,10 @@ export default function DetalleServicio() {
   }, [selectedId]);
 
   // Auth permissions
-  const isAdmin = profile?.rol === "admin";
-  const isRecepcion = profile?.rol === "recepcion" || isAdmin;
-  const isTecnico = profile?.rol === "tecnico" || isAdmin;
-  const isConsulta = profile?.rol === "consulta";
+  const isAdmin = profile?.rol === "superadmin";
+  const isRecepcion = profile?.rol === "superadmin" || profile?.rol === "logistica";
+  const isTecnico = profile?.rol === "tecnico" || profile?.rol === "superadmin";
+  const isConsulta = profile?.rol === "administracion" || profile?.rol === "consulta" || (!isAdmin && !isRecepcion && !isTecnico);
 
   // Action Save changes
   const handleSave = async (tab: TabType, textMessage?: string) => {

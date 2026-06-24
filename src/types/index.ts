@@ -1,4 +1,4 @@
-export type Role = "admin" | "recepcion" | "tecnico" | "consulta";
+export type Role = "superadmin" | "administracion" | "tecnico" | "logistica" | "admin" | "recepcion" | "consulta";
 
 export type EstadoServicio =
   | "RECIBIDO"

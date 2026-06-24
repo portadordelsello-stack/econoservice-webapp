@@ -126,7 +126,7 @@ export default function Equipos() {
     );
   });
 
-  const canWrite = profile?.rol === "admin" || profile?.rol === "recepcion";
+  const canWrite = profile?.rol === "superadmin" || profile?.rol === "logistica";
 
   if (loading && equipos.length === 0) {
     return (

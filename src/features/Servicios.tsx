@@ -119,7 +119,7 @@ export default function Servicios() {
     return matchesSearch && matchesEstado && matchesCliente && matchesTecnico;
   });
 
-  const canWrite = profile?.rol === "admin" || profile?.rol === "recepcion";
+  const canWrite = profile?.rol === "superadmin" || profile?.rol === "logistica";
 
   if (loading && servicios.length === 0) {
     return (

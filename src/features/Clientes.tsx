@@ -160,7 +160,7 @@ export default function Clientes() {
     (c.localidad && c.localidad.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const canWrite = profile?.rol === "admin" || profile?.rol === "recepcion";
+  const canWrite = profile?.rol === "superadmin" || profile?.rol === "logistica";
 
   if (loading && clientes.length === 0) {
     return (

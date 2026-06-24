@@ -41,14 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               uid: firebaseUser.uid,
               nombre: firebaseUser.displayName || "Administrador Global",
               email: firebaseUser.email || "portadordelsello@gmail.com",
-              rol: "admin",
+              rol: "superadmin",
               activo: true,
               createdAt: new Date(),
             };
             await setDoc(userDocRef, {
               ...adminProfile,
               activo: true,
-              rol: "admin"
+              rol: "superadmin"
             }, { merge: true });
             setProfile(adminProfile);
             setLoading(false);
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 uid: firebaseUser.uid,
                 nombre: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Usuario",
                 email: firebaseUser.email || "",
-                rol: "consulta",
+                rol: "tecnico",
                 activo: false,
                 createdAt: new Date(),
               };
