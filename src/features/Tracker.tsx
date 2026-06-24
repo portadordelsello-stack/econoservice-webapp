@@ -111,6 +111,7 @@ export default function Tracker() {
   const leafletLoaded = useLeaflet();
   
   const [activeServices, setActiveServices] = useState<Servicio[]>([]);
+  const [clientsMap, setClientsMap] = useState<Record<string, Cliente>>({});
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<Servicio | null>(null);
   const [clientData, setClientData] = useState<Cliente | null>(null);
@@ -133,9 +134,20 @@ export default function Tracker() {
   const loadServices = async () => {
     setLoading(true);
     try {
-      const all = await ServiciosService.getAll();
+      const [all, allClients] = await Promise.all([
+        ServiciosService.getAll(),
+        ClientesService.getAll()
+      ]);
       const list = all.filter(s => s.estado === "LISTO_PARA_ENTREGA" || s.estado === "ENTREGA_EN_PROGRESO");
       setActiveServices(list);
+      
+      const cMap: Record<string, Cliente> = {};
+      allClients.forEach(c => {
+        if (c.id) {
+          cMap[c.id] = c;
+        }
+      });
+      setClientsMap(cMap);
       
       // Keep selected service reference fresh if it's in the list
       if (selectedService) {
@@ -625,12 +637,27 @@ export default function Tracker() {
                         {serv.aparato} {serv.marcaModelo}
                       </p>
 
-                      <div className="flex items-center gap-1 text-gray-400 mt-1">
-                        <MapPin className="w-3 h-3" />
-                        <span className="truncate max-w-[200px]">
-                          {serv.infoLogistica || "Falta ingresar dirección de entrega"}
-                        </span>
-                      </div>
+                      {(() => {
+                        const client = clientsMap[serv.clienteId];
+                        const addressStr = client && client.calle 
+                          ? `${client.calle} ${client.numero || ""}, ${client.localidad || "Santo Tomé"}`
+                          : "Falta ingresar dirección de entrega";
+                        return (
+                          <div className="space-y-1 mt-1.5">
+                            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300" title={addressStr}>
+                              <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span className="truncate max-w-[220px] font-medium">
+                                {addressStr}
+                              </span>
+                            </div>
+                            {serv.infoLogistica && (
+                              <div className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/5 dark:bg-amber-500/10 px-2 py-0.5 rounded italic truncate max-w-[220px]">
+                                Nota: {serv.infoLogistica}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Action buttons */}
                       <div className="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-2">
