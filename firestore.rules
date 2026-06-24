@@ -10,8 +10,7 @@ service cloud.firestore {
     function isGlobalAdminEmail() {
       return isAuthenticated() && 
              'email' in request.auth.token &&
-             (request.auth.token.email.lower() == 'portadordelsello@gmail.com' ||
-              request.auth.token.email == 'portadordelsello@gmail.com');
+             request.auth.token.email == 'portadordelsello@gmail.com';
     }
 
     function getUserRole() {
@@ -102,6 +101,12 @@ service cloud.firestore {
     // 7. Gastos
     match /gastos/{gastoId} {
       allow read: if hasAnyRole(['superadmin', 'admin', 'administracion']);
+      allow write: if hasAnyRole(['superadmin', 'admin']);
+    }
+    
+    // 8. Config
+    match /config/{configId} {
+      allow read: if isAuthenticated();
       allow write: if hasAnyRole(['superadmin', 'admin']);
     }
   }
