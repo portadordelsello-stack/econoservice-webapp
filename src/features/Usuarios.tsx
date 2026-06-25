@@ -18,11 +18,16 @@ import {
   FolderOpen,
   Save,
   HardDrive,
-  Trash2
+  Trash2,
+  Settings,
+  ArrowLeft,
+  ChevronRight,
+  Lock
 } from "lucide-react";
 
 export default function Usuarios() {
   const { profile } = useAuth();
+  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive">("menu");
   const [usuarios, setUsuarios] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -204,29 +209,210 @@ export default function Usuarios() {
   const activeUsers = usuarios.filter((u) => u.activo).length;
   const pendingUsers = usuarios.filter((u) => !u.activo).length;
 
-  return (
-    <div className="space-y-6">
-      
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  if (activeSubView === "menu") {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        {/* Header */}
         <div>
           <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
-            <Users className="w-7 h-7 text-indigo-600" />
-            Usuarios del Sistema
+            <Settings className="w-7 h-7 text-indigo-600" />
+            Ajustes del Sistema
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Administra las cuentas de Google Auth, activa accesos y asigna los roles correspondientes.
+            Gestión de configuraciones del sistema, administración de cuentas de usuario y servicios conectados.
           </p>
         </div>
-        <div>
-          <button
-            onClick={fetchUsuarios}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-850 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+
+        {/* Options Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Card: Usuarios del Sistema */}
+          <div 
+            onClick={() => setActiveSubView("usuarios")}
+            className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-950/40 cursor-pointer transition-all flex flex-col justify-between"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Actualizar
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  Usuarios del Sistema
+                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-indigo-600 dark:text-indigo-400" />
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Administra las cuentas de Google Auth, activa accesos, asigna los roles correspondientes (superadmin, logística, técnico, etc.) o elimina cuentas.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              <span>Gestionar usuarios</span>
+              <span className="bg-indigo-50 dark:bg-indigo-950/30 px-2 py-1 rounded-md text-[10px] font-mono text-indigo-700 dark:text-indigo-300">
+                {totalUsers} Cuentas
+              </span>
+            </div>
+          </div>
+
+          {/* Card: Configuración de Google Drive */}
+          <div 
+            onClick={() => setActiveSubView("drive")}
+            className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-950/40 cursor-pointer transition-all flex flex-col justify-between"
+          >
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <HardDrive className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  Configuración de Google Drive
+                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-indigo-600 dark:text-indigo-400" />
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Configura el ID de la carpeta de Google Drive donde se almacenarán automáticamente las fotos tomadas por el personal de logística al realizar las entregas.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              <span>Configurar almacenamiento</span>
+              <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                folderId ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300" : "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300"
+              }`}>
+                {folderId ? "Configurado" : "Pendiente"}
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  if (activeSubView === "drive") {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <div>
+          <button 
+            onClick={() => setActiveSubView("menu")}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer transition-colors mb-2 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-3.5 py-2 rounded-xl shadow-xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a Ajustes
           </button>
+        </div>
+
+        {isSuperadmin ? (
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-gray-100 dark:border-gray-800">
+              <HardDrive className="w-5 h-5 text-indigo-600" />
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Configuración de Google Drive
+                </h2>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  Especifique la carpeta de Google Drive donde se almacenarán las fotos tomadas por el personal de logística.
+                </p>
+              </div>
+            </div>
+
+            {driveSuccessMsg && (
+              <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-150 dark:border-emerald-900/50 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                <Check className="w-4 h-4 shrink-0" />
+                <span>{driveSuccessMsg}</span>
+              </div>
+            )}
+
+            {driveErrorMsg && (
+              <div className="p-3.5 bg-red-50 dark:bg-red-950/20 border border-red-150 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{driveErrorMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveDriveConfig} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  ID de la Carpeta de Google Drive
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ej. 1A2b3C4d5E6f7G8h9I0j..."
+                    value={folderId}
+                    onChange={(e) => setFolderId(e.target.value)}
+                    className="flex-1 px-3.5 py-2 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                  <button
+                    type="submit"
+                    disabled={savingDriveConfig}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    {savingDriveConfig ? "Guardando..." : "Guardar ID"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-900 rounded-xl text-xs text-slate-500 leading-relaxed space-y-2">
+                <span className="font-bold text-slate-700 dark:text-slate-300 block">¿Cómo encontrar el ID de una carpeta de Google Drive?</span>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Abra la carpeta que desea usar en su Google Drive en el navegador web.</li>
+                  <li>Mire la barra de direcciones URL del navegador.</li>
+                  <li>La URL tendrá este formato: <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-700 dark:text-gray-300 text-[11px]">https://drive.google.com/drive/folders/&lt;ID_DE_CARPETA&gt;</code></li>
+                  <li>Copie todo el texto que viene después de <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-700 dark:text-gray-300 text-[11px]">/folders/</code> y péguelo en el campo de arriba.</li>
+                </ol>
+              </div>
+            </form>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-8 text-center space-y-4 shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">Acceso Restringido</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
+                La configuración de almacenamiento de Google Drive solo está disponible para usuarios con rol de <strong>Superadministrador</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-200">
+      
+      {/* Back button and Header */}
+      <div>
+        <button 
+          onClick={() => setActiveSubView("menu")}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer transition-colors mb-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 px-3.5 py-2 rounded-xl shadow-xs"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Volver a Ajustes
+        </button>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-2">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+              <Users className="w-7 h-7 text-indigo-600" />
+              Usuarios del Sistema
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Administra las cuentas de Google Auth, activa accesos y asigna los roles correspondientes.
+            </p>
+          </div>
+          <div>
+            <button
+              onClick={fetchUsuarios}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-850 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              Actualizar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -425,72 +611,6 @@ export default function Usuarios() {
           </div>
         )}
       </div>
-
-      {/* Google Drive Folder ID Configuration Panel - visible/editable only by Superadmin */}
-      {isSuperadmin && (
-        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-gray-100 dark:border-gray-800">
-            <HardDrive className="w-5 h-5 text-indigo-600" />
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                Configuración de Google Drive
-              </h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500">
-                Especifique la carpeta de Google Drive donde se almacenarán las fotos tomadas por el personal de logística.
-              </p>
-            </div>
-          </div>
-
-          {driveSuccessMsg && (
-            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-150 dark:border-emerald-900/50 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
-              <Check className="w-4 h-4 shrink-0" />
-              <span>{driveSuccessMsg}</span>
-            </div>
-          )}
-
-          {driveErrorMsg && (
-            <div className="p-3.5 bg-red-50 dark:bg-red-950/20 border border-red-150 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span>{driveErrorMsg}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSaveDriveConfig} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                ID de la Carpeta de Google Drive
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ej. 1A2b3C4d5E6f7G8h9I0j..."
-                  value={folderId}
-                  onChange={(e) => setFolderId(e.target.value)}
-                  className="flex-1 px-3.5 py-2 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                />
-                <button
-                  type="submit"
-                  disabled={savingDriveConfig}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  {savingDriveConfig ? "Guardando..." : "Guardar ID"}
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-900 rounded-xl text-xs text-slate-500 leading-relaxed space-y-2">
-              <span className="font-bold text-slate-700 dark:text-slate-300 block">¿Cómo encontrar el ID de una carpeta de Google Drive?</span>
-              <ol className="list-decimal list-inside space-y-1">
-                <li>Abra la carpeta que desea usar en su Google Drive en el navegador web.</li>
-                <li>Mire la barra de direcciones URL del navegador.</li>
-                <li>La URL tendrá este formato: <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-700 dark:text-gray-300 text-[11px]">https://drive.google.com/drive/folders/&lt;ID_DE_CARPETA&gt;</code></li>
-                <li>Copie todo el texto que viene después de <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-gray-700 dark:text-gray-300 text-[11px]">/folders/</code> y péguelo en el campo de arriba.</li>
-              </ol>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Modal de confirmación de eliminación */}
       {userToDelete && (

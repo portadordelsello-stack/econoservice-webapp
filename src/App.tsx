@@ -34,7 +34,8 @@ import {
   FileSpreadsheet,
   ShieldCheck,
   FolderLock,
-  Truck
+  Truck,
+  Settings
 } from "lucide-react";
 
 function MainLayout() {
@@ -53,7 +54,7 @@ function MainLayout() {
     { view: "agenda", label: "Agenda", icon: Calendar, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "tracker", label: "Tracker", icon: Truck, roles: ["superadmin", "administracion", "logistica", "tecnico", "admin", "recepcion", "consulta"] },
     { view: "gastos", label: "Gastos", icon: TrendingDown, roles: ["superadmin", "administracion", "admin"] },
-    { view: "usuarios", label: "Usuarios Sistema", icon: FolderLock, roles: ["superadmin", "administracion", "admin"] }
+    { view: "usuarios", label: "Ajustes", icon: Settings, roles: ["superadmin", "administracion", "admin"] }
   ];
 
   // Automatic authorized view redirection
