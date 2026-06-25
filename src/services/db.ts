@@ -12,10 +12,11 @@ import {
   limit, 
   serverTimestamp,
   increment,
-  runTransaction
+  runTransaction,
+  onSnapshot
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { Cliente, Tecnico, Equipo, Servicio, Historial, Presupuesto, PresupuestoItem, Gasto, EstadoServicio } from "../types";
+import { Cliente, Tecnico, Equipo, Servicio, Historial, Presupuesto, PresupuestoItem, Gasto, EstadoServicio, Proveedor, ItemStock, AppNotification } from "../types";
 
 // Helper to convert Firestore Timestamps to JS Dates
 export const toDate = (timestamp: any): Date | null => {
@@ -436,3 +437,158 @@ export const GastosService = {
     await deleteDoc(docRef);
   }
 };
+
+// ============================================================================
+// PROVEEDORES SERVICES
+// ============================================================================
+export const ProveedoresService = {
+  async getAll(): Promise<Proveedor[]> {
+    const colRef = collection(db, "proveedores");
+    const q = query(colRef, orderBy("nombre", "asc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Proveedor[];
+  },
+
+  async create(proveedor: Omit<Proveedor, "id" | "createdAt">): Promise<string> {
+    const colRef = collection(db, "proveedores");
+    const docRef = await addDoc(colRef, {
+      ...proveedor,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  },
+
+  async update(id: string, proveedor: Partial<Proveedor>): Promise<void> {
+    const docRef = doc(db, "proveedores", id);
+    await updateDoc(docRef, proveedor);
+  },
+
+  async delete(id: string): Promise<void> {
+    const docRef = doc(db, "proveedores", id);
+    await deleteDoc(docRef);
+  }
+};
+
+// ============================================================================
+// STOCK (INVENTARIO) SERVICES
+// ============================================================================
+export const StockService = {
+  async getAll(): Promise<ItemStock[]> {
+    const colRef = collection(db, "stock");
+    const q = query(colRef, orderBy("nombre", "asc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as ItemStock[];
+  },
+
+  async create(item: Omit<ItemStock, "id" | "createdAt" | "updatedAt">): Promise<string> {
+    const colRef = collection(db, "stock");
+    const docRef = await addDoc(colRef, {
+      ...item,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  },
+
+  async update(id: string, item: Partial<ItemStock>): Promise<void> {
+    const docRef = doc(db, "stock", id);
+    await updateDoc(docRef, {
+      ...item,
+      updatedAt: serverTimestamp()
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    const docRef = doc(db, "stock", id);
+    await deleteDoc(docRef);
+  }
+};
+
+// ============================================================================
+// NOTIFICATIONS SERVICES
+// ============================================================================
+export const NotificationsService = {
+  async create(notification: Omit<AppNotification, "id" | "createdAt" | "read" | "readBy">): Promise<string> {
+    const colRef = collection(db, "notifications");
+    const docRef = await addDoc(colRef, {
+      ...notification,
+      read: false,
+      readBy: [],
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  },
+
+  async markAsRead(id: string, userId: string): Promise<void> {
+    const docRef = doc(db, "notifications", id);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      const readBy = data.readBy || [];
+      if (!readBy.includes(userId)) {
+        await updateDoc(docRef, {
+          readBy: [...readBy, userId]
+        });
+      }
+    }
+  },
+
+  async markAllAsReadForUser(userId: string, notifications: AppNotification[]): Promise<void> {
+    for (const notif of notifications) {
+      if (notif.id && (!notif.readBy || !notif.readBy.includes(userId))) {
+        await this.markAsRead(notif.id, userId);
+      }
+    }
+  },
+
+  listenToNotifications(
+    role: string,
+    userId: string,
+    onUpdate: (notifications: AppNotification[]) => void
+  ) {
+    const colRef = collection(db, "notifications");
+    const q = query(colRef, orderBy("createdAt", "desc"), limit(50));
+    
+    return onSnapshot(q, 
+      (snapshot) => {
+        const allNotifs = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as AppNotification[];
+        
+        const filtered = allNotifs.filter(notif => {
+          if (notif.targetUserId && notif.targetUserId !== userId) {
+            return false;
+          }
+          
+          if (notif.targetRole && notif.targetRole !== "all") {
+            const isTallerTarget = notif.targetRole === "taller" || notif.targetRole === "tecnico";
+            const isUserTaller = role === "tecnico";
+            
+            if (isTallerTarget) {
+              return isUserTaller;
+            }
+            
+            return notif.targetRole === role;
+          }
+          
+          return true;
+        });
+        
+        onUpdate(filtered);
+      },
+      (error) => {
+        console.warn("Real-time notifications subscription error caught gracefully:", error);
+        onUpdate([]);
+      }
+    );
+  }
+};
+
+

@@ -118,5 +118,20 @@ service cloud.firestore {
       allow read: if true;
       allow write: if hasAnyRole(['superadmin', 'admin', 'logistica']);
     }
+
+    // 10. Proveedores
+    match /proveedores/{proveedorId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 11. Stock (Inventario)
+    match /stock/{stockId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 12. Notifications
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
   }
 }

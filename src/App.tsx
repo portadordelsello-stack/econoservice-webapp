@@ -17,6 +17,8 @@ import Gastos from "./features/Gastos";
 import Usuarios from "./features/Usuarios";
 import Tracker from "./features/Tracker";
 import TrackingCliente from "./features/TrackingCliente";
+import Insumos from "./features/Insumos";
+import { NotificationsCenter } from "./components/NotificationsCenter";
 
 import { 
   Wrench, 
@@ -35,7 +37,8 @@ import {
   ShieldCheck,
   FolderLock,
   Truck,
-  Settings
+  Settings,
+  Package
 } from "lucide-react";
 
 function MainLayout() {
@@ -50,6 +53,7 @@ function MainLayout() {
     { view: "servicios", label: "Taller", icon: Wrench, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
     { view: "clientes", label: "Clientes", icon: User, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "equipos", label: "Equipos", icon: Laptop, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "insumos", label: "Insumos", icon: Package, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
     { view: "presupuestos", label: "Presupuestos", icon: FileSpreadsheet, roles: ["superadmin", "administracion", "admin", "recepcion", "consulta"] },
     { view: "agenda", label: "Agenda", icon: Calendar, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "tracker", label: "Tracker", icon: Truck, roles: ["superadmin", "administracion", "logistica", "tecnico", "admin", "recepcion", "consulta"] },
@@ -139,6 +143,7 @@ function MainLayout() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <NotificationsCenter align="left" />
           <button
             onClick={toggleTheme}
             className="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer"
@@ -222,6 +227,9 @@ function MainLayout() {
           </div>
 
           <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="hidden md:block">
+              <NotificationsCenter align="left" />
+            </div>
             <button
               onClick={toggleTheme}
               className="hidden md:flex p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
@@ -256,6 +264,7 @@ function MainLayout() {
         {currentView === "detalle-servicio" && <DetalleServicio />}
         {currentView === "clientes" && <Clientes />}
         {currentView === "equipos" && <Equipos />}
+        {currentView === "insumos" && <Insumos />}
         {currentView === "presupuestos" && <Presupuestos />}
         {currentView === "agenda" && <Agenda />}
         {currentView === "gastos" && <Gastos />}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { ServiciosService, ClientesService, EquiposService, TecnicosService, toDate } from "../services/db";
+import { ServiciosService, ClientesService, EquiposService, TecnicosService, toDate, StockService, NotificationsService } from "../services/db";
 import { Servicio, Cliente, Equipo, Tecnico, Historial, EstadoServicio } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
@@ -231,6 +231,60 @@ export default function DetalleServicio() {
   const isTecnico = profile?.rol === "tecnico" || profile?.rol === "superadmin";
   const isConsulta = profile?.rol === "administracion" || profile?.rol === "consulta" || (!isAdmin && !isRecepcion && !isTecnico);
 
+  const syncRepuestosToStock = async (repuestosText: string) => {
+    if (!repuestosText || !repuestosText.trim() || !servicio) return;
+
+    // Split by commas, semicolons, or newlines
+    const items = repuestosText
+      .split(/[,;\n•\-*]+/)
+      .map(i => i.trim())
+      .filter(i => i.length > 2 && !i.toLowerCase().includes("ninguno") && !i.toLowerCase().includes("no se requ"));
+
+    if (items.length === 0) return;
+
+    try {
+      const latestStock = await StockService.getAll();
+
+      for (const item of items) {
+        const existingItem = latestStock.find(
+          st => st.nombre.toLowerCase().trim() === item.toLowerCase().trim()
+        );
+
+        if (existingItem && existingItem.id) {
+          if (existingItem.cantidad < 1) {
+            await StockService.update(existingItem.id, {
+              cantidad: 1,
+              marcaModeloCompatible: existingItem.marcaModeloCompatible || servicio.marcaModelo || ""
+            });
+          }
+        } else {
+          await StockService.create({
+            nombre: item,
+            descripcion: `Sincronizado de repuestos comprados en Orden #${servicio.numeroServicio || ''} (${servicio.aparato || ''} ${servicio.marcaModelo || ''})`,
+            cantidad: 1,
+            unidad: "unidades",
+            marcaModeloCompatible: servicio.marcaModelo || "",
+            ubicacion: "Taller / Por asignar",
+            precioCompra: 0,
+            precioVenta: 0,
+            stockMinimo: 0,
+            proveedorId: ""
+          });
+        }
+
+        // Crear una notificación para el Taller (Técnicos)
+        await NotificationsService.create({
+          targetRole: "tecnico",
+          title: "Repuesto Disponible en Stock 📦",
+          message: `El repuesto "${item}" para "${servicio.aparato || ''} ${servicio.marcaModelo || ''}" (Orden #${servicio.numeroServicio || ''}) ya se encuentra en Stock.`,
+          serviceId: servicio.id || ""
+        });
+      }
+    } catch (err) {
+      console.error("Error syncing repuestos to stock:", err);
+    }
+  };
+
   // Action Save changes
   const handleSave = async (tab: TabType, textMessage?: string) => {
     if (!selectedId || !profile) return;
@@ -287,6 +341,11 @@ export default function DetalleServicio() {
         profile.nombre,
         textMessage || `Campos actualizados en la pestaña de ${tab.toUpperCase()}`
       );
+
+      // Sincronizar automáticamente con el Stock Central (Inventario)
+      if (tab === "repuestos" && editRepuestosComprados) {
+        await syncRepuestosToStock(editRepuestosComprados);
+      }
 
       // Refresh details
       await loadServiceDetails();

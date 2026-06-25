@@ -134,3 +134,43 @@ export interface Gasto {
   monto: number;
   observaciones?: string;
 }
+
+export interface Proveedor {
+  id?: string;
+  nombre: string;
+  contacto?: string;
+  telefono?: string;
+  direccion?: string;
+  email?: string;
+  observaciones?: string;
+  createdAt: any;
+}
+
+export interface ItemStock {
+  id?: string;
+  nombre: string;
+  descripcion?: string;
+  cantidad: number;
+  unidad?: string;
+  precioCompra?: number;
+  precioVenta?: number;
+  proveedorId?: string;
+  marcaModeloCompatible?: string;
+  ubicacion?: string;
+  stockMinimo?: number;
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface AppNotification {
+  id?: string;
+  targetRole?: Role | "all" | "taller"; // Target role or workshop group
+  targetUserId?: string;
+  title: string;
+  message: string;
+  read: boolean;
+  readBy?: string[]; // list of user uids who have read/dismissed this
+  createdAt: any;
+  serviceId?: string;
+}
+

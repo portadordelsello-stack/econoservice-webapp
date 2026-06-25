@@ -4,6 +4,7 @@ import { db } from "../lib/firebase";
 import { useAuth } from "../providers/AuthProvider";
 import { UserProfile, Role } from "../types";
 import { DriveService } from "../services/drive";
+import { GeminiConfigService } from "../services/geminiConfig";
 import { 
   Users, 
   ShieldCheck, 
@@ -22,12 +23,13 @@ import {
   Settings,
   ArrowLeft,
   ChevronRight,
-  Lock
+  Lock,
+  Sparkles
 } from "lucide-react";
 
 export default function Usuarios() {
   const { profile } = useAuth();
-  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive">("menu");
+  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini">("menu");
   const [usuarios, setUsuarios] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -36,12 +38,30 @@ export default function Usuarios() {
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
   const isSuperadmin = profile?.rol === "superadmin";
+  const canManageConfig = profile?.rol === "superadmin" || profile?.rol === "admin" || profile?.rol === "administracion";
+
+  // Gemini Config states
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
+  const [savingGeminiConfig, setSavingGeminiConfig] = useState(false);
+  const [geminiSuccessMsg, setGeminiSuccessMsg] = useState<string | null>(null);
+  const [geminiErrorMsg, setGeminiErrorMsg] = useState<string | null>(null);
 
   // Drive Config states
   const [folderId, setFolderId] = useState("");
   const [savingDriveConfig, setSavingDriveConfig] = useState(false);
   const [driveSuccessMsg, setDriveSuccessMsg] = useState<string | null>(null);
   const [driveErrorMsg, setDriveErrorMsg] = useState<string | null>(null);
+
+  const fetchGeminiConfig = async () => {
+    try {
+      const config = await GeminiConfigService.getConfig();
+      setGeminiApiKey(config.apiKey);
+      setGeminiModel(config.model || "gemini-2.5-flash");
+    } catch (err) {
+      console.error("Error fetching Gemini config:", err);
+    }
+  };
 
   const fetchDriveConfig = async () => {
     try {
@@ -53,10 +73,11 @@ export default function Usuarios() {
   };
 
   useEffect(() => {
-    if (isSuperadmin) {
+    if (canManageConfig) {
       fetchDriveConfig();
+      fetchGeminiConfig();
     }
-  }, [isSuperadmin]);
+  }, [canManageConfig]);
 
   const handleSaveDriveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +92,25 @@ export default function Usuarios() {
       setDriveErrorMsg("No se pudo guardar la configuración de Google Drive.");
     } finally {
       setSavingDriveConfig(false);
+    }
+  };
+
+  const handleSaveGeminiConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingGeminiConfig(true);
+    setGeminiSuccessMsg(null);
+    setGeminiErrorMsg(null);
+    try {
+      await GeminiConfigService.setConfig({
+        apiKey: geminiApiKey,
+        model: geminiModel,
+      });
+      setGeminiSuccessMsg("Configuración de Gemini actualizada con éxito.");
+    } catch (err: any) {
+      console.error("Error saving Gemini config:", err);
+      setGeminiErrorMsg("No se pudo guardar la configuración de Gemini.");
+    } finally {
+      setSavingGeminiConfig(false);
     }
   };
 
@@ -224,7 +264,7 @@ export default function Usuarios() {
         </div>
 
         {/* Options Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* Card: Usuarios del Sistema */}
           <div 
@@ -282,6 +322,33 @@ export default function Usuarios() {
             </div>
           </div>
 
+          {/* Card: Configuración de Gemini */}
+          <div 
+            onClick={() => setActiveSubView("gemini")}
+            className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-950/40 cursor-pointer transition-all flex flex-col justify-between"
+          >
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  Configuración de Gemini
+                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-indigo-600 dark:text-indigo-400" />
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Configura el modelo de Inteligencia Artificial para el asistente de repuestos y gestiona tu clave API personalizada.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              <span>Configurar IA</span>
+              <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/30 text-indigo-750 dark:text-indigo-300`}>
+                {geminiModel}
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
     );
@@ -300,7 +367,7 @@ export default function Usuarios() {
           </button>
         </div>
 
-        {isSuperadmin ? (
+        {canManageConfig ? (
           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-gray-100 dark:border-gray-800">
               <HardDrive className="w-5 h-5 text-indigo-600" />
@@ -371,7 +438,127 @@ export default function Usuarios() {
             <div className="space-y-1.5">
               <h3 className="text-base font-bold text-gray-900 dark:text-white">Acceso Restringido</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
-                La configuración de almacenamiento de Google Drive solo está disponible para usuarios con rol de <strong>Superadministrador</strong>.
+                La configuración de almacenamiento de Google Drive solo está disponible para usuarios con rol de <strong>Administrador o Superadministrador</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (activeSubView === "gemini") {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <div>
+          <button 
+            onClick={() => setActiveSubView("menu")}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer transition-colors mb-2 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-3.5 py-2 rounded-xl shadow-xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a Ajustes
+          </button>
+        </div>
+
+        {canManageConfig ? (
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-800">
+              <Sparkles className="w-5 h-5 text-indigo-600 animate-pulse" />
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Configuración de Gemini (Inteligencia Artificial)
+                </h2>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  Configure el modelo de procesamiento de lenguaje natural y administre la clave de API para el asistente de repuestos e insumos.
+                </p>
+              </div>
+            </div>
+
+            {geminiSuccessMsg && (
+              <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-150 dark:border-emerald-900/50 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                <Check className="w-4 h-4 shrink-0" />
+                <span>{geminiSuccessMsg}</span>
+              </div>
+            )}
+
+            {geminiErrorMsg && (
+              <div className="p-3.5 bg-red-50 dark:bg-red-950/20 border border-red-150 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{geminiErrorMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveGeminiConfig} className="space-y-6">
+              
+              {/* Dropdown for Model Select */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Modelo de Gemini (Capa Gratuita / Recomendados)
+                </label>
+                <select
+                  value={geminiModel}
+                  onChange={(e) => setGeminiModel(e.target.value)}
+                  className="w-full px-3.5 py-3 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                >
+                  <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite (Más rápido, ultra liviano)</option>
+                  <option value="gemini-3-flash">Gemini 3 Flash (Alta velocidad de respuesta)</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Excelente relación velocidad/calidad)</option>
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash (Ideal para respuestas de desarrollo)</option>
+                  <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (Bajo consumo de cuota)</option>
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Clásico estable)</option>
+                  <option value="gemini-1.5-flash-lite">Gemini 1.5 Flash-Lite (Baja latencia)</option>
+                </select>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                  Seleccione el modelo preferido. Gemini 2.5/3.1 Flash se recomiendan para una respuesta sumamente ágil sobre listas de stock grandes.
+                </p>
+              </div>
+
+              {/* API Key Input */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Clave de API personalizada (API Key)
+                </label>
+                <input
+                  type="password"
+                  placeholder="Pegue aquí su API Key de Google AI Studio (ej. AIzaSy...)"
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  className="w-full px-3.5 py-3 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                />
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                  Deje vacío para utilizar la clave de API por defecto de la plataforma. Si introduce una clave personalizada, se guardará de forma segura en la base de datos y se utilizará para todas las consultas del asistente.
+                </p>
+              </div>
+
+              {/* Submit button */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={savingGeminiConfig}
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingGeminiConfig ? "Guardando..." : "Guardar Configuración"}
+                </button>
+              </div>
+
+              <div className="p-4 bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-100/40 dark:border-indigo-950/40 rounded-xl text-xs text-indigo-600 dark:text-indigo-400 leading-relaxed space-y-1.5">
+                <span className="font-bold text-gray-800 dark:text-gray-200 block">¿Cómo obtener una API Key gratuita de Gemini?</span>
+                <p>
+                  Puede obtener una clave de API completamente gratuita ingresando con su cuenta de Google a <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="font-bold underline text-indigo-700 dark:text-indigo-300">Google AI Studio</a> y haciendo clic en <strong>"Get API Key"</strong>. La capa gratuita le permite realizar hasta 15 consultas por minuto de forma gratuita.
+                </p>
+              </div>
+            </form>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-8 text-center space-y-4 shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">Acceso Restringido</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
+                La configuración de Gemini solo está disponible para usuarios con rol de <strong>Administrador o Superadministrador</strong>.
               </p>
             </div>
           </div>
