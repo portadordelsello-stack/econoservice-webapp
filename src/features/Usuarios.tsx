@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, doc, updateDoc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, query, orderBy, deleteDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAuth } from "../providers/AuthProvider";
 import { UserProfile, Role } from "../types";
@@ -17,7 +17,8 @@ import {
   Clock,
   FolderOpen,
   Save,
-  HardDrive
+  HardDrive,
+  Trash2
 } from "lucide-react";
 
 export default function Usuarios() {
@@ -27,6 +28,7 @@ export default function Usuarios() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
   const isSuperadmin = profile?.rol === "superadmin";
 
@@ -91,7 +93,7 @@ export default function Usuarios() {
   }, []);
 
   const handleToggleActivo = async (user: UserProfile) => {
-    if (user.email.toLowerCase() === "portadordelsello@gmail.com") {
+    if (user.email.toLowerCase() === "juanpacheco@playcode.com.ar") {
       setErrorMessage("No se puede desactivar al administrador global primario.");
       return;
     }
@@ -121,8 +123,37 @@ export default function Usuarios() {
     }
   };
 
+  const handleDeleteUser = async (user: UserProfile) => {
+    if (user.email.toLowerCase() === "juanpacheco@playcode.com.ar") {
+      setErrorMessage("No se puede eliminar al administrador global primario.");
+      return;
+    }
+    if (user.uid === profile?.uid) {
+      setErrorMessage("No puedes eliminar tu propia cuenta.");
+      return;
+    }
+
+    setUpdatingId(user.uid);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setUserToDelete(null);
+
+    try {
+      const userRef = doc(db, "users", user.uid);
+      await deleteDoc(userRef);
+      
+      setUsuarios((prev) => prev.filter((u) => u.uid !== user.uid));
+      setSuccessMessage(`Usuario ${user.nombre} eliminado con éxito.`);
+    } catch (err: any) {
+      console.error("Error deleting user:", err);
+      setErrorMessage("Error al eliminar el usuario del sistema.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const handleChangeRol = async (user: UserProfile, nuevoRol: Role) => {
-    if (user.email.toLowerCase() === "portadordelsello@gmail.com") {
+    if (user.email.toLowerCase() === "juanpacheco@playcode.com.ar") {
       setErrorMessage("No se puede cambiar el rol del administrador global primario.");
       return;
     }
@@ -281,7 +312,7 @@ export default function Usuarios() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 text-sm">
                 {usuarios.map((user) => {
-                  const isPrimaryAdmin = user.email.toLowerCase() === "portadordelsello@gmail.com";
+                  const isPrimaryAdmin = user.email.toLowerCase() === "juanpacheco@playcode.com.ar";
                   const isSelf = user.uid === profile?.uid;
                   
                   return (
@@ -352,27 +383,39 @@ export default function Usuarios() {
 
                       {/* Actions */}
                       <td className="p-4 pr-6 text-right">
-                        <button
-                          onClick={() => handleToggleActivo(user)}
-                          disabled={!isSuperadmin || isPrimaryAdmin || isSelf || updatingId === user.uid}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border cursor-pointer transition-all disabled:opacity-40 ${
-                            user.activo
-                              ? "bg-red-50 dark:bg-red-950/10 text-red-600 dark:text-red-400 border-red-100 dark:border-red-950/30 hover:bg-red-100"
-                              : "bg-emerald-50 dark:bg-emerald-950/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-950/30 hover:bg-emerald-100"
-                          }`}
-                        >
-                          {user.activo ? (
-                            <>
-                              <UserX className="w-3.5 h-3.5" />
-                              Desactivar
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="w-3.5 h-3.5" />
-                              Activar Cuenta
-                            </>
-                          )}
-                        </button>
+                        <div className="flex justify-end items-center gap-2">
+                          <button
+                            onClick={() => handleToggleActivo(user)}
+                            disabled={!isSuperadmin || isPrimaryAdmin || isSelf || updatingId === user.uid}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border cursor-pointer transition-all disabled:opacity-40 ${
+                              user.activo
+                                ? "bg-amber-50 dark:bg-amber-950/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-950/30 hover:bg-amber-100"
+                                : "bg-emerald-50 dark:bg-emerald-950/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-950/30 hover:bg-emerald-100"
+                            }`}
+                          >
+                            {user.activo ? (
+                              <>
+                                <UserX className="w-3.5 h-3.5" />
+                                Desactivar
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="w-3.5 h-3.5" />
+                                Activar Cuenta
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            onClick={() => setUserToDelete(user)}
+                            disabled={!isSuperadmin || isPrimaryAdmin || isSelf || updatingId === user.uid}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-red-100 dark:border-red-950/30 bg-red-50 dark:bg-red-950/10 text-red-600 dark:text-red-400 hover:bg-red-100 disabled:opacity-40 cursor-pointer transition-all"
+                            title="Eliminar Cuenta"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -446,6 +489,44 @@ export default function Usuarios() {
               </ol>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Modal de confirmación de eliminación */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar cuenta de usuario?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará el perfil de <strong className="text-gray-900 dark:text-white">{userToDelete.nombre}</strong> ({userToDelete.email}) de la base de datos de forma permanente. El usuario ya no tendrá acceso ni roles asignados en el sistema.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteUser(userToDelete)}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                Sí, Eliminar Cuenta
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -34,13 +34,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(firebaseUser);
         try {
           const userDocRef = doc(db, "users", firebaseUser.uid);
-          const isGlobalAdmin = firebaseUser.email?.toLowerCase() === "portadordelsello@gmail.com";
+          const isGlobalAdmin = firebaseUser.email?.toLowerCase() === "juanpacheco@playcode.com.ar";
 
           if (isGlobalAdmin) {
             const adminProfile: UserProfile = {
               uid: firebaseUser.uid,
               nombre: firebaseUser.displayName || "Administrador Global",
-              email: firebaseUser.email || "portadordelsello@gmail.com",
+              email: firebaseUser.email || "juanpacheco@playcode.com.ar",
               rol: "superadmin",
               activo: true,
               createdAt: new Date(),
