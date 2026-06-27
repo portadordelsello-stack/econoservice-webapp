@@ -121,6 +121,20 @@ export default function Tracker() {
   const [gpsCoords, setGpsCoords] = useState<{lat: number, lng: number} | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [trackingEnvios, setTrackingEnvios] = useState<Record<string, any>>({});
+  
+  const isSuperadmin = profile?.rol === "superadmin";
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "tracking_envios"), (snapshot) => {
+      const tracks: Record<string, any> = {};
+      snapshot.forEach((doc) => {
+        tracks[doc.id] = { id: doc.id, ...doc.data() };
+      });
+      setTrackingEnvios(tracks);
+    });
+    return () => unsubscribe();
+  }, []);
   
   // Maps variables
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -129,6 +143,13 @@ export default function Tracker() {
   const clientMarkerRef = useRef<any>(null);
   const routeLineRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
+
+  // Derived GPS coordinates to display on the map
+  const activeTrack = selectedService ? trackingEnvios[selectedService.id] : null;
+  const isCurrentlyTrackedInFirestore = activeTrack?.activo === true;
+  const effectiveGpsCoords = isTrackingActive && gpsCoords 
+    ? gpsCoords 
+    : (isCurrentlyTrackedInFirestore ? { lat: activeTrack.lat, lng: activeTrack.lng } : null);
   
   // Load services with status LISTO_PARA_ENTREGA or ENTREGA_EN_PROGRESO
   const loadServices = async () => {
@@ -253,11 +274,12 @@ export default function Tracker() {
     const bounds: any[] = [];
 
     // Plot driver
-    if (gpsCoords) {
-      driverMarkerRef.current = L.marker([gpsCoords.lat, gpsCoords.lng], { icon: truckIcon })
+    if (effectiveGpsCoords) {
+      const driverName = activeTrack?.operadorNombre || (isTrackingActive ? (profile?.nombre || "Vos") : "Encargado de Logística");
+      driverMarkerRef.current = L.marker([effectiveGpsCoords.lat, effectiveGpsCoords.lng], { icon: truckIcon })
         .addTo(mapInstanceRef.current)
-        .bindPopup("<strong>Ubicación de Reparto (Vos)</strong><br/>Transmitiendo señal en tiempo real.");
-      bounds.push([gpsCoords.lat, gpsCoords.lng]);
+        .bindPopup(`<strong>Móvil de Reparto (${driverName})</strong><br/>Transmitiendo señal en tiempo real.`);
+      bounds.push([effectiveGpsCoords.lat, effectiveGpsCoords.lng]);
     }
 
     // Geocode client address and plot it
@@ -273,8 +295,8 @@ export default function Tracker() {
             bounds.push([coords.lat, coords.lng]);
 
             // Draw clean dotted route if we have both driver and client
-            if (gpsCoords) {
-              routeLineRef.current = L.polyline([[gpsCoords.lat, gpsCoords.lng], [coords.lat, coords.lng]], {
+            if (effectiveGpsCoords) {
+              routeLineRef.current = L.polyline([[effectiveGpsCoords.lat, effectiveGpsCoords.lng], [coords.lat, coords.lng]], {
                 color: "#f59e0b",
                 dashArray: "6, 8",
                 weight: 3,
@@ -294,7 +316,7 @@ export default function Tracker() {
       mapInstanceRef.current.setView([-31.6420, -60.7200], 13);
     }
 
-  }, [gpsCoords, clientData, leafletLoaded]);
+  }, [effectiveGpsCoords, clientData, leafletLoaded, activeTrack, profile?.nombre, isTrackingActive]);
 
   // Watch GPS Location of current device
   const startGpsTracking = () => {
@@ -542,54 +564,101 @@ export default function Tracker() {
                   </div>
                 )}
 
-                {/* GPS Trigger Buttons */}
-                {selectedService && (
-                  <div className="space-y-2">
-                    {!isTrackingActive ? (
-                      <button
-                        onClick={startGpsTracking}
-                        className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md shadow-amber-500/10 cursor-pointer"
-                      >
-                        <Play className="w-4 h-4 fill-current" />
-                        Iniciar Reparto e Instalar GPS Celular
-                      </button>
-                    ) : (
-                      <button
-                        onClick={stopGpsTracking}
-                        className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md shadow-red-600/10 cursor-pointer"
-                      >
-                        <Square className="w-4 h-4 fill-current" />
-                        Detener Transmisión GPS
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* GPS Live Diagnostics */}
-                {isTrackingActive && (
-                  <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-xs space-y-1.5 animate-pulse">
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>
-                      Emisor GPS Activo
+                {/* Conditional view based on role */}
+                {isSuperadmin ? (
+                  selectedService && (
+                    <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                      {activeTrack?.activo ? (
+                        <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-xs space-y-2">
+                          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-ping"></span>
+                            <span>GPS ACTIVADO</span>
+                          </div>
+                          <div className="space-y-1.5 text-gray-750 dark:text-gray-300">
+                            <div>
+                              <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">Iniciado por:</span>
+                              <span className="font-bold text-gray-850 dark:text-white">{activeTrack.operadorNombre || "Encargado de Logística"}</span>
+                            </div>
+                            {activeTrack.actualizadoEn && (
+                              <div>
+                                <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">Última actualización:</span>
+                                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                  {new Date(activeTrack.actualizadoEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} ({new Date(activeTrack.actualizadoEn).toLocaleDateString()})
+                                </span>
+                              </div>
+                            )}
+                            {activeTrack.lat && activeTrack.lng && (
+                              <div className="text-[10px] font-mono text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded mt-1 inline-block">
+                                Lat: {activeTrack.lat.toFixed(5)} | Lng: {activeTrack.lng.toFixed(5)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-gray-100/50 dark:bg-gray-850/50 border border-gray-150 dark:border-gray-800 rounded-xl p-4 text-xs text-center space-y-2">
+                          <div className="flex items-center justify-center gap-1.5 text-gray-500 dark:text-gray-400 font-bold">
+                            <span className="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
+                            <span>NO ACTIVADO</span>
+                          </div>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-normal">
+                            La transmisión de ubicación para esta orden aún no ha sido iniciada por el personal de reparto.
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                      Transmitiendo coordenadas a la nube. Mantené tu pantalla activa y tu celular encima.
-                    </p>
-                    {gpsCoords && (
-                      <div className="text-[10px] font-mono text-gray-400 mt-1">
-                        Lat: {gpsCoords.lat.toFixed(5)} | Lng: {gpsCoords.lng.toFixed(5)}
+                  )
+                ) : (
+                  /* GPS Trigger Buttons and Live diagnostics for drivers / logistics */
+                  selectedService && (
+                    <>
+                      <div className="space-y-2">
+                        {!isTrackingActive ? (
+                          <button
+                            onClick={startGpsTracking}
+                            className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md shadow-amber-500/10 cursor-pointer"
+                          >
+                            <Play className="w-4 h-4 fill-current" />
+                            Iniciar Reparto e Instalar GPS Celular
+                          </button>
+                        ) : (
+                          <button
+                            onClick={stopGpsTracking}
+                            className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md shadow-red-600/10 cursor-pointer"
+                          >
+                            <Square className="w-4 h-4 fill-current" />
+                            Detener Transmisión GPS
+                          </button>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
 
-                {gpsError && (
-                  <div className="bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-xs text-rose-600 dark:text-rose-400 flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold">Error del GPS:</span> {gpsError}
-                    </div>
-                  </div>
+                      {/* GPS Live Diagnostics */}
+                      {isTrackingActive && (
+                        <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-xs space-y-1.5 animate-pulse">
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>
+                            Emisor GPS Activo
+                          </div>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                            Transmitiendo coordenadas a la nube. Mantené tu pantalla activa y tu celular encima.
+                          </p>
+                          {gpsCoords && (
+                            <div className="text-[10px] font-mono text-gray-400 mt-1">
+                              Lat: {gpsCoords.lat.toFixed(5)} | Lng: {gpsCoords.lng.toFixed(5)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {gpsError && (
+                        <div className="bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-xs text-rose-600 dark:text-rose-400 flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold">Error del GPS:</span> {gpsError}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )
                 )}
               </div>
             )}
