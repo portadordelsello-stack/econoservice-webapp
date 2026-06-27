@@ -1,11 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { ShieldAlert, CheckCircle } from "lucide-react";
+import { BrandingService, DEFAULT_BRANDING } from "../services/branding";
+import { BrandingConfig } from "../types";
 
 export default function Login() {
   const { signInWithGoogle, authError, setAuthError } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  const [branding, setBranding] = useState<BrandingConfig>(() => BrandingService.getLocalConfig());
+
+  useEffect(() => {
+    let active = true;
+    // Set document title from local cache immediately
+    BrandingService.updateDocumentTitle(branding.titulo);
+    
+    BrandingService.getConfig()
+      .then((config) => {
+        if (active) {
+          setBranding(config);
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading branding in login:", err);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -27,18 +49,33 @@ export default function Login() {
         
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white mb-3 shadow-md">
-            <span className="text-2xl font-bold font-mono">ES</span>
-          </div>
+          {branding.logo ? (
+            <div className="inline-flex items-center justify-center mb-3">
+              <img 
+                src={branding.logo} 
+                alt="Logo" 
+                className="max-h-20 max-w-[200px] object-contain rounded-xl shadow-xs"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          ) : (
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white mb-3 shadow-md">
+              <span className="text-2xl font-bold font-mono">
+                {branding.titulo ? branding.titulo.substring(0, 2).toUpperCase() : "ES"}
+              </span>
+            </div>
+          )}
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-            EconoService
+            {branding.titulo}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gestión de Servicio Técnico de Electrodomésticos
+            {branding.subtitulo}
           </p>
-          <div className="inline-block bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-medium px-2.5 py-1 rounded-full mt-2">
-            Migrado de MS Access • Google Auth Activo
-          </div>
+          {branding.badge && (
+            <div className="inline-block bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-medium px-2.5 py-1 rounded-full mt-2">
+              {branding.badge}
+            </div>
+          )}
         </div>
 
         {/* Error/Success Banner */}

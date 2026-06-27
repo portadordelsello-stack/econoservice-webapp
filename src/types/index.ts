@@ -174,3 +174,10 @@ export interface AppNotification {
   serviceId?: string;
 }
 
+export interface BrandingConfig {
+  logo?: string;
+  titulo: string;
+  subtitulo: string;
+  badge: string;
+}
+

@@ -19,6 +19,8 @@ import Tracker from "./features/Tracker";
 import TrackingCliente from "./features/TrackingCliente";
 import Insumos from "./features/Insumos";
 import { NotificationsCenter } from "./components/NotificationsCenter";
+import { BrandingService } from "./services/branding";
+import { BrandingConfig } from "./types";
 
 import { 
   Wrench, 
@@ -46,6 +48,24 @@ function MainLayout() {
   const { currentView, navigate } = useNavigation();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [branding, setBranding] = React.useState<BrandingConfig>(() => BrandingService.getLocalConfig());
+
+  React.useEffect(() => {
+    let active = true;
+    BrandingService.updateDocumentTitle(branding.titulo);
+    BrandingService.getConfig()
+      .then((config) => {
+        if (active) {
+          setBranding(config);
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading branding in MainLayout:", err);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Sidebar link details
   const navigationLinks = [
@@ -136,13 +156,22 @@ function MainLayout() {
       
       {/* MOBILE HEADER */}
       <header className="md:hidden flex items-center justify-between p-4 bg-[#0f172a] text-white border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <Wrench className="w-6 h-6 text-indigo-400" />
-          <span className="font-extrabold text-lg tracking-tight text-white">
-            EconoService
+        <div className="flex items-center gap-2 min-w-0">
+          {branding.logo ? (
+            <img 
+              src={branding.logo} 
+              alt="Logo" 
+              className="h-8 max-w-[100px] object-contain rounded-md" 
+              referrerPolicy="no-referrer" 
+            />
+          ) : (
+            <Wrench className="w-5 h-5 text-indigo-400 shrink-0" />
+          )}
+          <span className="font-extrabold text-base tracking-tight text-white truncate">
+            {branding.titulo}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <NotificationsCenter align="left" />
           <button
             onClick={toggleTheme}
@@ -167,15 +196,24 @@ function MainLayout() {
         {/* Brand details */}
         <div className="p-6">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
-              <Wrench className="w-6 h-6" />
-            </div>
-            <div>
-              <span className="font-bold text-lg tracking-tight text-white block">
-                EconoService
+            {branding.logo ? (
+              <img 
+                src={branding.logo} 
+                alt="Logo" 
+                className="max-h-11 max-w-[110px] object-contain rounded-lg shadow-sm" 
+                referrerPolicy="no-referrer" 
+              />
+            ) : (
+              <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400 shrink-0">
+                <Wrench className="w-5 h-5" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <span className="font-bold text-base tracking-tight text-white block truncate">
+                {branding.titulo}
               </span>
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest block">
-                Agente de Gestión
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest block truncate">
+                {branding.subtitulo || "Agente de Gestión"}
               </span>
             </div>
           </div>

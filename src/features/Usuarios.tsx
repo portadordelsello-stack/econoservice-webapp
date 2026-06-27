@@ -5,6 +5,7 @@ import { useAuth } from "../providers/AuthProvider";
 import { UserProfile, Role } from "../types";
 import { DriveService } from "../services/drive";
 import { GeminiConfigService } from "../services/geminiConfig";
+import { BrandingService, DEFAULT_BRANDING } from "../services/branding";
 import { 
   Users, 
   ShieldCheck, 
@@ -24,12 +25,14 @@ import {
   ArrowLeft,
   ChevronRight,
   Lock,
-  Sparkles
+  Sparkles,
+  Palette,
+  UploadCloud
 } from "lucide-react";
 
 export default function Usuarios() {
   const { profile } = useAuth();
-  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini">("menu");
+  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini" | "apariencia">("menu");
   const [usuarios, setUsuarios] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -39,6 +42,100 @@ export default function Usuarios() {
 
   const isSuperadmin = profile?.rol === "superadmin";
   const canManageConfig = profile?.rol === "superadmin" || profile?.rol === "admin" || profile?.rol === "administracion";
+
+  // Branding Config states
+  const [brandLogo, setBrandLogo] = useState("");
+  const [brandTitulo, setBrandTitulo] = useState("");
+  const [brandSubtitulo, setBrandSubtitulo] = useState("");
+  const [brandBadge, setBrandBadge] = useState("");
+  const [savingApariencia, setSavingApariencia] = useState(false);
+  const [aparienciaSuccessMsg, setAparienciaSuccessMsg] = useState<string | null>(null);
+  const [aparienciaErrorMsg, setAparienciaErrorMsg] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  const fetchBrandingConfig = async () => {
+    try {
+      const config = await BrandingService.getConfig();
+      setBrandLogo(config.logo || "");
+      setBrandTitulo(config.titulo || "");
+      setBrandSubtitulo(config.subtitulo || "");
+      setBrandBadge(config.badge || "");
+    } catch (err) {
+      console.error("Error fetching branding config in settings:", err);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 500 * 1024) {
+      setAparienciaErrorMsg("El logotipo es demasiado grande. Por favor, suba una imagen de menos de 500 KB.");
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBrandLogo(reader.result as string);
+      setAparienciaErrorMsg(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (file.size > 500 * 1024) {
+        setAparienciaErrorMsg("El logotipo es demasiado grande. Por favor, suba una imagen de menos de 500 KB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBrandLogo(reader.result as string);
+        setAparienciaErrorMsg(null);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveBranding = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSuperadmin) {
+      setAparienciaErrorMsg("No tienes permisos suficientes para modificar la apariencia.");
+      return;
+    }
+    setSavingApariencia(true);
+    setAparienciaSuccessMsg(null);
+    setAparienciaErrorMsg(null);
+    try {
+      await BrandingService.setConfig({
+        logo: brandLogo,
+        titulo: brandTitulo,
+        subtitulo: brandSubtitulo,
+        badge: brandBadge,
+      });
+      setAparienciaSuccessMsg("La apariencia y marca del sistema se han actualizado con éxito.");
+    } catch (err: any) {
+      console.error("Error saving branding config:", err);
+      setAparienciaErrorMsg("No se pudo guardar la configuración de apariencia.");
+    } finally {
+      setSavingApariencia(false);
+    }
+  };
 
   // Gemini Config states
   const [geminiApiKey, setGeminiApiKey] = useState("");
@@ -73,6 +170,7 @@ export default function Usuarios() {
   };
 
   useEffect(() => {
+    fetchBrandingConfig();
     if (canManageConfig) {
       fetchDriveConfig();
       fetchGeminiConfig();
@@ -264,7 +362,7 @@ export default function Usuarios() {
         </div>
 
         {/* Options Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* Card: Usuarios del Sistema */}
           <div 
@@ -349,6 +447,302 @@ export default function Usuarios() {
             </div>
           </div>
 
+          {/* Card: Apariencia y Marca */}
+          <div 
+            onClick={() => setActiveSubView("apariencia")}
+            className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-950/40 cursor-pointer transition-all flex flex-col justify-between"
+          >
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Palette className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  Apariencia y Marca
+                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-indigo-600 dark:text-indigo-400" />
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Personaliza dinámicamente el logotipo, título principal, subtítulo y badge en la pantalla de inicio de sesión del sistema.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              <span>Personalizar pantalla</span>
+              <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/30 text-indigo-750 dark:text-indigo-300`}>
+                Configurado
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  if (activeSubView === "apariencia") {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <div>
+          <button 
+            onClick={() => setActiveSubView("menu")}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer transition-colors mb-2 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-3.5 py-2 rounded-xl shadow-xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a Ajustes
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Form Column */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-800">
+                <Palette className="w-5 h-5 text-indigo-600" />
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Personalización de Apariencia y Marca
+                  </h2>
+                  <p className="text-xs text-gray-450 dark:text-gray-500">
+                    Establezca la identidad visual de la pantalla de inicio de sesión de la plataforma.
+                  </p>
+                </div>
+              </div>
+
+              {aparienciaSuccessMsg && (
+                <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-150 dark:border-emerald-900/50 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{aparienciaSuccessMsg}</span>
+                </div>
+              )}
+
+              {aparienciaErrorMsg && (
+                <div className="p-3.5 bg-red-50 dark:bg-red-950/20 border border-red-150 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{aparienciaErrorMsg}</span>
+                </div>
+              )}
+
+              {!isSuperadmin && (
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-150 dark:border-amber-900/40 rounded-xl text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2.5">
+                  <Lock className="w-4.5 h-4.5 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">Acceso de Solo Lectura</span>
+                    <p className="mt-0.5">La modificación de marca y apariencia está restringida exclusivamente para usuarios con rol de <strong>Superadministrador</strong>.</p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveBranding} className="space-y-6">
+                
+                {/* Título Principal */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Título Principal
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={!isSuperadmin || savingApariencia}
+                    placeholder="Escriba el nombre del sistema (ej. EconoService)"
+                    value={brandTitulo}
+                    onChange={(e) => setBrandTitulo(e.target.value)}
+                    className="w-full px-3.5 py-3 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600 disabled:opacity-50"
+                  />
+                </div>
+
+                {/* Subtítulo */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Subtítulo descriptivo
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={!isSuperadmin || savingApariencia}
+                    placeholder="Breve descripción bajo el título"
+                    value={brandSubtitulo}
+                    onChange={(e) => setBrandSubtitulo(e.target.value)}
+                    className="w-full px-3.5 py-3 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600 disabled:opacity-50"
+                  />
+                </div>
+
+                {/* Badge text */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Texto de Distintivo / Badge
+                  </label>
+                  <input
+                    type="text"
+                    disabled={!isSuperadmin || savingApariencia}
+                    placeholder="Ej. Migrado de MS Access • Google Auth Activo"
+                    value={brandBadge}
+                    onChange={(e) => setBrandBadge(e.target.value)}
+                    className="w-full px-3.5 py-3 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600 disabled:opacity-50"
+                  />
+                </div>
+
+                {/* Logotipo upload or URL */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                      Logotipo de la Marca
+                    </label>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Subir Archivo Drag-and-Drop */}
+                      <div 
+                        onDragEnter={handleDrag}
+                        onDragOver={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDrop={handleDrop}
+                        className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center transition-all min-h-[140px] relative ${
+                          !isSuperadmin 
+                            ? "bg-gray-50/50 border-gray-200 dark:bg-gray-900/50 dark:border-gray-800 opacity-60" 
+                            : dragActive 
+                              ? "border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20" 
+                              : "border-gray-200 dark:border-gray-800 hover:border-indigo-400 bg-gray-50/50 dark:bg-gray-850/50"
+                        }`}
+                      >
+                        <UploadCloud className="w-7 h-7 text-gray-400 mb-2" />
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          Arrastre y suelte una imagen aquí
+                        </span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                          PNG, JPG o SVG (Max 500 KB)
+                        </span>
+                        
+                        {isSuperadmin && (
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                        )}
+                      </div>
+
+                      {/* URL Externa */}
+                      <div className="p-4 bg-gray-50/50 dark:bg-gray-850/50 border border-gray-200 dark:border-gray-800 rounded-xl flex flex-col justify-between min-h-[140px]">
+                        <div className="space-y-1">
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">
+                            URL de Imagen Externa
+                          </span>
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                            Si prefiere hospedar su logotipo externamente, pegue el enlace directo.
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          disabled={!isSuperadmin || savingApariencia}
+                          placeholder="https://ejemplo.com/logo.png"
+                          value={brandLogo && brandLogo.startsWith("data:") ? "" : brandLogo}
+                          onChange={(e) => setBrandLogo(e.target.value)}
+                          className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-600 disabled:opacity-50"
+                        />
+                      </div>
+                    </div>
+
+                    {brandLogo && (
+                      <div className="mt-4 flex items-center justify-between p-3 bg-indigo-50/20 dark:bg-indigo-950/20 border border-indigo-100/40 dark:border-indigo-950/40 rounded-xl">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-1 bg-white dark:bg-gray-900 rounded-md border border-gray-100 dark:border-gray-800">
+                            <img src={brandLogo} alt="Mini logo" className="w-8 h-8 object-contain" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs font-bold text-gray-800 dark:text-gray-200 block">Logotipo Personalizado Cargado</span>
+                            <span className="text-[10px] text-gray-400 font-mono block truncate max-w-[250px]">
+                              {brandLogo.startsWith("data:") ? "Imagen en Base64" : brandLogo}
+                            </span>
+                          </div>
+                        </div>
+                        {isSuperadmin && (
+                          <button
+                            type="button"
+                            onClick={() => setBrandLogo("")}
+                            className="px-2.5 py-1.5 bg-red-50 dark:bg-red-950/10 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-lg transition-colors cursor-pointer border border-transparent shrink-0"
+                          >
+                            Eliminar Logo
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Submit button */}
+                {isSuperadmin && (
+                  <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <button
+                      type="submit"
+                      disabled={savingApariencia}
+                      className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                    >
+                      <Save className="w-4 h-4" />
+                      {savingApariencia ? "Guardando..." : "Guardar Apariencia y Marca"}
+                    </button>
+                  </div>
+                )}
+              </form>
+            </div>
+          </div>
+
+          {/* Real-time Preview Column */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 sticky top-6">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white pb-3 border-b border-gray-100 dark:border-gray-800 mb-4 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />
+                Vista Previa en Tiempo Real
+              </h3>
+              
+              <div className="p-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-900 rounded-xl flex items-center justify-center min-h-[300px]">
+                {/* Simulated Login Card */}
+                <div className="w-full max-w-xs bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-md text-center">
+                  
+                  {/* Brand Header */}
+                  <div className="mb-6">
+                    {brandLogo ? (
+                      <div className="inline-flex items-center justify-center mb-3">
+                        <img 
+                          src={brandLogo} 
+                          alt="Logo Preview" 
+                          className="max-h-16 max-w-[140px] object-contain rounded-lg"
+                        />
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600 text-white mb-3 shadow-sm">
+                        <span className="text-xl font-bold font-mono">
+                          {brandTitulo ? brandTitulo.substring(0, 2).toUpperCase() : "ES"}
+                        </span>
+                      </div>
+                    )}
+                    <h4 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate">
+                      {brandTitulo || "EconoService"}
+                    </h4>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-normal">
+                      {brandSubtitulo || "Gestión de Servicio Técnico"}
+                    </p>
+                    {brandBadge && (
+                      <div className="inline-block bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-medium px-2 py-0.5 rounded-full mt-2">
+                        {brandBadge}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Simulated login button */}
+                  <div className="py-2.5 px-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.77-2.6-2.6-4.53-6.16-4.53z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                    </svg>
+                    Iniciar Sesión con Google
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

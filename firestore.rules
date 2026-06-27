@@ -109,8 +109,8 @@ service cloud.firestore {
     
     // 8. Config
     match /config/{configId} {
-      allow read: if isAuthenticated();
-      allow write: if hasAnyRole(['superadmin', 'admin']);
+      allow read: if configId == 'branding' || isAuthenticated();
+      allow write: if (configId == 'branding' && hasAnyRole(['superadmin'])) || (configId != 'branding' && hasAnyRole(['superadmin', 'admin']));
     }
 
     // 9. Tracking de Envíos (Public read, driver write)

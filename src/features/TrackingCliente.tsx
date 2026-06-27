@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Navigation
 } from "lucide-react";
+import { BrandingService } from "../services/branding";
 
 // Dynamic hook to load Leaflet CDN assets (React 19 safe and extremely robust)
 function useLeaflet() {
@@ -97,6 +98,25 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [branding, setBranding] = useState<any>(() => BrandingService.getLocalConfig());
+
+  useEffect(() => {
+    let active = true;
+    BrandingService.updateDocumentTitle(branding.titulo + " - Seguimiento");
+    BrandingService.getConfig()
+      .then((config) => {
+        if (active) {
+          setBranding(config);
+          BrandingService.updateDocumentTitle(config.titulo + " - Seguimiento");
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading branding in tracking page:", err);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   
   // Service, Client, and Tracker positions
   const [servicio, setServicio] = useState<any>(null);
@@ -345,14 +365,23 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
       
       {/* HEADER BAR */}
       <header className="sticky top-0 z-50 bg-[#0f172a] text-white py-4 px-6 shadow-md border-b border-slate-800">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
-              <Truck className="w-5 h-5 text-indigo-400 animate-pulse" />
-            </div>
-            <span className="font-extrabold text-lg tracking-tight">EconoService</span>
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {branding.logo ? (
+              <img 
+                src={branding.logo} 
+                alt="Logo" 
+                className="h-8 max-w-[120px] object-contain rounded-md" 
+                referrerPolicy="no-referrer" 
+              />
+            ) : (
+              <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400 shrink-0">
+                <Truck className="w-5 h-5 text-indigo-400 animate-pulse" />
+              </div>
+            )}
+            <span className="font-extrabold text-lg tracking-tight truncate">{branding.titulo}</span>
           </div>
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest bg-slate-800/60 px-3 py-1 rounded-full border border-slate-700/50">
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest bg-slate-800/60 px-3 py-1 rounded-full border border-slate-700/50 shrink-0">
             Seguimiento de Equipo
           </span>
         </div>
