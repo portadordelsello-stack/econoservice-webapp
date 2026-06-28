@@ -158,7 +158,9 @@ export default function Clientes() {
   const filteredClientes = clientes.filter(c => 
     c.nombreApellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.telCel && c.telCel.includes(searchTerm)) ||
-    (c.localidad && c.localidad.toLowerCase().includes(searchTerm.toLowerCase()))
+    (c.localidad && c.localidad.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.calle && c.calle.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.numero && c.numero.includes(searchTerm))
   );
 
   const canWrite = profile?.rol === "superadmin" || profile?.rol === "logistica";
@@ -204,7 +206,7 @@ export default function Clientes() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar cliente por nombre o teléfono..."
+              placeholder="Buscar cliente por nombre, teléfono o dirección..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"

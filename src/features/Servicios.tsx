@@ -13,7 +13,8 @@ import {
   Calendar,
   AlertTriangle,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  MapPin
 } from "lucide-react";
 
 export default function Servicios() {
@@ -31,7 +32,7 @@ export default function Servicios() {
   const [filterTecnico, setFilterTecnico] = useState<string>("");
 
   // Quick helper mappings
-  const [clientNames, setClientNames] = useState<Record<string, { name: string, problematic: boolean }>>({});
+  const [clientNames, setClientNames] = useState<Record<string, { name: string, problematic: boolean, calle?: string, numero?: string }>>({});
   const [tecnicNames, setTecnicNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -48,11 +49,13 @@ export default function Servicios() {
         setClientes(cliList);
         setTecnicos(tecList);
 
-        const cliMap: Record<string, { name: string, problematic: boolean }> = {};
+        const cliMap: Record<string, { name: string, problematic: boolean, calle?: string, numero?: string }> = {};
         cliList.forEach(c => {
           cliMap[c.id || ""] = {
             name: c.nombreApellido,
-            problematic: c.clienteProblematico
+            problematic: c.clienteProblematico,
+            calle: c.calle,
+            numero: c.numero
           };
         });
         setClientNames(cliMap);
@@ -248,11 +251,11 @@ export default function Servicios() {
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-bold uppercase border-b border-gray-100 dark:border-gray-800">
                 <th className="p-4 pl-6">N° Orden</th>
-                <th className="p-4">Cliente Propietario</th>
+                <th className="p-4">Dirección Propietario</th>
                 <th className="p-4">Aparato / Detalle</th>
                 <th className="p-4">Fecha Ingreso</th>
                 <th className="p-4">Estado</th>
-                <th className="p-4">Técnico</th>
+                <th className="p-4">Cliente</th>
                 <th className="p-4 pr-6 text-right">Ficha</th>
               </tr>
             </thead>
@@ -277,22 +280,18 @@ export default function Servicios() {
                         #{s.numeroServicio}
                       </td>
 
-                      {/* Propietario & warning */}
-                      <td className="p-4">
-                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                          <span>{client ? client.name : "Cargando..."}</span>
-                          {client?.problematic && (
-                            <span className="text-red-500 inline-flex" title="Cliente Conflictivo">
-                              <AlertTriangle className="w-3.5 h-3.5 fill-red-100 dark:fill-red-950/20" />
+                      {/* Client Address */}
+                      <td className="p-4 text-gray-900 dark:text-white font-semibold max-w-[180px] truncate">
+                        <span className="flex items-center gap-1.5 truncate" title={client?.calle ? `${client.calle} ${client.numero || ""}` : "Sin dirección"}>
+                          <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          {client?.calle ? (
+                            <span className="truncate">
+                              {client.calle} {client.numero || ""}
                             </span>
+                          ) : (
+                            <span className="italic text-gray-400 font-normal">Sin dirección</span>
                           )}
-                        </div>
-                        {s.esReclamoGarantia && (
-                          <span className="inline-block mt-0.5 text-[9px] font-bold bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 px-1.5 py-0.2 rounded uppercase tracking-wider">
-                            Reclamo Garantía
-                          </span>
-                        )}
+                        </span>
                       </td>
 
                       {/* Apparatus and Brand Model */}
@@ -319,12 +318,22 @@ export default function Servicios() {
                         </span>
                       </td>
 
-                      {/* Assigned technician */}
-                      <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">
-                        <span className="flex items-center gap-1.5">
-                          <UserCheck className="w-3.5 h-3.5 text-gray-400" />
-                          {s.tecnicoId ? tecnicNames[s.tecnicoId] || "Asignado" : <span className="italic text-gray-400 font-normal">Sin asignar</span>}
-                        </span>
+                      {/* Propietario & warning */}
+                      <td className="p-4">
+                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          <span>{client ? client.name : "Cargando..."}</span>
+                          {client?.problematic && (
+                            <span className="text-red-500 inline-flex" title="Cliente Conflictivo">
+                              <AlertTriangle className="w-3.5 h-3.5 fill-red-100 dark:fill-red-950/20" />
+                            </span>
+                          )}
+                        </div>
+                        {s.esReclamoGarantia && (
+                          <span className="inline-block mt-0.5 text-[9px] font-bold bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 px-1.5 py-0.2 rounded uppercase tracking-wider">
+                            Reclamo Garantía
+                          </span>
+                        )}
                       </td>
 
                       {/* Go to detailed view */}
@@ -394,15 +403,19 @@ export default function Servicios() {
                   )}
                 </div>
 
-                {/* Footer details: Date & assigned technician */}
+                {/* Footer details: Date & client address */}
                 <div className="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-50 dark:border-gray-800/50">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5" />
                     {toDate(s.fechaIngreso)?.toLocaleDateString() || "Sin fecha"}
                   </span>
-                  <span className="flex items-center gap-1 font-semibold text-gray-700 dark:text-gray-300">
-                    <UserCheck className="w-3.5 h-3.5 text-indigo-500" />
-                    {s.tecnicoId ? tecnicNames[s.tecnicoId] || "Asignado" : "Sin asignar"}
+                  <span className="flex items-center gap-1 font-semibold text-gray-700 dark:text-gray-300 max-w-[60%] truncate" title={client?.calle ? `${client.calle} ${client.numero || ""}` : "Sin dirección"}>
+                    <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    {client?.calle ? (
+                      <span className="truncate">{client.calle} {client.numero || ""}</span>
+                    ) : (
+                      <span className="italic font-normal text-gray-400">Sin dirección</span>
+                    )}
                   </span>
                 </div>
 
