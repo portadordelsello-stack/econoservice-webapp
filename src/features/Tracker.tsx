@@ -530,7 +530,7 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
             {activeServices.length === 0 ? (
               <div className="p-4 bg-gray-50 dark:bg-gray-850 rounded-xl text-center">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  No hay órdenes en situación de <span className="font-semibold text-amber-500">LISTO_PARA_ENTREGA</span> o <span className="font-semibold text-amber-500">ENTREGA_EN_PROGRESO</span>.
+                  No hay órdenes en situación de <span className="font-semibold text-amber-500">Listo para Entrega</span> o <span className="font-semibold text-amber-500">Entrega en Progreso</span>.
                 </p>
               </div>
             ) : (
