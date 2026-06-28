@@ -53,10 +53,16 @@ export default function Equipos() {
   // Client mapping for fast display
   const [clientMap, setClientMap] = useState<Record<string, Cliente>>({});
 
+  // Client Search in modal states
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   const { 
     register, 
     handleSubmit, 
     reset, 
+    setValue,
+    watch,
     formState: { errors, isSubmitting } 
   } = useForm({
     resolver: zodResolver(EquipoSchema),
@@ -98,6 +104,8 @@ export default function Equipos() {
 
   const handleOpenCreate = () => {
     setEditingEquipo(null);
+    setClientSearchQuery("");
+    setShowSuggestions(false);
     reset({
       clienteId: "",
       tipo: "",
@@ -111,6 +119,9 @@ export default function Equipos() {
 
   const handleOpenEdit = (equipo: Equipo) => {
     setEditingEquipo(equipo);
+    const client = clientMap[equipo.clienteId];
+    setClientSearchQuery(client ? client.nombreApellido : "");
+    setShowSuggestions(false);
     reset({
       clienteId: equipo.clienteId,
       tipo: equipo.tipo,
@@ -155,6 +166,15 @@ export default function Equipos() {
       cliAddress.includes(term)
     );
   });
+
+  const matchedClientesForModal = clientSearchQuery.trim() === ""
+    ? []
+    : clientes.filter(c => {
+        const name = (c.nombreApellido || "").toLowerCase();
+        const address = `${c.calle || ""} ${c.numero || ""} ${c.barrio || ""} ${c.localidad || ""}`.toLowerCase();
+        const term = clientSearchQuery.toLowerCase();
+        return name.includes(term) || address.includes(term);
+      }).slice(0, 5);
 
   const canWrite = profile?.rol === "superadmin" || profile?.rol === "logistica";
 
@@ -405,20 +425,109 @@ export default function Equipos() {
             {/* Form */}
             <form onSubmit={handleSubmit(onSubmitForm)} className="p-6 space-y-4">
               
-              {/* Propietario Selector */}
-              <div>
+               {/* Propietario Selector */}
+              <div className="relative">
                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
                   Cliente Propietario *
                 </label>
-                <select
-                  {...register("clienteId")}
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-950 dark:text-white border border-gray-100 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                >
-                  <option value="">-- Seleccionar Cliente --</option>
-                  {clientes.map(c => (
-                    <option key={c.id} value={c.id}>{c.nombreApellido}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <Search className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Buscar cliente por nombre o dirección..."
+                    value={clientSearchQuery}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => {
+                      // Small timeout to allow onClick on suggestion to trigger first
+                      setTimeout(() => {
+                        setShowSuggestions(false);
+                      }, 200);
+                    }}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setClientSearchQuery(val);
+                      setShowSuggestions(true);
+                      if (val === "") {
+                        setValue("clienteId", "");
+                      }
+                    }}
+                    className="w-full pl-9 pr-8 py-2 bg-gray-50 dark:bg-gray-800 text-gray-950 dark:text-white border border-gray-100 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                  {clientSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClientSearchQuery("");
+                        setValue("clienteId", "");
+                        setShowSuggestions(false);
+                      }}
+                      className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Hidden input for React Hook Form binding */}
+                <input type="hidden" {...register("clienteId")} />
+
+                {/* Suggestions Dropdown */}
+                {showSuggestions && clientSearchQuery.trim() !== "" && (
+                  <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-850 border border-gray-100 dark:border-gray-750 rounded-xl shadow-xl max-h-60 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800 animate-in fade-in duration-100">
+                    {matchedClientesForModal.length === 0 ? (
+                      <div className="p-3 text-xs text-gray-400 dark:text-gray-500 text-center">
+                        No se encontraron clientes coincidentes
+                      </div>
+                    ) : (
+                      matchedClientesForModal.map((c) => {
+                        const hasAddress = c.calle || c.barrio || c.localidad;
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => {
+                              setValue("clienteId", c.id || "");
+                              setClientSearchQuery(c.nombreApellido);
+                              setShowSuggestions(false);
+                            }}
+                            className="p-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 cursor-pointer flex flex-col gap-1 transition-colors text-left"
+                          >
+                            <span className="text-xs font-bold text-gray-800 dark:text-gray-100">
+                              {c.nombreApellido}
+                            </span>
+                            {hasAddress && (
+                              <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                <span className="truncate">
+                                  {[
+                                    c.calle ? `${c.calle} ${c.numero || ""}` : "",
+                                    c.barrio ? `B° ${c.barrio}` : "",
+                                    c.localidad || ""
+                                  ].filter(Boolean).join(", ")}
+                                </span>
+                              </div>
+                            )}
+                            {c.telefono && (
+                              <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono pl-4">
+                                Tel: {c.telefono}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Show indicator if a valid client is currently selected */}
+                {watch("clienteId") && (
+                  <p className="text-[10px] font-semibold text-emerald-500 dark:text-emerald-400 mt-1 flex items-center gap-1 pl-1">
+                    <Check className="w-3.5 h-3.5" />
+                    Cliente seleccionado correctamente
+                  </p>
+                )}
+
                 {errors.clienteId && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.clienteId.message as string}</p>
                 )}

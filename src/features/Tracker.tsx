@@ -29,7 +29,9 @@ import {
   User, 
   AlertCircle,
   Clock,
-  Navigation
+  Navigation,
+  Sparkles,
+  ListOrdered
 } from "lucide-react";
 
 // Hook to dynamically load Leaflet CDN assets (React 19 safe and extremely robust)
@@ -123,6 +125,20 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [trackingEnvios, setTrackingEnvios] = useState<Record<string, any>>({});
   
+  // Route optimization states
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [routeRecommendation, setRouteRecommendation] = useState<{
+    explicacion: string;
+    recomendaciones: Array<{
+      numeroServicio: number | string;
+      direccion: string;
+      cliente: string;
+      orden: number;
+      comentario: string;
+    }>;
+  } | null>(null);
+  const [optimizationError, setOptimizationError] = useState<string | null>(null);
+  
   const isSuperadmin = profile?.rol === "superadmin";
 
   useEffect(() => {
@@ -184,6 +200,47 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOptimizeRoute = async () => {
+    setIsOptimizing(true);
+    setOptimizationError(null);
+    setRouteRecommendation(null);
+    
+    try {
+      const formattedOrders = activeServices.map(s => {
+        const client = clientsMap[s.clienteId];
+        const addressStr = client && client.calle 
+          ? `${client.calle} ${client.numero || ""}, ${client.localidad || "Santo Tomé"}`
+          : "Falta ingresar dirección de entrega";
+        return {
+          numeroServicio: s.numeroServicio,
+          direccion: addressStr,
+          clienteNombre: client?.nombreApellido || "Cliente s/d",
+          aparato: s.aparato,
+          marcaModelo: s.marcaModelo
+        };
+      });
+
+      const response = await fetch("/api/tracker/optimize-route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orders: formattedOrders }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "No se pudo calcular la ruta recomendada.");
+      }
+
+      const data = await response.json();
+      setRouteRecommendation(data);
+    } catch (err: any) {
+      console.error("Error optimizando ruta:", err);
+      setOptimizationError(err.message || "Ocurrió un error al contactar al asistente.");
+    } finally {
+      setIsOptimizing(false);
     }
   };
 
@@ -801,6 +858,131 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Asistente de Ruta Inteligente (Gemini AI) */}
+          <div className="bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/10 dark:to-gray-900 border border-indigo-100/60 dark:border-indigo-900/40 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-indigo-100/50 dark:border-indigo-900/20 pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500 animate-pulse shrink-0" />
+                <h2 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">
+                  Asistente de Ruta Inteligente
+                </h2>
+              </div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950/50 px-2 py-0.5 rounded-full border border-indigo-200/50 dark:border-indigo-900/50">
+                Gemini AI
+              </span>
+            </div>
+
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+              El asistente analiza las direcciones registradas en tus órdenes de reparto activas y traza un orden de entrega lógico, identificando calles paralelas, alturas contiguas y la ruta ideal para ahorrar tiempo y combustible.
+            </p>
+
+            {activeServices.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-2 italic bg-gray-50 dark:bg-gray-850/50 rounded-xl border border-gray-100 dark:border-gray-800/60">
+                No hay órdenes de reparto activas para optimizar.
+              </p>
+            ) : (
+              <div className="space-y-4 pt-1">
+                <button
+                  onClick={handleOptimizeRoute}
+                  disabled={isOptimizing}
+                  className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm"
+                >
+                  {isOptimizing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Analizando calles y alturas...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      Recomendar Orden de Entrega
+                    </>
+                  )}
+                </button>
+
+                {optimizationError && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-xl text-xs text-red-600 dark:text-red-400 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{optimizationError}</span>
+                  </div>
+                )}
+
+                {routeRecommendation && (
+                  <div className="space-y-4">
+                    {/* Explicación / Comentario General del Asistente */}
+                    <div className="p-3.5 bg-white dark:bg-gray-850 border border-gray-100 dark:border-gray-800 rounded-xl text-xs text-gray-700 dark:text-gray-300 leading-relaxed space-y-1.5 shadow-sm">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        Análisis Geográfico del Asistente:
+                      </div>
+                      <p className="italic">"{routeRecommendation.explicacion}"</p>
+                    </div>
+
+                    {/* Pasos de Entrega Recomendados */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-1">
+                        <ListOrdered className="w-3.5 h-3.5 text-indigo-500" />
+                        Secuencia Recomendada de Reparto:
+                      </div>
+
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                        {routeRecommendation.recomendaciones.map((rec, index) => {
+                          const matchingService = activeServices.find(s => s.numeroServicio === Number(rec.numeroServicio) || String(s.numeroServicio) === String(rec.numeroServicio));
+                          const isCurrentlySelected = selectedService?.numeroServicio === matchingService?.numeroServicio && matchingService !== undefined;
+
+                          return (
+                            <div
+                              key={index}
+                              onClick={() => {
+                                if (matchingService) {
+                                  setSelectedService(matchingService);
+                                }
+                              }}
+                              className={`p-3 rounded-xl border text-xs flex gap-3 transition-all cursor-pointer ${
+                                isCurrentlySelected
+                                  ? "bg-amber-500/5 border-amber-500/50"
+                                  : "bg-white dark:bg-gray-850 border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-750"
+                              }`}
+                            >
+                              {/* Step Badge */}
+                              <div className="w-6 h-6 rounded-lg bg-indigo-500 text-white font-mono text-xs font-black flex items-center justify-center shrink-0 shadow-sm">
+                                {rec.orden || (index + 1)}
+                              </div>
+
+                              <div className="space-y-1 min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-bold text-gray-800 dark:text-white truncate">
+                                    Orden #{rec.numeroServicio} — {rec.cliente}
+                                  </span>
+                                  {matchingService && (
+                                    <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/5 px-1.5 py-0.5 rounded border border-emerald-500/10">
+                                      {matchingService.aparato}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 font-medium">
+                                  <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
+                                  <span className="truncate">{rec.direccion}</span>
+                                </div>
+
+                                {rec.comentario && (
+                                  <p className="text-[11px] text-indigo-600 dark:text-indigo-400 bg-indigo-500/5 dark:bg-indigo-500/10 px-2.5 py-1 rounded-lg mt-1 italic font-medium">
+                                    {rec.comentario}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
