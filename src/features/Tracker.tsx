@@ -13,7 +13,7 @@ import {
   ClientesService, 
   EquiposService 
 } from "../services/db";
-import { Servicio, Cliente, EstadoServicio } from "../types";
+import { Servicio, Cliente, EstadoServicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { 
   Truck, 
@@ -106,7 +106,7 @@ async function geocodeAddress(calle: string, numero: string, localidad: string):
   return null;
 }
 
-export default function Tracker() {
+export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { profile } = useAuth();
   const leafletLoaded = useLeaflet();
   
@@ -481,24 +481,38 @@ export default function Tracker() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
-            <Truck className="w-7 h-7 text-amber-500" />
-            Tracker Logístico
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Monitoreo en tiempo real de entregas, geolocalización satelital para clientes de Santo Tomé y Santa Fe.
-          </p>
+      {!isEmbedded && (
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+              <Truck className="w-7 h-7 text-amber-500" />
+              Tracker Logístico
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Monitoreo en tiempo real de entregas, geolocalización satelital para clientes de Santo Tomé y Santa Fe.
+            </p>
+          </div>
+          <button
+            onClick={loadServices}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-750 transition-all text-xs font-semibold uppercase tracking-wider self-start cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Actualizar Lista
+          </button>
         </div>
-        <button
-          onClick={loadServices}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-750 transition-all text-xs font-semibold uppercase tracking-wider self-start cursor-pointer"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Actualizar Lista
-        </button>
-      </div>
+      )}
+
+      {isEmbedded && (
+        <div className="flex justify-end">
+          <button
+            onClick={loadServices}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-750 transition-all text-xs font-semibold uppercase tracking-wider cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Actualizar Lista
+          </button>
+        </div>
+      )}
 
       {/* Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -535,11 +549,19 @@ export default function Tracker() {
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-600 text-gray-900 dark:text-white"
                   >
                     <option value="">-- Seleccionar Orden --</option>
-                    {activeServices.map(s => (
-                      <option key={s.id} value={s.id}>
-                        Orden #{s.numeroServicio} - {s.aparato} ({s.marcaModelo})
-                      </option>
-                    ))}
+                    {activeServices.map(s => {
+                      const client = clientsMap[s.clienteId];
+                      const address = client ? [
+                        client.calle ? `${client.calle} ${client.numero || ""}` : "",
+                        client.barrio ? `B° ${client.barrio}` : "",
+                        client.localidad || ""
+                      ].filter(Boolean).join(", ") : "Dirección no registrada";
+                      return (
+                        <option key={s.id} value={s.id}>
+                          Orden #{s.numeroServicio} - {address}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -698,7 +720,7 @@ export default function Tracker() {
                             ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
                             : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300"
                         }`}>
-                          {serv.estado}
+                          {getEstadoLabel(serv.estado)}
                         </span>
                       </div>
 
@@ -786,7 +808,7 @@ export default function Tracker() {
         </div>
 
         {/* Right Column - Map Interface */}
-        <div className="lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 shadow-sm flex flex-col h-[550px] lg:h-[650px]">
+        <div className="lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 shadow-sm flex flex-col h-[380px] md:h-[550px] lg:h-[650px]">
           <div className="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-gray-800 pb-2">
             <span className="text-xs font-bold text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
               <Navigation className="w-4 h-4 text-indigo-500 animate-spin-slow" />

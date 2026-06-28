@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ClienteSchema } from "../schemas";
 import { ClientesService, EquiposService, ServiciosService, toDate } from "../services/db";
-import { Cliente, Equipo, Servicio } from "../types";
+import { Cliente, Equipo, Servicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
 import { 
@@ -19,7 +19,8 @@ import {
   X, 
   Check,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  Trash
 } from "lucide-react";
 
 export default function Clientes() {
@@ -30,6 +31,29 @@ export default function Clientes() {
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [clienteEquipos, setClienteEquipos] = useState<Equipo[]>([]);
   const [clienteServicios, setClienteServicios] = useState<Servicio[]>([]);
+  
+  const [clienteToDelete, setClienteToDelete] = useState<string | null>(null);
+  
+  const isSuperadmin = profile?.rol === "superadmin";
+
+  const handleDeleteCliente = (id: string) => {
+    if (!id) return;
+    setClienteToDelete(id);
+  };
+
+  const confirmDeleteCliente = async () => {
+    if (!clienteToDelete) return;
+    try {
+      await ClientesService.delete(clienteToDelete);
+      if (selectedCliente?.id === clienteToDelete) {
+        setSelectedCliente(null);
+      }
+      loadClientes();
+      setClienteToDelete(null);
+    } catch (err) {
+      console.error("Error deleting client:", err);
+    }
+  };
   
   // UI states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -231,21 +255,35 @@ export default function Clientes() {
                 >
                   <div className="space-y-1 min-w-0 pr-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-gray-900 dark:text-white truncate">
-                        {c.nombreApellido}
+                      <span className="font-bold text-gray-900 dark:text-white truncate">
+                        {[
+                          c.calle ? `${c.calle} ${c.numero || ""}` : "",
+                          c.barrio ? `B° ${c.barrio}` : "",
+                          c.localidad || ""
+                        ].filter(Boolean).join(", ") || "Domicilio no registrado"}
                       </span>
                       {c.clienteProblematico && (
-                        <span className="inline-flex items-center text-red-600 dark:text-red-400">
+                        <span className="inline-flex items-center text-red-600 dark:text-red-400 shrink-0">
                           <AlertTriangle className="w-3.5 h-3.5 fill-red-100 dark:fill-red-950/40" />
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-400">
-                      <Phone className="w-3 h-3" />
-                      <span>{c.telCel || c.telFijo || "Sin número"}</span>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate">
+                      {c.nombreApellido}
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {isSuperadmin && (
+                      <button
+                        onClick={() => handleDeleteCliente(c.id || "")}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer"
+                        title="Eliminar Cliente"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    )}
+                    <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                  </div>
                 </div>
               ))
             )}
@@ -294,15 +332,26 @@ export default function Clientes() {
                   </p>
                 </div>
                 
-                {canWrite && (
-                  <button
-                    onClick={() => handleOpenEdit(selectedCliente)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-xs font-semibold cursor-pointer shrink-0"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    Editar Perfil
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {canWrite && (
+                    <button
+                      onClick={() => handleOpenEdit(selectedCliente)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      Editar Perfil
+                    </button>
+                  )}
+                  {isSuperadmin && (
+                    <button
+                      onClick={() => handleDeleteCliente(selectedCliente.id || "")}
+                      className="p-1.5 border border-gray-100 dark:border-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-colors cursor-pointer shrink-0"
+                      title="Eliminar Cliente"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Personal details & Address details */}
@@ -414,7 +463,7 @@ export default function Clientes() {
                             <td className="p-3 font-medium text-gray-900 dark:text-white">{s.aparato}</td>
                             <td className="p-3">
                               <span className="inline-block px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-400">
-                                {s.estado}
+                                {getEstadoLabel(s.estado)}
                               </span>
                             </td>
                             <td className="p-3 text-xs text-gray-400">{toDate(s.fechaIngreso)?.toLocaleDateString() || "Sin fecha"}</td>
@@ -644,6 +693,44 @@ export default function Clientes() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {clienteToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar cliente?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará de forma permanente este cliente de la base de datos de forma irreversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setClienteToDelete(null)}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteCliente}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                Sí, Eliminar Cliente
+              </button>
+            </div>
           </div>
         </div>
       )}

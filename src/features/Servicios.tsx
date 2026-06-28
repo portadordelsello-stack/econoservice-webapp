@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ServiciosService, ClientesService, TecnicosService, toDate } from "../services/db";
-import { Servicio, Cliente, Tecnico, EstadoServicio } from "../types";
+import { Servicio, Cliente, Tecnico, EstadoServicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
 import { 
@@ -14,7 +14,8 @@ import {
   AlertTriangle,
   ChevronRight,
   ShieldCheck,
-  MapPin
+  MapPin,
+  Trash
 } from "lucide-react";
 
 export default function Servicios() {
@@ -24,6 +25,27 @@ export default function Servicios() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [loading, setLoading] = useState(true);
+  const [servicioToDelete, setServicioToDelete] = useState<string | null>(null);
+
+  const isSuperadmin = profile?.rol === "superadmin";
+
+  const handleDeleteServicio = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!id) return;
+    setServicioToDelete(id);
+  };
+
+  const confirmDeleteServicio = async () => {
+    if (!servicioToDelete) return;
+    try {
+      await ServiciosService.delete(servicioToDelete);
+      const list = await ServiciosService.getAll();
+      setServicios(list);
+      setServicioToDelete(null);
+    } catch (err) {
+      console.error("Error deleting service:", err);
+    }
+  };
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -194,14 +216,14 @@ export default function Servicios() {
               className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-100 dark:border-gray-750 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-indigo-600"
             >
               <option value="">-- Todos los Estados --</option>
-              <option value="RECIBIDO">RECIBIDO</option>
-              <option value="DIAGNOSTICO">DIAGNOSTICO</option>
-              <option value="PENDIENTE_APROBACION">PENDIENTE_APROBACION</option>
-              <option value="EN_REPARACION">EN_REPARACION</option>
-              <option value="LISTO_PARA_ENTREGA">LISTO_PARA_ENTREGA</option>
-              <option value="ENTREGA_EN_PROGRESO">ENTREGA_EN_PROGRESO</option>
-              <option value="ENTREGADO">ENTREGADO</option>
-              <option value="CANCELADO">CANCELADO</option>
+              <option value="RECIBIDO">Recibido</option>
+              <option value="DIAGNOSTICO">En Diagnóstico</option>
+              <option value="PENDIENTE_APROBACION">Pendiente Aprobación</option>
+              <option value="EN_REPARACION">En Reparación</option>
+              <option value="LISTO_PARA_ENTREGA">Listo para Entrega</option>
+              <option value="ENTREGA_EN_PROGRESO">Entrega en Progreso</option>
+              <option value="ENTREGADO">Entregado</option>
+              <option value="CANCELADO">Cancelado</option>
             </select>
           </div>
 
@@ -314,7 +336,7 @@ export default function Servicios() {
                       {/* Status badge */}
                       <td className="p-4">
                         <span className={`inline-block px-2.5 py-1 text-xs font-bold rounded-full border ${getStatusColor(s.estado)}`}>
-                          {s.estado}
+                          {getEstadoLabel(s.estado)}
                         </span>
                       </td>
 
@@ -336,11 +358,25 @@ export default function Servicios() {
                         )}
                       </td>
 
-                      {/* Go to detailed view */}
-                      <td className="p-4 pr-6 text-right">
-                        <button className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors cursor-pointer">
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
+                      {/* Go to detailed view & Delete */}
+                      <td className="p-4 pr-6 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-2">
+                          {isSuperadmin && (
+                            <button
+                              onClick={(e) => handleDeleteServicio(e, s.id || "")}
+                              className="p-1.5 text-gray-450 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer"
+                              title="Eliminar Orden"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => navigate("detalle-servicio", s.id)}
+                            className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors cursor-pointer"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -371,9 +407,20 @@ export default function Servicios() {
                   <span className="font-mono font-extrabold text-indigo-600 dark:text-indigo-400">
                     #{s.numeroServicio}
                   </span>
-                  <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full border ${getStatusColor(s.estado)}`}>
-                    {s.estado}
-                  </span>
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full border ${getStatusColor(s.estado)}`}>
+                      {getEstadoLabel(s.estado)}
+                    </span>
+                    {isSuperadmin && (
+                      <button
+                        onClick={(e) => handleDeleteServicio(e, s.id || "")}
+                        className="p-1.5 text-gray-450 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer"
+                        title="Eliminar Orden"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Apparatus & Brand */}
@@ -424,6 +471,44 @@ export default function Servicios() {
           })
         )}
       </div>
+
+      {/* Custom Delete Confirmation Modal */}
+      {servicioToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar orden de trabajo?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará de forma permanente esta orden de trabajo de la base de datos de forma irreversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setServicioToDelete(null)}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteServicio}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                Sí, Eliminar Orden
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

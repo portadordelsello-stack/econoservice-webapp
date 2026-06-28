@@ -504,7 +504,7 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
         </div>
 
         {/* RIGHT PANEL - LIVE MAP */}
-        <div className="lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-3xl p-4 flex flex-col h-[500px] lg:h-[600px] relative">
+        <div className="lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-3xl p-4 flex flex-col h-[350px] md:h-[500px] lg:h-[600px] relative">
           <div className="flex items-center justify-between mb-3 border-b border-gray-50 dark:border-gray-800 pb-2.5">
             <span className="text-xs font-bold text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
               <Navigation className="w-4 h-4 text-indigo-500" />

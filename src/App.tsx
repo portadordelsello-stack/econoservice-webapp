@@ -16,6 +16,7 @@ import Agenda from "./features/Agenda";
 import Gastos from "./features/Gastos";
 import Usuarios from "./features/Usuarios";
 import Tracker from "./features/Tracker";
+import Logistica from "./features/Logistica";
 import TrackingCliente from "./features/TrackingCliente";
 import Insumos from "./features/Insumos";
 import { NotificationsCenter } from "./components/NotificationsCenter";
@@ -70,13 +71,12 @@ function MainLayout() {
   // Sidebar link details
   const navigationLinks = [
     { view: "dashboard", label: "Dashboard", icon: Activity, roles: ["superadmin", "administracion", "admin"] },
+    { view: "logistica", label: "Logística", icon: Truck, roles: ["superadmin", "administracion", "logistica", "tecnico", "admin", "recepcion", "consulta"] },
     { view: "servicios", label: "Taller", icon: Wrench, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
     { view: "clientes", label: "Clientes", icon: User, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "equipos", label: "Equipos", icon: Laptop, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "insumos", label: "Insumos", icon: Package, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
-    { view: "presupuestos", label: "Presupuestos", icon: FileSpreadsheet, roles: ["superadmin", "administracion", "admin", "recepcion", "consulta"] },
     { view: "agenda", label: "Agenda", icon: Calendar, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
-    { view: "tracker", label: "Tracker", icon: Truck, roles: ["superadmin", "administracion", "logistica", "tecnico", "admin", "recepcion", "consulta"] },
     { view: "gastos", label: "Gastos", icon: TrendingDown, roles: ["superadmin", "administracion", "admin"] },
     { view: "usuarios", label: "Ajustes", icon: Settings, roles: ["superadmin", "administracion", "admin"] }
   ];
@@ -297,17 +297,18 @@ function MainLayout() {
       {/* MAIN VIEWPORT */}
       <main className="flex-1 p-4 md:p-8 lg:p-10 max-w-7xl mx-auto w-full overflow-y-auto">
         {currentView === "dashboard" && <Dashboard />}
+        {currentView === "logistica" && <Logistica />}
         {currentView === "servicios" && <Servicios />}
         {currentView === "crear-servicio" && <CrearServicio />}
         {currentView === "detalle-servicio" && <DetalleServicio />}
         {currentView === "clientes" && <Clientes />}
         {currentView === "equipos" && <Equipos />}
         {currentView === "insumos" && <Insumos />}
-        {currentView === "presupuestos" && <Presupuestos />}
+        {currentView === "presupuestos" && <Logistica initialSubView="presupuestos" />}
         {currentView === "agenda" && <Agenda />}
         {currentView === "gastos" && <Gastos />}
         {currentView === "usuarios" && <Usuarios />}
-        {currentView === "tracker" && <Tracker />}
+        {currentView === "tracker" && <Logistica initialSubView="tracker" />}
       </main>
 
     </div>

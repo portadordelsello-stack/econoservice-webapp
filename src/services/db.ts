@@ -66,6 +66,11 @@ export const ClientesService = {
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() } as Cliente;
+  },
+
+  async delete(id: string): Promise<void> {
+    const docRef = doc(db, "clientes", id);
+    await deleteDoc(docRef);
   }
 };
 
@@ -184,6 +189,11 @@ export const EquiposService = {
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() } as Equipo;
+  },
+
+  async delete(id: string): Promise<void> {
+    const docRef = doc(db, "equipos", id);
+    await deleteDoc(docRef);
   }
 };
 
@@ -401,6 +411,11 @@ export const PresupuestosService = {
       id: doc.id,
       ...doc.data()
     })) as PresupuestoItem[];
+  },
+
+  async delete(id: string): Promise<void> {
+    const docRef = doc(db, "presupuestos", id);
+    await deleteDoc(docRef);
   }
 };
 

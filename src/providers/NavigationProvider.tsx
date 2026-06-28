@@ -12,7 +12,8 @@ export type ViewType =
   | "agenda"
   | "gastos"
   | "usuarios"
-  | "tracker";
+  | "tracker"
+  | "logistica";
 
 interface NavigationContextType {
   currentView: ViewType;
@@ -83,7 +84,8 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
       "agenda",
       "gastos",
       "usuarios",
-      "tracker"
+      "tracker",
+      "logistica"
     ];
     return validViews.includes(view as ViewType);
   }

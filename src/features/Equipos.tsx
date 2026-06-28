@@ -13,7 +13,10 @@ import {
   X, 
   Check, 
   User, 
-  Tag
+  Tag,
+  MapPin,
+  Trash,
+  AlertTriangle
 } from "lucide-react";
 
 export default function Equipos() {
@@ -22,13 +25,33 @@ export default function Equipos() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   
+  const [equipoToDelete, setEquipoToDelete] = useState<string | null>(null);
+  
+  const isSuperadmin = profile?.rol === "superadmin";
+
+  const handleDeleteEquipo = (id: string) => {
+    if (!id) return;
+    setEquipoToDelete(id);
+  };
+
+  const confirmDeleteEquipo = async () => {
+    if (!equipoToDelete) return;
+    try {
+      await EquiposService.delete(equipoToDelete);
+      loadData();
+      setEquipoToDelete(null);
+    } catch (err) {
+      console.error("Error deleting equipment:", err);
+    }
+  };
+  
   // UI states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEquipo, setEditingEquipo] = useState<Equipo | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Client mapping for fast display
-  const [clientNames, setClientNames] = useState<Record<string, string>>({});
+  const [clientMap, setClientMap] = useState<Record<string, Cliente>>({});
 
   const { 
     register, 
@@ -57,11 +80,11 @@ export default function Equipos() {
       setEquipos(eqList);
       setClientes(cliList);
 
-      const mapping: Record<string, string> = {};
+      const mapping: Record<string, Cliente> = {};
       cliList.forEach(c => {
-        mapping[c.id || ""] = c.nombreApellido;
+        mapping[c.id || ""] = c;
       });
-      setClientNames(mapping);
+      setClientMap(mapping);
     } catch (err) {
       console.error("Error loading data:", err);
     } finally {
@@ -115,14 +138,21 @@ export default function Equipos() {
   };
 
   const filteredEquipos = equipos.filter(eq => {
-    const cliName = clientNames[eq.clienteId]?.toLowerCase() || "";
+    const client = clientMap[eq.clienteId];
+    const cliName = client?.nombreApellido?.toLowerCase() || "";
+    const cliAddress = client ? [
+      client.calle ? `${client.calle} ${client.numero || ""}` : "",
+      client.barrio ? `B° ${client.barrio}` : "",
+      client.localidad || ""
+    ].filter(Boolean).join(", ").toLowerCase() : "";
     const term = searchTerm.toLowerCase();
     return (
       eq.tipo.toLowerCase().includes(term) ||
       eq.marca.toLowerCase().includes(term) ||
       eq.modelo.toLowerCase().includes(term) ||
       (eq.serie && eq.serie.toLowerCase().includes(term)) ||
-      cliName.includes(term)
+      cliName.includes(term) ||
+      cliAddress.includes(term)
     );
   });
 
@@ -173,15 +203,15 @@ export default function Equipos() {
           />
         </div>
 
-        {/* Equipos Grid Table */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+        {/* Equipos Grid Table - Desktop View */}
+        <div className="hidden md:block bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-bold uppercase border-b border-gray-100 dark:border-gray-800">
                   <th className="p-4 pl-6">Equipo</th>
                   <th className="p-4">Marca y Modelo</th>
-                  <th className="p-4">N° Serie</th>
+                  <th className="p-4">Dirección</th>
                   <th className="p-4">Cliente / Propietario</th>
                   <th className="p-4">Observaciones</th>
                   {canWrite && <th className="p-4 pr-6 text-right">Acciones</th>}
@@ -206,13 +236,29 @@ export default function Equipos() {
                       <td className="p-4 font-medium text-gray-700 dark:text-gray-300">
                         {eq.marca} <span className="text-gray-400 font-normal">({eq.modelo})</span>
                       </td>
-                      <td className="p-4 font-mono text-xs text-gray-500 dark:text-gray-400">
-                        {eq.serie || <span className="italic text-gray-400">S/N</span>}
+                      <td className="p-4 font-bold text-gray-900 dark:text-white max-w-[220px] truncate">
+                        {(() => {
+                          const c = clientMap[eq.clienteId];
+                          if (!c) return <span className="italic text-gray-400 font-normal">Sin dirección</span>;
+                          const address = [
+                            c.calle ? `${c.calle} ${c.numero || ""}` : "",
+                            c.barrio ? `B° ${c.barrio}` : "",
+                            c.localidad || ""
+                          ].filter(Boolean).join(", ");
+                          return address ? (
+                            <span className="flex items-center gap-1.5 truncate" title={address}>
+                              <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                              <span className="truncate">{address}</span>
+                            </span>
+                          ) : (
+                            <span className="italic text-gray-400 font-normal">Sin dirección</span>
+                          );
+                        })()}
                       </td>
                       <td className="p-4 text-gray-900 dark:text-white font-medium">
                         <span className="flex items-center gap-1.5">
                           <User className="w-3.5 h-3.5 text-gray-400" />
-                          {clientNames[eq.clienteId] || <span className="text-red-500 italic">Cliente Huérfano</span>}
+                          {clientMap[eq.clienteId]?.nombreApellido || <span className="text-red-500 italic">Cliente Huérfano</span>}
                         </span>
                       </td>
                       <td className="p-4 text-gray-500 dark:text-gray-400 max-w-xs truncate">
@@ -220,13 +266,24 @@ export default function Equipos() {
                       </td>
                       {canWrite && (
                         <td className="p-4 pr-6 text-right">
-                          <button
-                            onClick={() => handleOpenEdit(eq)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-xs font-semibold cursor-pointer"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                            Editar
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleOpenEdit(eq)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-xs font-semibold cursor-pointer"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              Editar
+                            </button>
+                            {isSuperadmin && (
+                              <button
+                                onClick={() => handleDeleteEquipo(eq.id || "")}
+                                className="p-1.5 text-gray-450 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer"
+                                title="Eliminar Equipo"
+                              >
+                                <Trash className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -235,6 +292,95 @@ export default function Equipos() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Equipos List - Mobile Card View */}
+        <div className="md:hidden space-y-4">
+          {filteredEquipos.length === 0 ? (
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+              No se encontraron equipos registrados.
+            </div>
+          ) : (
+            filteredEquipos.map((eq) => {
+              const c = clientMap[eq.clienteId];
+              const address = c ? [
+                c.calle ? `${c.calle} ${c.numero || ""}` : "",
+                c.barrio ? `B° ${c.barrio}` : "",
+                c.localidad || ""
+              ].filter(Boolean).join(", ") : "";
+
+              return (
+                <div
+                  key={eq.id}
+                  className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-3"
+                >
+                  {/* Header: Type and badge */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-gray-950 dark:text-white flex items-center gap-2 text-sm">
+                      <Laptop className="w-4 h-4 text-indigo-500 shrink-0" />
+                      {eq.tipo}
+                    </span>
+                    {eq.serie && (
+                      <span className="text-[10px] font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-500">
+                        {eq.serie}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Brand & Model */}
+                  <div className="text-xs text-gray-600 dark:text-gray-300">
+                    <span className="font-semibold text-gray-400">Marca/Modelo:</span> {eq.marca} ({eq.modelo})
+                  </div>
+
+                  {/* Owner & Address details */}
+                  <div className="space-y-2 text-xs bg-gray-50 dark:bg-gray-850 p-3 rounded-xl border border-gray-100/30 dark:border-gray-800/20">
+                    <div className="flex items-center gap-1.5 truncate text-gray-900 dark:text-white">
+                      <User className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span className="font-medium truncate">
+                        {c?.nombreApellido || <span className="text-red-500 italic">Cliente Huérfano</span>}
+                      </span>
+                    </div>
+
+                    <div className="flex items-start gap-1.5 text-gray-500 dark:text-gray-400 pl-5">
+                      <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                      <span className="truncate">
+                        {address || <span className="italic text-gray-400">Sin dirección registrada</span>}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Observations */}
+                  {eq.observaciones && (
+                    <p className="text-xs text-gray-400 italic">
+                      <span className="font-semibold not-italic">Notas:</span> {eq.observaciones}
+                    </p>
+                  )}
+
+                  {/* Edit / Delete action */}
+                  {canWrite && (
+                    <div className="pt-1 flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => handleOpenEdit(eq)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        Editar Datos
+                      </button>
+                      {isSuperadmin && (
+                        <button
+                          onClick={() => handleDeleteEquipo(eq.id || "")}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-gray-100 dark:border-gray-800 rounded-xl transition-colors cursor-pointer"
+                          title="Eliminar Equipo"
+                        >
+                          <Trash className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -375,6 +521,44 @@ export default function Equipos() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {equipoToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar equipo registrado?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará de forma permanente este equipo de la base de datos de forma irreversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setEquipoToDelete(null)}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteEquipo}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                Sí, Eliminar Equipo
+              </button>
+            </div>
           </div>
         </div>
       )}

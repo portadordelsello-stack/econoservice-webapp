@@ -15,7 +15,8 @@ import {
   Trash2,
   Cpu,
   UserCheck,
-  ShieldCheck
+  ShieldCheck,
+  AlertTriangle
 } from "lucide-react";
 
 export default function Tecnicos() {
@@ -27,6 +28,7 @@ export default function Tecnicos() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTecnico, setEditingTecnico] = useState<Tecnico | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tecnicoToDelete, setTecnicoToDelete] = useState<string | null>(null);
 
   const { 
     register, 
@@ -96,14 +98,19 @@ export default function Tecnicos() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("¿Está seguro de que desea eliminar permanentemente este técnico?")) {
-      try {
-        await TecnicosService.delete(id);
-        loadTecnicos();
-      } catch (err) {
-        console.error("Error deleting tecnico:", err);
-      }
+  const handleDelete = (id: string) => {
+    if (!id) return;
+    setTecnicoToDelete(id);
+  };
+
+  const confirmDeleteTecnico = async () => {
+    if (!tecnicoToDelete) return;
+    try {
+      await TecnicosService.delete(tecnicoToDelete);
+      loadTecnicos();
+      setTecnicoToDelete(null);
+    } catch (err) {
+      console.error("Error deleting tecnico:", err);
     }
   };
 
@@ -335,6 +342,44 @@ export default function Tecnicos() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {tecnicoToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar técnico?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará de forma permanente este perfil de técnico de la base de datos de forma irreversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setTecnicoToDelete(null)}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteTecnico}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                Sí, Eliminar Técnico
+              </button>
+            </div>
           </div>
         </div>
       )}

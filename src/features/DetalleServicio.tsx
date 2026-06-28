@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { ServiciosService, ClientesService, EquiposService, TecnicosService, toDate, StockService, NotificationsService } from "../services/db";
-import { Servicio, Cliente, Equipo, Tecnico, Historial, EstadoServicio } from "../types";
+import { Servicio, Cliente, Equipo, Tecnico, Historial, EstadoServicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
 import { storage } from "../lib/firebase";
@@ -434,7 +434,7 @@ export default function DetalleServicio() {
                 Ficha de Servicio #{servicio.numeroServicio}
               </h1>
               <span className={`px-3 py-0.5 text-xs font-bold rounded-full uppercase ${getStatusBadgeColor(servicio.estado)}`}>
-                {servicio.estado}
+                {getEstadoLabel(servicio.estado)}
               </span>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -526,14 +526,14 @@ export default function DetalleServicio() {
                   onChange={(e) => setEditEstado(e.target.value as EstadoServicio)}
                   className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750 rounded-xl text-sm focus:outline-none"
                 >
-                  <option value="RECIBIDO">RECIBIDO</option>
-                  <option value="DIAGNOSTICO">DIAGNOSTICO</option>
-                  <option value="PENDIENTE_APROBACION">PENDIENTE_APROBACION</option>
-                  <option value="EN_REPARACION">EN_REPARACION</option>
-                  <option value="LISTO_PARA_ENTREGA">LISTO_PARA_ENTREGA</option>
-                  <option value="ENTREGA_EN_PROGRESO">ENTREGA_EN_PROGRESO</option>
-                  <option value="ENTREGADO">ENTREGADO</option>
-                  <option value="CANCELADO">CANCELADO</option>
+                  <option value="RECIBIDO">Recibido</option>
+                  <option value="DIAGNOSTICO">En Diagnóstico</option>
+                  <option value="PENDIENTE_APROBACION">Pendiente Aprobación</option>
+                  <option value="EN_REPARACION">En Reparación</option>
+                  <option value="LISTO_PARA_ENTREGA">Listo para Entrega</option>
+                  <option value="ENTREGA_EN_PROGRESO">Entrega en Progreso</option>
+                  <option value="ENTREGADO">Entregado</option>
+                  <option value="CANCELADO">Cancelado</option>
                 </select>
               </div>
 

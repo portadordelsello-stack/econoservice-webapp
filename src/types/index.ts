@@ -10,6 +10,21 @@ export type EstadoServicio =
   | "ENTREGADO"
   | "CANCELADO";
 
+export const ESTADO_LABELS: Record<EstadoServicio, string> = {
+  RECIBIDO: "Recibido",
+  DIAGNOSTICO: "En Diagnóstico",
+  PENDIENTE_APROBACION: "Pendiente Aprobación",
+  EN_REPARACION: "En Reparación",
+  LISTO_PARA_ENTREGA: "Listo para Entrega",
+  ENTREGA_EN_PROGRESO: "Entrega en Progreso",
+  ENTREGADO: "Entregado",
+  CANCELADO: "Cancelado"
+};
+
+export function getEstadoLabel(estado: string): string {
+  return ESTADO_LABELS[estado as EstadoServicio] || estado;
+}
+
 export interface UserProfile {
   uid: string;
   nombre: string;

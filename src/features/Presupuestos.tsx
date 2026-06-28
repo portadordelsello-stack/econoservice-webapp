@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { PresupuestosService, ServiciosService, toDate } from "../services/db";
-import { Presupuesto, PresupuestoItem, Servicio } from "../types";
+import { ClientesService, PresupuestosService, ServiciosService, toDate } from "../services/db";
+import { Cliente, Presupuesto, PresupuestoItem, Servicio } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
 import { 
@@ -11,10 +11,12 @@ import {
   Calculator, 
   User, 
   X,
-  FileText
+  FileText,
+  MapPin,
+  AlertTriangle
 } from "lucide-react";
 
-export default function Presupuestos() {
+export default function Presupuestos({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { profile } = useAuth();
   const { navigate } = useNavigation();
 
@@ -25,10 +27,12 @@ export default function Presupuestos() {
 
   // Selector mappings
   const [servicesMap, setServicesMap] = useState<Record<string, Servicio>>({});
+  const [clientMap, setClientMap] = useState<Record<string, Cliente>>({});
 
   // Form states for Create/Edit
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Presupuesto | null>(null);
+  const [budgetToDelete, setBudgetToDelete] = useState<string | null>(null);
   
   const [selectedServicioId, setSelectedServicioId] = useState("");
   const [observaciones, setObservaciones] = useState("");
@@ -50,6 +54,14 @@ export default function Presupuestos() {
         sMap[s.id || ""] = s;
       });
       setServicesMap(sMap);
+
+      // Load clients
+      const cliList = await ClientesService.getAll();
+      const cMap: Record<string, Cliente> = {};
+      cliList.forEach(c => {
+        cMap[c.id || ""] = c;
+      });
+      setClientMap(cMap);
 
       // We load all budgets
       // Since budgets is a standalone collection we read all or filter. Let's read all.
@@ -183,6 +195,22 @@ export default function Presupuestos() {
     }
   };
 
+  const handleDeleteBudget = (id: string) => {
+    if (!id) return;
+    setBudgetToDelete(id);
+  };
+
+  const confirmDeleteBudget = async () => {
+    if (!budgetToDelete) return;
+    try {
+      await PresupuestosService.delete(budgetToDelete);
+      loadData();
+      setBudgetToDelete(null);
+    } catch (err) {
+      console.error("Error deleting budget:", err);
+    }
+  };
+
   const canWrite = profile?.rol === "superadmin";
 
   if (loading && presupuestos.length === 0) {
@@ -197,16 +225,30 @@ export default function Presupuestos() {
     <div className="space-y-6 animate-fade-in font-sans">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Estimaciones y Presupuestos
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gestión detallada de repuestos, mano de obra, e informes de aprobación.
-          </p>
+      {!isEmbedded && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+              Estimaciones y Presupuestos
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Gestión detallada de repuestos, mano de obra, e informes de aprobación.
+            </p>
+          </div>
+          {canWrite && (
+            <button
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Crear Presupuesto
+            </button>
+          )}
         </div>
-        {canWrite && (
+      )}
+
+      {isEmbedded && canWrite && (
+        <div className="flex justify-end">
           <button
             onClick={handleOpenCreate}
             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md cursor-pointer"
@@ -214,21 +256,21 @@ export default function Presupuestos() {
             <Plus className="w-4 h-4" />
             Crear Presupuesto
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Budgets List Grid */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+      {/* Budgets List Grid - Desktop Table View */}
+      <div className="hidden md:block bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-bold uppercase border-b border-gray-100 dark:border-gray-800">
                 <th className="p-4 pl-6">N° Orden</th>
-                <th className="p-4">Aparato</th>
+                <th className="p-4">Dirección</th>
                 <th className="p-4">Monto Estimado</th>
                 <th className="p-4">Fecha Cotización</th>
                 <th className="p-4">Resolución Cliente</th>
-                <th className="p-4">Comentarios</th>
+                <th className="p-4">Equipo</th>
                 {canWrite && <th className="p-4 pr-6 text-right">Detalles</th>}
               </tr>
             </thead>
@@ -247,8 +289,24 @@ export default function Presupuestos() {
                       <td className="p-4 pl-6 font-mono font-bold text-indigo-600 dark:text-indigo-400">
                         #{serv ? serv.numeroServicio : "Cargando..."}
                       </td>
-                      <td className="p-4 font-semibold text-gray-850 dark:text-white">
-                        {serv ? serv.aparato : <span className="italic text-gray-300">Cargando...</span>}
+                      <td className="p-4 font-bold text-gray-900 dark:text-white max-w-[220px] truncate">
+                        {(() => {
+                          const c = serv ? clientMap[serv.clienteId] : null;
+                          if (!c) return <span className="italic text-gray-400 font-normal">Sin dirección</span>;
+                          const address = [
+                            c.calle ? `${c.calle} ${c.numero || ""}` : "",
+                            c.barrio ? `B° ${c.barrio}` : "",
+                            c.localidad || ""
+                          ].filter(Boolean).join(", ");
+                          return address ? (
+                            <span className="flex items-center gap-1.5 truncate" title={address}>
+                              <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                              <span className="truncate">{address}</span>
+                            </span>
+                          ) : (
+                            <span className="italic text-gray-400 font-normal">Sin dirección</span>
+                          );
+                        })()}
                       </td>
                       <td className="p-4 font-extrabold text-gray-900 dark:text-white">
                         ${p.total.toLocaleString()}
@@ -265,18 +323,27 @@ export default function Presupuestos() {
                           {p.aprobado ? "Aprobado" : "Pendiente"}
                         </span>
                       </td>
-                      <td className="p-4 text-xs text-gray-500 max-w-xs truncate">
-                        {p.observaciones || <span className="italic text-gray-300">Ninguna</span>}
+                      <td className="p-4 font-semibold text-gray-850 dark:text-white">
+                        {serv ? serv.aparato : <span className="italic text-gray-300">Cargando...</span>}
                       </td>
                       {canWrite && (
                         <td className="p-4 pr-6 text-right">
-                          <button
-                            onClick={() => handleOpenEdit(p)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-xs font-semibold cursor-pointer"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            Editar Cotización
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleOpenEdit(p)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-xs font-semibold cursor-pointer"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              Editar Cotización
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBudget(p.id || "")}
+                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer"
+                              title="Eliminar Presupuesto"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -286,6 +353,91 @@ export default function Presupuestos() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Budgets List - Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {presupuestos.length === 0 ? (
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+            No hay estimaciones presupuestadas aún en el sistema.
+          </div>
+        ) : (
+          presupuestos.map((p) => {
+            const serv = servicesMap[p.servicioId];
+            const c = serv ? clientMap[serv.clienteId] : null;
+            const address = c ? [
+              c.calle ? `${c.calle} ${c.numero || ""}` : "",
+              c.barrio ? `B° ${c.barrio}` : "",
+              c.localidad || ""
+            ].filter(Boolean).join(", ") : "";
+
+            return (
+              <div
+                key={p.id}
+                className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-3"
+              >
+                {/* Header: order number & status */}
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-extrabold text-indigo-600 dark:text-indigo-400">
+                    #{serv ? serv.numeroServicio : "..."}
+                  </span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    p.aprobado 
+                      ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100" 
+                      : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 border border-indigo-100"
+                  }`}>
+                    {p.aprobado ? "Aprobado" : "Pendiente"}
+                  </span>
+                </div>
+
+                {/* Info block: Address & Equipment */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-start gap-1.5 text-gray-700 dark:text-gray-300">
+                    <MapPin className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                    <span className="font-medium">
+                      {address || <span className="italic text-gray-400">Sin dirección registrada</span>}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 pl-5">
+                    <span className="font-semibold">Equipo:</span>
+                    <span>{serv ? serv.aparato : <span className="italic text-gray-300">Cargando...</span>}</span>
+                  </div>
+                </div>
+
+                {/* Footer block: Date and Total Amount */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-gray-800/50 text-xs">
+                  <span className="text-gray-400">
+                    {toDate(p.fechaCreacion)?.toLocaleDateString() || "Hoy"}
+                  </span>
+                  <span className="font-extrabold text-gray-900 dark:text-white text-sm">
+                    ${p.total.toLocaleString()}
+                  </span>
+                </div>
+
+                {/* Action button */}
+                {canWrite && (
+                  <div className="pt-1 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleOpenEdit(p)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Editar Cotización
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBudget(p.id || "")}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-gray-100 dark:border-gray-800 rounded-xl transition-colors cursor-pointer"
+                      title="Eliminar Presupuesto"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Editor Modal */}
@@ -455,6 +607,44 @@ export default function Presupuestos() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {budgetToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar cotización de presupuesto?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará de forma permanente esta estimación presupuestada de la base de datos. No se podrá recuperar.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setBudgetToDelete(null)}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteBudget}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                Sí, Eliminar Presupuesto
+              </button>
+            </div>
           </div>
         </div>
       )}

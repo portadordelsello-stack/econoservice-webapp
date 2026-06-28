@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ServiciosService, ClientesService, TecnicosService, StockService, ProveedoresService, NotificationsService } from "../services/db";
-import { Servicio, Cliente, Tecnico, EstadoServicio, ItemStock, Proveedor } from "../types";
+import { Servicio, Cliente, Tecnico, EstadoServicio, ItemStock, Proveedor, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
 import { GeminiConfigService } from "../services/geminiConfig";
@@ -16,6 +16,7 @@ import {
   X, 
   RefreshCw, 
   AlertCircle,
+  AlertTriangle,
   Clock,
   Calendar,
   Layers,
@@ -35,6 +36,11 @@ import {
 export default function Insumos() {
   const { user, profile } = useAuth();
   const { navigate } = useNavigation();
+
+  const isSuperadmin = profile?.rol === "superadmin";
+
+  const [stockItemToDelete, setStockItemToDelete] = useState<string | null>(null);
+  const [proveedorToDelete, setProveedorToDelete] = useState<string | null>(null);
 
   // Data states
   const [servicios, setServicios] = useState<Servicio[]>([]);
@@ -430,15 +436,20 @@ export default function Insumos() {
     }
   };
 
-  const handleDeleteStockItem = async (id: string) => {
-    if (!window.confirm("¿Está seguro de que desea eliminar este insumo del stock?")) return;
+  const handleDeleteStockItem = (id: string) => {
+    if (!id) return;
+    setStockItemToDelete(id);
+  };
+
+  const confirmDeleteStockItem = async () => {
+    if (!stockItemToDelete) return;
     try {
       setSaving(true);
-      await StockService.delete(id);
+      await StockService.delete(stockItemToDelete);
       await loadStockData();
+      setStockItemToDelete(null);
     } catch (err) {
       console.error("Error deleting stock item:", err);
-      alert("No se pudo eliminar el insumo.");
     } finally {
       setSaving(false);
     }
@@ -472,15 +483,20 @@ export default function Insumos() {
     }
   };
 
-  const handleDeleteProveedor = async (id: string) => {
-    if (!window.confirm("¿Está seguro de que desea eliminar este proveedor?")) return;
+  const handleDeleteProveedor = (id: string) => {
+    if (!id) return;
+    setProveedorToDelete(id);
+  };
+
+  const confirmDeleteProveedor = async () => {
+    if (!proveedorToDelete) return;
     try {
       setSaving(true);
-      await ProveedoresService.delete(id);
+      await ProveedoresService.delete(proveedorToDelete);
       await loadStockData();
+      setProveedorToDelete(null);
     } catch (err) {
       console.error("Error deleting proveedor:", err);
-      alert("No se pudo eliminar el proveedor.");
     } finally {
       setSaving(false);
     }
@@ -804,13 +820,15 @@ export default function Insumos() {
                                   >
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
-                                  <button
-                                    onClick={() => item.id && handleDeleteStockItem(item.id)}
-                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
-                                    title="Eliminar"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                  {isSuperadmin && (
+                                    <button
+                                      onClick={() => item.id && handleDeleteStockItem(item.id)}
+                                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
+                                      title="Eliminar"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -882,13 +900,15 @@ export default function Insumos() {
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                              onClick={() => p.id && handleDeleteProveedor(p.id)}
-                              className="p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {isSuperadmin && (
+                              <button
+                                onClick={() => p.id && handleDeleteProveedor(p.id)}
+                                className="p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -1059,7 +1079,7 @@ export default function Insumos() {
                               ? "bg-emerald-50/20 hover:bg-emerald-50 dark:bg-emerald-950/10 dark:hover:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/40 hover:border-emerald-400 dark:hover:border-emerald-600 text-emerald-600 dark:text-emerald-400" 
                               : "bg-amber-50/20 hover:bg-amber-50 dark:bg-amber-950/10 dark:hover:bg-amber-950/20 border-amber-100 dark:border-amber-900/40 hover:border-amber-400 dark:hover:border-amber-600 text-amber-600 dark:text-amber-400"
                           }`}
-                          title={`${s.aparato} (${s.marcaModelo}) - ${s.estado.replace("_", " ")}`}
+                          title={`${s.aparato} (${s.marcaModelo}) - ${getEstadoLabel(s.estado)}`}
                         >
                           <span className="text-3xl sm:text-4xl font-black font-mono tracking-tight select-none">
                             #{s.numeroServicio}
@@ -1256,7 +1276,7 @@ export default function Insumos() {
                   <div className="pt-2 border-t border-gray-100/50 dark:border-gray-800/40 flex items-center justify-between text-xs">
                     <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">ESTADO DE SERVICIO</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${getStatusBadgeColor(selectedService.estado)}`}>
-                      {selectedService.estado.replace("_", " ")}
+                      {getEstadoLabel(selectedService.estado)}
                     </span>
                   </div>
                 </div>
@@ -1712,6 +1732,82 @@ export default function Insumos() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Stock Item Modal */}
+      {stockItemToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar insumo de inventario?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará de forma permanente este insumo/repuesto del stock de la base de datos de forma irreversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setStockItemToDelete(null)}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteStockItem}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                Sí, Eliminar Insumo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Supplier Modal */}
+      {proveedorToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar proveedor?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará de forma permanente este proveedor de la base de datos de forma irreversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setProveedorToDelete(null)}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteProveedor}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                Sí, Eliminar Proveedor
+              </button>
+            </div>
           </div>
         </div>
       )}

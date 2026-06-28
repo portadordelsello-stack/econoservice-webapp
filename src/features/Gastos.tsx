@@ -27,6 +27,7 @@ export default function Gastos() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingGasto, setEditingGasto] = useState<Gasto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [gastoToDelete, setGastoToDelete] = useState<string | null>(null);
 
   const { 
     register, 
@@ -102,14 +103,19 @@ export default function Gastos() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("¿Está seguro de que desea eliminar este registro de gasto?")) {
-      try {
-        await GastosService.delete(id);
-        loadGastos();
-      } catch (err) {
-        console.error("Error deleting gasto:", err);
-      }
+  const handleDelete = (id: string) => {
+    if (!id) return;
+    setGastoToDelete(id);
+  };
+
+  const confirmDeleteGasto = async () => {
+    if (!gastoToDelete) return;
+    try {
+      await GastosService.delete(gastoToDelete);
+      loadGastos();
+      setGastoToDelete(null);
+    } catch (err) {
+      console.error("Error deleting gasto:", err);
     }
   };
 
@@ -200,8 +206,8 @@ export default function Gastos() {
 
       </div>
 
-      {/* Expenses Table list */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+      {/* Expenses Table list - Desktop View */}
+      <div className="hidden md:block bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -271,6 +277,72 @@ export default function Gastos() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Expenses - Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {filteredGastos.length === 0 ? (
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+            No se registran gastos anotados para el criterio de búsqueda.
+          </div>
+        ) : (
+          filteredGastos.map((g) => (
+            <div
+              key={g.id}
+              className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-3"
+            >
+              {/* Card Header: Concept & Category badge */}
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm">
+                    {g.concepto}
+                  </h3>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full border border-gray-200 dark:border-gray-700/50 mt-1">
+                    <FolderOpen className="w-2.5 h-2.5 text-gray-400" />
+                    {g.categoria}
+                  </span>
+                </div>
+                <span className="font-extrabold text-red-500 font-mono text-sm whitespace-nowrap shrink-0">
+                  -${g.monto.toLocaleString()}
+                </span>
+              </div>
+
+              {/* Card Body: Observations if present */}
+              {g.observaciones && (
+                <p className="text-xs text-gray-400 bg-gray-50 dark:bg-gray-850 p-2.5 rounded-xl border border-gray-100/30 dark:border-gray-800/20 whitespace-pre-wrap">
+                  {g.observaciones}
+                </p>
+              )}
+
+              {/* Card Footer: Date & actions */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-gray-800/50 text-xs">
+                <span className="text-gray-400 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" />
+                  {toDate(g.fecha)?.toLocaleDateString() || "Hoy"}
+                </span>
+
+                {isAdmin && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenEdit(g)}
+                      className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-gray-50 dark:hover:bg-gray-850 rounded-lg transition-colors cursor-pointer"
+                      title="Editar egreso"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(g.id || "")}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-50 dark:hover:bg-gray-850 rounded-lg transition-colors cursor-pointer"
+                      title="Eliminar egreso"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Create/Edit Modal */}
@@ -380,6 +452,44 @@ export default function Gastos() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {gastoToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar registro de gasto?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará de forma permanente este registro de egreso de la base de datos de forma irreversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setGastoToDelete(null)}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteGasto}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                Sí, Eliminar Gasto
+              </button>
+            </div>
           </div>
         </div>
       )}

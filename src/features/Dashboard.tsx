@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ServiciosService, ClientesService, TecnicosService, toDate } from "../services/db";
-import { Servicio, Cliente, Tecnico, EstadoServicio } from "../types";
+import { Servicio, Cliente, Tecnico, EstadoServicio, getEstadoLabel } from "../types";
 import { useNavigation } from "../providers/NavigationProvider";
 import { 
   Wrench, 
@@ -283,7 +283,7 @@ export default function Dashboard() {
                       </td>
                       <td className="p-4">
                         <span className={`inline-block px-2.5 py-1 text-xs font-bold rounded-full border ${getStatusColor(s.estado)}`}>
-                          {s.estado}
+                          {getEstadoLabel(s.estado)}
                         </span>
                       </td>
                       <td className="p-4 text-slate-600 dark:text-gray-400">
