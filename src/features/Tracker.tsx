@@ -13,6 +13,7 @@ import {
   ClientesService, 
   EquiposService 
 } from "../services/db";
+import { GeminiConfigService } from "../services/geminiConfig";
 import { Servicio, Cliente, EstadoServicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { 
@@ -209,6 +210,11 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
     setRouteRecommendation(null);
     
     try {
+      const config = await GeminiConfigService.getConfig();
+      if (!config.apiKey || !config.apiKey.trim()) {
+        throw new Error("No hay ninguna API Key de Gemini configurada. Solicite al Administrador que la configure en la sección de Usuarios.");
+      }
+
       const formattedOrders = activeServices.map(s => {
         const client = clientsMap[s.clienteId];
         const addressStr = client && client.calle 
@@ -226,7 +232,10 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
       const response = await fetch("/api/tracker/optimize-route", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orders: formattedOrders }),
+        body: JSON.stringify({ 
+          orders: formattedOrders,
+          apiKey: config.apiKey
+        }),
       });
 
       if (!response.ok) {
