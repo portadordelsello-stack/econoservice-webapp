@@ -6,6 +6,8 @@ import { UserProfile, Role } from "../types";
 import { DriveService } from "../services/drive";
 import { GeminiConfigService } from "../services/geminiConfig";
 import { BrandingService, DEFAULT_BRANDING } from "../services/branding";
+import { ClientesService } from "../services/db";
+import Papa from "papaparse";
 import { 
   Users, 
   ShieldCheck, 
@@ -32,7 +34,7 @@ import {
 
 export default function Usuarios() {
   const { profile } = useAuth();
-  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini" | "apariencia">("menu");
+  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini" | "apariencia" | "importar">("menu");
   const [usuarios, setUsuarios] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -167,6 +169,101 @@ export default function Usuarios() {
     } catch (err) {
       console.error("Error fetching drive config:", err);
     }
+  };
+
+  // CSV Import States
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importTotal, setImportTotal] = useState(0);
+  const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
+  const [importErrorMsg, setImportErrorMsg] = useState<string | null>(null);
+
+  const handleCsvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setCsvFile(e.target.files[0]);
+      setImportErrorMsg(null);
+      setImportSuccessMsg(null);
+      setImportProgress(0);
+      setImportTotal(0);
+    }
+  };
+
+  const processCsvImport = async () => {
+    if (!csvFile) {
+      setImportErrorMsg("Debe seleccionar un archivo CSV.");
+      return;
+    }
+
+    setIsImporting(true);
+    setImportErrorMsg(null);
+    setImportSuccessMsg(null);
+    setImportProgress(0);
+
+    Papa.parse(csvFile, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const rows = results.data as any[];
+        setImportTotal(rows.length);
+
+        const mapCsvToCliente = (row: any) => {
+          return {
+            nombreApellido: row.nombreApellido || row.nombre || row.cliente || "Sin Nombre",
+            telFijo: row.telFijo || row.telefonoFijo || "",
+            telCel: row.telCel || row.celular || row.telefono || "",
+            telCelBis: row.telCelBis || "",
+            telCelOtro: row.telCelOtro || "",
+            localidad: row.localidad || row.ciudad || "",
+            barrio: row.barrio || "",
+            zona: row.zona || "",
+            calle: row.calle || row.direccion || "",
+            numero: row.numero || "",
+            piso: row.piso || "",
+            depto: row.depto || row.departamento || "",
+            clienteProblematico: row.clienteProblematico === "true" || row.clienteProblematico === "SI" || row.clienteProblematico === "1" || false,
+            observaciones: row.observaciones || ""
+          };
+        };
+
+        const parsedClientes = rows.map(mapCsvToCliente);
+        
+        // Dividir en 15 partes (lotes) como solicitó el usuario para su tranquilidad
+        const partes = 15;
+        const chunkSize = Math.ceil(parsedClientes.length / partes);
+        let currentProcessed = 0;
+
+        try {
+          for (let i = 0; i < partes; i++) {
+            const chunk = parsedClientes.slice(i * chunkSize, (i + 1) * chunkSize);
+            if (chunk.length === 0) continue;
+            
+            // Límite real de Firestore batch es 500. chunk.length debería ser menor.
+            // Si el archivo tiene 5000, chunkSize es 334. Perfecto.
+            await ClientesService.batchCreate(chunk);
+            
+            currentProcessed += chunk.length;
+            setImportProgress(currentProcessed);
+            
+            // Pequeña pausa para evitar colapsar la UI
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+
+          setImportSuccessMsg(`Se han importado exitosamente ${parsedClientes.length} clientes en ${partes} lotes.`);
+          setCsvFile(null);
+        } catch (error) {
+          console.error("Error importando clientes:", error);
+          setImportErrorMsg("Hubo un error durante la importación. Verifique los campos y la conexión.");
+        } finally {
+          setIsImporting(false);
+        }
+      },
+      error: (error) => {
+        console.error("Parse error:", error);
+        setImportErrorMsg("Error al leer el archivo CSV.");
+        setIsImporting(false);
+      }
+    });
   };
 
   useEffect(() => {
@@ -471,6 +568,30 @@ export default function Usuarios() {
               <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/30 text-indigo-750 dark:text-indigo-300`}>
                 Configurado
               </span>
+            </div>
+          </div>
+
+          {/* Card: Importar Clientes CSV */}
+          <div 
+            onClick={() => setActiveSubView("importar")}
+            className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-950/40 cursor-pointer transition-all flex flex-col justify-between"
+          >
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <UploadCloud className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  Importar Clientes CSV
+                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-indigo-600 dark:text-indigo-400" />
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Realiza cargas masivas de clientes desde un archivo CSV. El sistema dividirá la importación en lotes seguros.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              <span>Importación masiva</span>
             </div>
           </div>
 
@@ -953,6 +1074,117 @@ export default function Usuarios() {
               <h3 className="text-base font-bold text-gray-900 dark:text-white">Acceso Restringido</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
                 La configuración de Gemini solo está disponible para usuarios con rol de <strong>Administrador o Superadministrador</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (activeSubView === "importar") {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <div>
+          <button 
+            onClick={() => setActiveSubView("menu")}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer transition-colors mb-2 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-3.5 py-2 rounded-xl shadow-xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a Ajustes
+          </button>
+        </div>
+
+        {canManageConfig ? (
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-800">
+              <UploadCloud className="w-5 h-5 text-indigo-600" />
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Importar Clientes CSV
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Sube un archivo CSV con clientes. El sistema lo dividirá en 15 lotes automáticamente.
+                </p>
+              </div>
+            </div>
+
+            {importSuccessMsg && (
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-xl flex items-center gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs font-medium animate-in fade-in">
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                {importSuccessMsg}
+              </div>
+            )}
+
+            {importErrorMsg && (
+              <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 rounded-xl flex items-center gap-2.5 text-red-800 dark:text-red-300 text-xs font-medium animate-in fade-in">
+                <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                {importErrorMsg}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-900 dark:text-white">Archivo CSV</label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCsvChange}
+                    className="flex-1 px-3.5 py-3 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-900 dark:file:text-indigo-300 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-800"
+                    disabled={isImporting}
+                  />
+                  <button
+                    onClick={processCsvImport}
+                    disabled={!csvFile || isImporting}
+                    className="inline-flex items-center gap-1.5 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                    {isImporting ? "Importando..." : "Importar"}
+                  </button>
+                </div>
+              </div>
+
+              {isImporting && (
+                <div className="space-y-2 pt-4">
+                  <div className="flex justify-between text-xs font-medium text-gray-500">
+                    <span>Progreso de importación</span>
+                    <span>{importProgress} / {importTotal} clientes</span>
+                  </div>
+                  <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
+                    <div 
+                      className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${importTotal > 0 ? (importProgress / importTotal) * 100 : 0}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-400 text-center">Dividiendo en 15 lotes para importación segura a Firebase.</p>
+                </div>
+              )}
+              
+              <div className="p-4 mt-6 bg-gray-50 dark:bg-gray-850 border border-gray-100 dark:border-gray-800 rounded-xl text-xs text-gray-600 dark:text-gray-400 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-800 dark:text-gray-200 block">Formato esperado del CSV:</span>
+                  <a 
+                    href={`data:text/csv;charset=utf-8,nombreApellido%2CtelFijo%2CtelCel%2Ccalle%2Cnumero%2Clocalidad%2Cbarrio%2CclienteProblematico%2Cobservaciones%0AJuan%20Perez%2C4221122%2C3424123456%2CSan%20Martin%2C1234%2CSanta%20Fe%2CCentro%2CNO%2CLlamar%20antes%20de%20ir%0AMaria%20Gomez%2C%2C3425987654%2CRivadavia%2C456%2CSanto%20Tome%2CLas%20Vegas%2CSI%2CNo%20atiende%20el%20timbre`}
+                    download="plantilla_clientes.csv"
+                    className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold underline decoration-indigo-600/30 underline-offset-2 flex items-center gap-1"
+                  >
+                    Descargar CSV de Ejemplo
+                  </a>
+                </div>
+                <p>El archivo debe incluir una primera fila con los encabezados (columnas). Los campos reconocidos son: <code>nombreApellido</code> (o <code>nombre</code> o <code>cliente</code>), <code>telFijo</code>, <code>telCel</code> (o <code>celular</code>), <code>calle</code>, <code>numero</code>, <code>localidad</code>, <code>barrio</code>, <code>clienteProblematico</code> (SI/NO o true/false), <code>observaciones</code>.</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-8 text-center space-y-4 shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">Acceso Restringido</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
+                La importación masiva solo está disponible para usuarios con rol de <strong>Administrador o Superadministrador</strong>.
               </p>
             </div>
           </div>

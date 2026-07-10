@@ -13,7 +13,8 @@ import {
   serverTimestamp,
   increment,
   runTransaction,
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Cliente, Tecnico, Equipo, Servicio, Historial, Presupuesto, PresupuestoItem, Gasto, EstadoServicio, Proveedor, ItemStock, AppNotification } from "../types";
@@ -50,6 +51,22 @@ export const ClientesService = {
       updatedAt: serverTimestamp()
     });
     return docRef.id;
+  },
+
+  async batchCreate(clientes: Omit<Cliente, "id" | "createdAt" | "updatedAt">[]): Promise<void> {
+    const batch = writeBatch(db);
+    const colRef = collection(db, "clientes");
+    
+    clientes.forEach(cliente => {
+      const docRef = doc(colRef);
+      batch.set(docRef, {
+        ...cliente,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    });
+
+    await batch.commit();
   },
 
   async update(id: string, cliente: Partial<Cliente>): Promise<void> {
