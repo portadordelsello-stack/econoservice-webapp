@@ -34,11 +34,57 @@ export default function Clientes() {
   
   const [clienteToDelete, setClienteToDelete] = useState<string | null>(null);
   
+  // Bulk Delete States
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  
   const isSuperadmin = profile?.rol === "superadmin";
 
   const handleDeleteCliente = (id: string) => {
     if (!id) return;
     setClienteToDelete(id);
+  };
+
+  const handleToggleSelectClient = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllFiltered = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const allFilteredIds = filteredClientes.map(c => c.id).filter(Boolean) as string[];
+    const allSelected = allFilteredIds.every(id => selectedIds.includes(id));
+    if (allSelected) {
+      // Unselect all filtered
+      setSelectedIds(prev => prev.filter(id => !allFilteredIds.includes(id)));
+    } else {
+      // Select all filtered
+      setSelectedIds(prev => {
+        const union = new Set([...prev, ...allFilteredIds]);
+        return Array.from(union);
+      });
+    }
+  };
+
+  const confirmBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    try {
+      setIsBulkDeleting(true);
+      await ClientesService.batchDelete(selectedIds);
+      if (selectedCliente?.id && selectedIds.includes(selectedCliente.id)) {
+        setSelectedCliente(null);
+      }
+      setSelectedIds([]);
+      setBulkDeleteConfirmOpen(false);
+      loadClientes();
+    } catch (err) {
+      console.error("Error bulk deleting clientes:", err);
+    } finally {
+      setIsBulkDeleting(false);
+    }
   };
 
   const confirmDeleteCliente = async () => {
@@ -237,6 +283,44 @@ export default function Clientes() {
             />
           </div>
 
+          {isSuperadmin && filteredClientes.length > 0 && (
+            <div className="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-3 rounded-2xl shadow-xs text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSelectAllFiltered}
+                  className="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-150 dark:border-gray-800 rounded-xl font-bold text-gray-750 dark:text-gray-250 transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <input
+                    type="checkbox"
+                    checked={filteredClientes.length > 0 && filteredClientes.every(c => c.id && selectedIds.includes(c.id))}
+                    onChange={() => {}} // event handled by button click
+                    className="w-3.5 h-3.5 rounded text-indigo-600 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-indigo-500 cursor-pointer pointer-events-none"
+                  />
+                  <span>Seleccionar Todos</span>
+                </button>
+                {selectedIds.length > 0 && (
+                  <span className="text-gray-500 dark:text-gray-400 font-semibold">
+                    {selectedIds.length} seleccionados
+                  </span>
+                )}
+              </div>
+              {selectedIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBulkDeleteConfirmOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-xs cursor-pointer text-xs"
+                >
+                  <Trash className="w-3.5 h-3.5" />
+                  Eliminar
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-50 dark:divide-gray-800/50 max-h-[600px] overflow-y-auto">
             {filteredClientes.length === 0 ? (
               <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
@@ -247,13 +331,27 @@ export default function Clientes() {
                 <div
                   key={c.id}
                   onClick={() => handleSelectCliente(c)}
-                  className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${
+                  className={`p-4 flex items-center gap-3 cursor-pointer transition-all border-l-4 ${
                     selectedCliente?.id === c.id 
-                      ? "bg-indigo-500/10 border-l-4 border-indigo-600" 
-                      : "hover:bg-gray-50/50 dark:hover:bg-gray-800/30"
+                      ? "bg-indigo-500/10 border-indigo-600" 
+                      : "border-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30"
                   }`}
                 >
-                  <div className="space-y-1 min-w-0 pr-2">
+                  {isSuperadmin && c.id && (
+                    <div 
+                      className="shrink-0 p-1" 
+                      onClick={(e) => handleToggleSelectClient(c.id!, e)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(c.id)}
+                        onChange={() => {}} // event handled by wrapper click
+                        className="w-4 h-4 rounded text-indigo-600 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-indigo-500 cursor-pointer"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0 pr-2 space-y-1">
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-gray-900 dark:text-white truncate">
                         {[
@@ -729,6 +827,46 @@ export default function Clientes() {
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
               >
                 Sí, Eliminar Cliente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Bulk Delete Confirmation Modal */}
+      {bulkDeleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  ¿Eliminar {selectedIds.length} clientes?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción eliminará de forma permanente los {selectedIds.length} clientes seleccionados de la base de datos de forma irreversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setBulkDeleteConfirmOpen(false)}
+                disabled={isBulkDeleting}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmBulkDelete}
+                disabled={isBulkDeleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all disabled:opacity-50 flex items-center gap-1"
+              >
+                {isBulkDeleting ? "Eliminando..." : `Sí, Eliminar ${selectedIds.length} Clientes`}
               </button>
             </div>
           </div>

@@ -88,6 +88,16 @@ export const ClientesService = {
   async delete(id: string): Promise<void> {
     const docRef = doc(db, "clientes", id);
     await deleteDoc(docRef);
+  },
+
+  async batchDelete(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const batch = writeBatch(db);
+    ids.forEach(id => {
+      const docRef = doc(db, "clientes", id);
+      batch.delete(docRef);
+    });
+    await batch.commit();
   }
 };
 
