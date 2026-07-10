@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ServiciosService, ClientesService } from "../services/db";
 import { Servicio, Cliente } from "../types";
 import { useNavigation } from "../providers/NavigationProvider";
+import { useAuth } from "../providers/AuthProvider";
 import { 
   Calendar, 
   ChevronLeft, 
@@ -16,6 +17,7 @@ import {
 
 export default function Agenda() {
   const { navigate } = useNavigation();
+  const { user, profile } = useAuth();
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [clientes, setClientes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -24,6 +26,13 @@ export default function Agenda() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDayEvents, setSelectedDayEvents] = useState<Servicio[]>([]);
   const [selectedDateStr, setSelectedDateStr] = useState<string>("");
+
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedServiceToAdd, setSelectedServiceToAdd] = useState<string>("");
+  const [horaDesde, setHoraDesde] = useState("");
+  const [horaHasta, setHoraHasta] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -116,6 +125,46 @@ export default function Agenda() {
     const queryStr = `${yStr}-${mStr}-${dStr}`;
     return filterEventsForDate(servicios, queryStr).length;
   };
+
+  const handleAddDelivery = async () => {
+    if (!selectedServiceToAdd || !user || !profile) return;
+    try {
+      setSubmitting(true);
+      const targetDate = new Date(`${selectedDateStr}T12:00:00`);
+      
+      await ServiciosService.update(
+        selectedServiceToAdd, 
+        {
+          citaEntrega: targetDate,
+          horaEntregaDesde: horaDesde,
+          horaEntregaHasta: horaHasta
+        },
+        user.uid,
+        profile.nombre || "Usuario",
+        "Se agendó la fecha y hora de entrega"
+      );
+      
+      // Refresh
+      const [servList, cliList] = await Promise.all([
+        ServiciosService.getAll(),
+        ClientesService.getAll()
+      ]);
+      setServicios(servList);
+      setSelectedDayEvents(filterEventsForDate(servList, selectedDateStr));
+      
+      setShowAddModal(false);
+      setSelectedServiceToAdd("");
+      setHoraDesde("");
+      setHoraHasta("");
+    } catch (err) {
+      console.error("Error agendando entrega:", err);
+      alert("Error al agendar la entrega");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const readyToDeliverServices = servicios.filter(s => s.estado === "LISTO_PARA_ENTREGA" && !s.citaEntrega);
 
   if (loading) {
     return (
@@ -212,13 +261,23 @@ export default function Agenda() {
 
         {/* Day details */}
         <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm space-y-4">
-          <div className="border-b border-gray-50 dark:border-gray-800 pb-3">
-            <h3 className="font-bold text-gray-900 dark:text-white">
-              Citas del Día
-            </h3>
-            <span className="text-xs text-gray-400 font-medium">
-              Schedules for: {new Date(selectedDateStr + "T00:00:00").toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
+          <div className="flex items-center justify-between border-b border-gray-50 dark:border-gray-800 pb-3">
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white">
+                Citas del Día
+              </h3>
+              <span className="text-xs text-gray-400 font-medium">
+                {selectedDateStr && new Date(selectedDateStr + "T00:00:00").toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </span>
+            </div>
+            {selectedDateStr && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors"
+              >
+                + Entrega
+              </button>
+            )}
           </div>
 
           <div className="space-y-3 max-h-[440px] overflow-y-auto pr-1">
@@ -262,6 +321,97 @@ export default function Agenda() {
         </div>
 
       </div>
+
+      {/* Add Delivery Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Agendar Entrega
+              </h2>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-4 flex-1 overflow-y-auto max-h-[60vh]">
+              {readyToDeliverServices.length === 0 ? (
+                <div className="text-center p-6 text-gray-500 text-sm italic">
+                  No hay equipos listos para entregar en el taller.
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-500 uppercase">
+                      Seleccionar Equipo
+                    </label>
+                    <select
+                      value={selectedServiceToAdd}
+                      onChange={(e) => setSelectedServiceToAdd(e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    >
+                      <option value="">-- Elija un servicio listo --</option>
+                      {readyToDeliverServices.map(s => (
+                        <option key={s.id} value={s.id}>
+                          #{s.numeroServicio} - {clientes[s.clienteId] || "Cliente"} ({s.aparato})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {selectedServiceToAdd && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-gray-500 uppercase">
+                          Hora Desde
+                        </label>
+                        <input
+                          type="time"
+                          value={horaDesde}
+                          onChange={(e) => setHoraDesde(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-gray-500 uppercase">
+                          Hora Hasta
+                        </label>
+                        <input
+                          type="time"
+                          value={horaHasta}
+                          onChange={(e) => setHoraHasta(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                disabled={submitting}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAddDelivery}
+                disabled={!selectedServiceToAdd || submitting}
+                className="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-colors"
+              >
+                {submitting ? "Guardando..." : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

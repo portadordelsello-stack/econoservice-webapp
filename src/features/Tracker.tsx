@@ -32,7 +32,8 @@ import {
   Clock,
   Navigation,
   Sparkles,
-  ListOrdered
+  ListOrdered,
+  Calendar
 } from "lucide-react";
 
 // Hook to dynamically load Leaflet CDN assets (React 19 safe and extremely robust)
@@ -799,6 +800,17 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                         const addressStr = client && client.calle 
                           ? `${client.calle} ${client.numero || ""}, ${client.localidad || "Santo Tomé"}`
                           : "Falta ingresar dirección de entrega";
+                          
+                        let scheduleText = "";
+                        if (serv.citaEntrega) {
+                          const dt = serv.citaEntrega instanceof Date ? serv.citaEntrega : serv.citaEntrega.toDate();
+                          const dateStr = dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                          scheduleText = `${dateStr}`;
+                          if (serv.horaEntregaDesde || serv.horaEntregaHasta) {
+                            scheduleText += ` (${serv.horaEntregaDesde || "?"} - ${serv.horaEntregaHasta || "?"})`;
+                          }
+                        }
+
                         return (
                           <div className="space-y-1 mt-1.5">
                             <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300" title={addressStr}>
@@ -807,6 +819,16 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                                 {addressStr}
                               </span>
                             </div>
+                            
+                            {scheduleText && (
+                              <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                                <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                <span className="truncate font-medium">
+                                  {scheduleText}
+                                </span>
+                              </div>
+                            )}
+
                             {serv.infoLogistica && (
                               <div className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/5 dark:bg-amber-500/10 px-2 py-0.5 rounded italic truncate max-w-[220px]">
                                 Nota: {serv.infoLogistica}
