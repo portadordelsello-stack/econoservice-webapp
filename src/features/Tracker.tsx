@@ -146,11 +146,88 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
   
   const isSuperadmin = profile?.rol === "superadmin";
 
-  // Escape key to exit fullscreen, and trigger invalidateSize on change
+  const mapSectionRef = useRef<HTMLDivElement>(null);
+
+  // Toggle true Fullscreen with prefix support for Safari / iOS
+  const toggleFullscreen = async () => {
+    const element = mapSectionRef.current;
+    if (!isFullscreen) {
+      setIsFullscreen(true);
+      if (element) {
+        try {
+          if (element.requestFullscreen) {
+            await element.requestFullscreen();
+          } else if ((element as any).webkitRequestFullscreen) {
+            await (element as any).webkitRequestFullscreen();
+          } else if ((element as any).webkitEnterFullscreen) {
+            await (element as any).webkitEnterFullscreen();
+          } else if ((element as any).mozRequestFullScreen) {
+            await (element as any).mozRequestFullScreen();
+          } else if ((element as any).msRequestFullscreen) {
+            await (element as any).msRequestFullscreen();
+          }
+        } catch (err) {
+          console.warn("Native fullscreen requested but blocked or unsupported. Falling back to CSS fullscreen overlay.", err);
+        }
+      }
+    } else {
+      setIsFullscreen(false);
+      try {
+        const doc = document as any;
+        if (doc.exitFullscreen) {
+          await doc.exitFullscreen();
+        } else if (doc.webkitExitFullscreen) {
+          await doc.webkitExitFullscreen();
+        } else if (doc.mozCancelFullScreen) {
+          await doc.mozCancelFullScreen();
+        } else if (doc.msExitFullscreen) {
+          await doc.msExitFullscreen();
+        }
+      } catch (err) {
+        console.warn("Error exiting native fullscreen", err);
+      }
+    }
+  };
+
+  // Sync state with native fullscreenchange events (e.g. if exited using escape, swipe, or native buttons)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const doc = document as any;
+      const isCurrentlyNative = !!(
+        doc.fullscreenElement || 
+        doc.webkitFullscreenElement || 
+        doc.mozFullScreenElement || 
+        doc.msFullscreenElement
+      );
+      if (isCurrentlyNative !== isFullscreen) {
+        setIsFullscreen(isCurrentlyNative);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+    };
+  }, [isFullscreen]);
+
+  // Escape key fallback to exit fullscreen
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isFullscreen) {
-        setIsFullscreen(false);
+        const doc = document as any;
+        if (doc.fullscreenElement || doc.webkitFullscreenElement) {
+          if (doc.exitFullscreen) doc.exitFullscreen();
+          else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+        } else {
+          setIsFullscreen(false);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1043,11 +1120,14 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
         </div>
 
         {/* Right Column - Map Interface */}
-        <div className={`lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 shadow-sm flex flex-col transition-all duration-300 ${
-          isFullscreen 
-            ? "fixed inset-0 z-[9999] h-screen w-screen rounded-none p-6" 
-            : "h-[380px] md:h-[550px] lg:h-[650px]"
-        }`}>
+        <div 
+          ref={mapSectionRef}
+          className={`lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 shadow-sm flex flex-col transition-all duration-300 ${
+            isFullscreen 
+              ? "fixed inset-0 z-[9999] h-screen w-screen rounded-none p-6" 
+              : "h-[380px] md:h-[550px] lg:h-[650px]"
+          }`}
+        >
           <div className="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-gray-800 pb-2">
             <span className="text-xs font-bold text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
               <Navigation className="w-4 h-4 text-indigo-500 animate-spin-slow" />
@@ -1070,7 +1150,7 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
           <div className="flex-1 w-full h-full rounded-xl overflow-hidden relative border border-gray-100 dark:border-gray-850">
             {/* Fullscreen Toggle Button */}
             <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
+              onClick={toggleFullscreen}
               className="absolute top-3.5 right-3.5 z-[1000] w-10 h-10 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 rounded-xl shadow-md border border-slate-200/80 dark:border-gray-700 transition-all flex items-center justify-center cursor-pointer active:scale-95"
               title={isFullscreen ? "Salir de pantalla completa" : "Ver en pantalla completa"}
               id="btn-map-fullscreen"
