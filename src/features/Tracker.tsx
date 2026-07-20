@@ -33,7 +33,9 @@ import {
   Navigation,
   Sparkles,
   ListOrdered,
-  Calendar
+  Calendar,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 
 // Hook to dynamically load Leaflet CDN assets (React 19 safe and extremely robust)
@@ -126,6 +128,16 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [trackingEnvios, setTrackingEnvios] = useState<Record<string, any>>({});
+  const [isFullscreenMap, setIsFullscreenMap] = useState(false);
+
+  // Resize the Leaflet map layout when fullscreen is toggled
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      setTimeout(() => {
+        mapInstanceRef.current.invalidateSize();
+      }, 250);
+    }
+  }, [isFullscreenMap]);
   
   // Route optimization states
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -1021,21 +1033,43 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
         </div>
 
         {/* Right Column - Map Interface */}
-        <div className="lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 shadow-sm flex flex-col h-[380px] md:h-[550px] lg:h-[650px]">
-          <div className="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-gray-800 pb-2">
+        <div className={isFullscreenMap 
+          ? "fixed inset-0 z-[9999] bg-white dark:bg-gray-950 p-4 flex flex-col w-screen h-screen animate-fade-in"
+          : "lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 shadow-sm flex flex-col h-[380px] md:h-[550px] lg:h-[650px]"
+        }>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 border-b border-gray-100 dark:border-gray-800 pb-2">
             <span className="text-xs font-bold text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Navigation className="w-4 h-4 text-indigo-500 animate-spin-slow" />
-              Mapa de Cobertura EconoService (Santo Tomé & Santa Fe)
+              <Navigation className="w-4 h-4 text-indigo-500 animate-spin-slow shrink-0" />
+              <span>Mapa de Cobertura EconoService (Santo Tomé & Santa Fe)</span>
             </span>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 bg-emerald-600 rounded-full inline-block"></span>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Cliente
-              </span>
-              <span className="w-2.5 h-2.5 bg-amber-500 rounded-full inline-block"></span>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Móvil GPS
-              </span>
+            <div className="flex items-center justify-between sm:justify-end gap-3.5 w-full sm:w-auto">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 bg-emerald-600 rounded-full inline-block"></span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Cliente
+                </span>
+                <span className="w-2.5 h-2.5 bg-amber-500 rounded-full inline-block"></span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Móvil GPS
+                </span>
+              </div>
+              <button
+                onClick={() => setIsFullscreenMap(!isFullscreenMap)}
+                className="inline-flex items-center gap-1.5 h-9 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition-all shadow-3xs cursor-pointer active:scale-95 shrink-0"
+                id="btn-fullscreen-map"
+              >
+                {isFullscreenMap ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5" />
+                    <span>Salir de Pantalla Completa</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Pantalla Completa</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
