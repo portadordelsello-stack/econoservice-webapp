@@ -34,8 +34,8 @@ import {
   Sparkles,
   ListOrdered,
   Calendar,
-  Maximize2,
-  Minimize2
+  Maximize,
+  Minimize
 } from "lucide-react";
 
 // Hook to dynamically load Leaflet CDN assets (React 19 safe and extremely robust)
@@ -128,16 +128,6 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [trackingEnvios, setTrackingEnvios] = useState<Record<string, any>>({});
-  const [isFullscreenMap, setIsFullscreenMap] = useState(false);
-
-  // Resize the Leaflet map layout when fullscreen is toggled
-  useEffect(() => {
-    if (mapInstanceRef.current) {
-      setTimeout(() => {
-        mapInstanceRef.current.invalidateSize();
-      }, 250);
-    }
-  }, [isFullscreenMap]);
   
   // Route optimization states
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -152,8 +142,28 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
     }>;
   } | null>(null);
   const [optimizationError, setOptimizationError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const isSuperadmin = profile?.rol === "superadmin";
+
+  // Escape key to exit fullscreen, and trigger invalidateSize on change
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      setTimeout(() => {
+        mapInstanceRef.current.invalidateSize();
+      }, 150);
+    }
+  }, [isFullscreen]);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "tracking_envios"), (snapshot) => {
@@ -1033,16 +1043,17 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
         </div>
 
         {/* Right Column - Map Interface */}
-        <div className={isFullscreenMap 
-          ? "fixed inset-0 z-[9999] bg-white dark:bg-gray-950 p-4 flex flex-col w-screen h-screen animate-fade-in"
-          : "lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 shadow-sm flex flex-col h-[380px] md:h-[550px] lg:h-[650px]"
-        }>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 border-b border-gray-100 dark:border-gray-800 pb-2">
+        <div className={`lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 shadow-sm flex flex-col transition-all duration-300 ${
+          isFullscreen 
+            ? "fixed inset-0 z-[9999] h-screen w-screen rounded-none p-6" 
+            : "h-[380px] md:h-[550px] lg:h-[650px]"
+        }`}>
+          <div className="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-gray-800 pb-2">
             <span className="text-xs font-bold text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Navigation className="w-4 h-4 text-indigo-500 animate-spin-slow shrink-0" />
-              <span>Mapa de Cobertura EconoService (Santo Tomé & Santa Fe)</span>
+              <Navigation className="w-4 h-4 text-indigo-500 animate-spin-slow" />
+              Mapa de Cobertura EconoService (Santo Tomé & Santa Fe)
             </span>
-            <div className="flex items-center justify-between sm:justify-end gap-3.5 w-full sm:w-auto">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 bg-emerald-600 rounded-full inline-block"></span>
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
@@ -1053,27 +1064,24 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                   Móvil GPS
                 </span>
               </div>
-              <button
-                onClick={() => setIsFullscreenMap(!isFullscreenMap)}
-                className="inline-flex items-center gap-1.5 h-9 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition-all shadow-3xs cursor-pointer active:scale-95 shrink-0"
-                id="btn-fullscreen-map"
-              >
-                {isFullscreenMap ? (
-                  <>
-                    <Minimize2 className="w-3.5 h-3.5" />
-                    <span>Salir de Pantalla Completa</span>
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 className="w-3.5 h-3.5" />
-                    <span>Pantalla Completa</span>
-                  </>
-                )}
-              </button>
             </div>
           </div>
 
           <div className="flex-1 w-full h-full rounded-xl overflow-hidden relative border border-gray-100 dark:border-gray-850">
+            {/* Fullscreen Toggle Button */}
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="absolute top-3.5 right-3.5 z-[1000] w-10 h-10 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 rounded-xl shadow-md border border-slate-200/80 dark:border-gray-700 transition-all flex items-center justify-center cursor-pointer active:scale-95"
+              title={isFullscreen ? "Salir de pantalla completa" : "Ver en pantalla completa"}
+              id="btn-map-fullscreen"
+            >
+              {isFullscreen ? (
+                <Minimize className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              ) : (
+                <Maximize className="w-5 h-5 text-slate-600 dark:text-gray-400" />
+              )}
+            </button>
+
             {/* Loading splash screen */}
             {!leafletLoaded && (
               <div className="absolute inset-0 z-50 bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center space-y-3">
