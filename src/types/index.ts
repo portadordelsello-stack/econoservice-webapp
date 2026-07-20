@@ -36,6 +36,7 @@ export interface UserProfile {
 
 export interface Cliente {
   id?: string;
+  numeroCliente?: number;
   nombreApellido: string;
   telFijo?: string;
   telCel?: string;

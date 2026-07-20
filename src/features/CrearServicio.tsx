@@ -26,6 +26,21 @@ import {
   Loader2
 } from "lucide-react";
 
+const formatClienteId = (c: Cliente): string => {
+  if (c.numeroCliente) {
+    return String(c.numeroCliente).padStart(6, "0");
+  }
+  if (c.id) {
+    let hash = 0;
+    for (let i = 0; i < c.id.length; i++) {
+      hash = c.id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const num = Math.abs(hash) % 1000000;
+    return String(num).padStart(6, "0");
+  }
+  return "000000";
+};
+
 export default function CrearServicio() {
   const { profile } = useAuth();
   const { navigate } = useNavigation();
@@ -410,7 +425,7 @@ export default function CrearServicio() {
                 <option value="">-- Buscar / Seleccionar Cliente --</option>
                 {clientes.map(c => (
                   <option key={c.id} value={c.id}>
-                    {c.nombreApellido} {c.telCel ? `(${c.telCel})` : ""} {c.clienteProblematico ? "⚠️" : ""}
+                    [ID: {formatClienteId(c)}] {c.nombreApellido} {c.telCel ? `(${c.telCel})` : ""} {c.clienteProblematico ? "⚠️" : ""}
                   </option>
                 ))}
               </select>

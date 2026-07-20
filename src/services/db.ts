@@ -45,8 +45,25 @@ export const ClientesService = {
 
   async create(cliente: Omit<Cliente, "id" | "createdAt" | "updatedAt">): Promise<string> {
     const colRef = collection(db, "clientes");
+    
+    // Auto-incremental numeroCliente
+    const qHighest = query(colRef, orderBy("numeroCliente", "desc"), limit(1));
+    let nextNum = 1;
+    try {
+      const highestSnap = await getDocs(qHighest);
+      if (!highestSnap.empty) {
+        const highestDoc = highestSnap.docs[0].data() as any;
+        if (highestDoc && highestDoc.numeroCliente) {
+          nextNum = Number(highestDoc.numeroCliente) + 1;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not find highest numeroCliente, defaulting to 1:", e);
+    }
+
     const docRef = await addDoc(colRef, {
       ...cliente,
+      numeroCliente: nextNum,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -57,10 +74,25 @@ export const ClientesService = {
     const batch = writeBatch(db);
     const colRef = collection(db, "clientes");
     
-    clientes.forEach(cliente => {
+    const qHighest = query(colRef, orderBy("numeroCliente", "desc"), limit(1));
+    let nextNum = 1;
+    try {
+      const highestSnap = await getDocs(qHighest);
+      if (!highestSnap.empty) {
+        const highestDoc = highestSnap.docs[0].data() as any;
+        if (highestDoc && highestDoc.numeroCliente) {
+          nextNum = Number(highestDoc.numeroCliente) + 1;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not find highest numeroCliente, defaulting to 1:", e);
+    }
+    
+    clientes.forEach((cliente, idx) => {
       const docRef = doc(colRef);
       batch.set(docRef, {
         ...cliente,
+        numeroCliente: nextNum + idx,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });

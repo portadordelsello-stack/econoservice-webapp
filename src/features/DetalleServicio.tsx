@@ -41,6 +41,21 @@ type TabType =
   | "archivos" 
   | "historial";
 
+const formatClienteId = (c: Cliente): string => {
+  if (c.numeroCliente) {
+    return String(c.numeroCliente).padStart(6, "0");
+  }
+  if (c.id) {
+    let hash = 0;
+    for (let i = 0; i < c.id.length; i++) {
+      hash = c.id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const num = Math.abs(hash) % 1000000;
+    return String(num).padStart(6, "0");
+  }
+  return "000000";
+};
+
 export default function DetalleServicio() {
   const { profile } = useAuth();
   const { selectedId, navigate } = useNavigation();
@@ -692,7 +707,12 @@ export default function DetalleServicio() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               <div className="space-y-3">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Identificación</span>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{cliente.nombreApellido}</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <span>{cliente.nombreApellido}</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-900/30">
+                    ID: {formatClienteId(cliente)}
+                  </span>
+                </h3>
                 
                 <div className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300 pt-1">
                   <p><span className="font-semibold text-gray-400 mr-2">Celular Principal:</span> {cliente.telCel || "Sin registrar"}</p>

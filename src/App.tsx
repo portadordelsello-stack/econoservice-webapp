@@ -11,7 +11,6 @@ import Equipos from "./features/Equipos";
 import Servicios from "./features/Servicios";
 import CrearServicio from "./features/CrearServicio";
 import DetalleServicio from "./features/DetalleServicio";
-import Presupuestos from "./features/Presupuestos";
 import Agenda from "./features/Agenda";
 import Gastos from "./features/Gastos";
 import Usuarios from "./features/Usuarios";
@@ -304,7 +303,6 @@ function MainLayout() {
         {currentView === "clientes" && <Clientes />}
         {currentView === "equipos" && <Equipos />}
         {currentView === "insumos" && <Insumos />}
-        {currentView === "presupuestos" && <Logistica initialSubView="presupuestos" />}
         {currentView === "agenda" && <Agenda />}
         {currentView === "gastos" && <Gastos />}
         {currentView === "usuarios" && <Usuarios />}

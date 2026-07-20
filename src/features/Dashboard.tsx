@@ -327,13 +327,7 @@ export default function Dashboard() {
               <ArrowRight className="w-4 h-4 opacity-50" />
             </button>
 
-            <button
-              onClick={() => navigate("presupuestos")}
-              className="flex items-center justify-between p-3 border border-slate-150 dark:border-gray-850 hover:bg-slate-50 dark:hover:bg-gray-800 text-slate-700 dark:text-gray-300 rounded-xl font-medium text-sm transition-all cursor-pointer"
-            >
-              <span>Listado de Presupuestos</span>
-              <ArrowRight className="w-4 h-4 opacity-50" />
-            </button>
+
           </div>
 
           <div className="pt-4 border-t border-slate-100 dark:border-gray-800">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, doc, updateDoc, query, orderBy, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, query, orderBy, deleteDoc, writeBatch, limit } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAuth } from "../providers/AuthProvider";
 import { UserProfile, Role } from "../types";
@@ -179,6 +179,14 @@ export default function Usuarios() {
   const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
   const [importErrorMsg, setImportErrorMsg] = useState<string | null>(null);
 
+  // Bulk Delete States
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState(0);
+  const [deleteSuccessMsg, setDeleteSuccessMsg] = useState<string | null>(null);
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+
   const handleCsvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setCsvFile(e.target.files[0]);
@@ -264,6 +272,55 @@ export default function Usuarios() {
         setIsImporting(false);
       }
     });
+  };
+
+  const processDeleteAllClientes = async () => {
+    if (deleteConfirmInput !== "ELIMINAR") {
+      setDeleteErrorMsg("Debe escribir 'ELIMINAR' exactamente para confirmar.");
+      return;
+    }
+
+    setIsDeletingAll(true);
+    setDeleteErrorMsg(null);
+    setDeleteSuccessMsg(null);
+    setDeleteProgress(0);
+    setShowDeleteConfirmModal(false);
+
+    try {
+      const colRef = collection(db, "clientes");
+      let totalDeleted = 0;
+      let batchIndex = 1;
+
+      while (true) {
+        // Query 400 docs at a time (Firestore batch limit is 500, so 400 is highly safe)
+        const q = query(colRef, limit(400));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+          break;
+        }
+
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(docSnap => {
+          batch.delete(doc(db, "clientes", docSnap.id));
+        });
+
+        await batch.commit();
+        totalDeleted += snapshot.size;
+        setDeleteProgress(totalDeleted);
+
+        // Pause slightly to let Firestore index
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      setDeleteSuccessMsg(`Se han eliminado todos los clientes de la base de datos (${totalDeleted} en total).`);
+      setDeleteConfirmInput("");
+    } catch (error: any) {
+      console.error("Error al eliminar clientes masivamente:", error);
+      setDeleteErrorMsg("Hubo un error al eliminar los clientes. Verifique su rol y conexión.");
+    } finally {
+      setIsDeletingAll(false);
+    }
   };
 
   useEffect(() => {
@@ -1096,7 +1153,8 @@ export default function Usuarios() {
         </div>
 
         {canManageConfig ? (
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
             <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-800">
               <UploadCloud className="w-5 h-5 text-indigo-600" />
               <div>
@@ -1176,6 +1234,71 @@ export default function Usuarios() {
               </div>
             </div>
           </div>
+
+          {/* Card: Eliminación Masiva de Clientes */}
+          <div className="bg-white dark:bg-gray-900 border border-red-100 dark:border-red-950/40 rounded-2xl shadow-sm p-6 space-y-6">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-800">
+              <Trash2 className="w-5 h-5 text-red-600" />
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Eliminación Masiva de Clientes
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Elimina todos los clientes de la base de datos de manera definitiva e irreversible.
+                </p>
+              </div>
+            </div>
+
+            {deleteSuccessMsg && (
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-xl flex items-center gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs font-medium animate-in fade-in">
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                {deleteSuccessMsg}
+              </div>
+            )}
+
+            {deleteErrorMsg && (
+              <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 rounded-xl flex items-center gap-2.5 text-red-800 dark:text-red-300 text-xs font-medium animate-in fade-in">
+                <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                {deleteErrorMsg}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed bg-red-50/50 dark:bg-red-950/10 p-3.5 border border-red-100/50 dark:border-red-950/30 rounded-xl">
+                <strong>Advertencia importante:</strong> Esta opción es ideal cuando has subido un archivo CSV por error y deseas limpiar el directorio completo para volver a cargarlo. Al presionar el botón, el sistema limpiará todos los clientes registrados utilizando lotes de Firestore de forma segura para evitar interrupciones.
+              </p>
+
+              {!isDeletingAll ? (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteErrorMsg(null);
+                      setDeleteSuccessMsg(null);
+                      setDeleteConfirmInput("");
+                      setShowDeleteConfirmModal(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-5 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Vaciar Directorio de Clientes
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2 pt-2">
+                  <div className="flex justify-between text-xs font-medium text-gray-500">
+                    <span>Progreso de la eliminación masiva...</span>
+                    <span className="font-bold text-red-600">{deleteProgress} clientes eliminados</span>
+                  </div>
+                  <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                    <div className="bg-red-600 h-2 rounded-full animate-pulse w-full" />
+                  </div>
+                  <p className="text-[10px] text-gray-400 text-center">No cierres esta pestaña. Procesando eliminación en lotes para mayor estabilidad.</p>
+                </div>
+              )}
+            </div>
+          </div>
+          </div>
         ) : (
           <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-8 text-center space-y-4 shadow-sm">
             <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
@@ -1186,6 +1309,60 @@ export default function Usuarios() {
               <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
                 La importación masiva solo está disponible para usuarios con rol de <strong>Administrador o Superadministrador</strong>.
               </p>
+            </div>
+          </div>
+        )}
+
+        {showDeleteConfirmModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-900 border border-red-150 dark:border-red-950 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 animate-bounce" />
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <h3 className="text-base font-black text-gray-900 dark:text-white">
+                    ¿Confirmar eliminación masiva?
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    Estás a punto de eliminar <strong>todos los clientes</strong> registrados en el sistema de forma permanente e irreversible. Esto afectará también a los equipos o servicios asociados si estos clientes no existen más.
+                  </p>
+                  <div className="space-y-2 pt-2.5">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                      Escribe <span className="text-red-600 font-extrabold font-mono">ELIMINAR</span> para proceder:
+                    </label>
+                    <input
+                      type="text"
+                      value={deleteConfirmInput}
+                      onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                      placeholder="Escribe ELIMINAR"
+                      className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-850 border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-semibold tracking-wider text-center focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirmModal(false);
+                    setDeleteConfirmInput("");
+                  }}
+                  className="px-4 py-2.5 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={processDeleteAllClientes}
+                  disabled={deleteConfirmInput !== "ELIMINAR"}
+                  className="px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:hover:bg-red-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar Todos los Clientes
+                </button>
+              </div>
             </div>
           </div>
         )}
