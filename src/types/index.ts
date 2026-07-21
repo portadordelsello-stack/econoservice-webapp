@@ -8,7 +8,10 @@ export type EstadoServicio =
   | "LISTO_PARA_ENTREGA"
   | "ENTREGA_EN_PROGRESO"
   | "ENTREGADO"
-  | "CANCELADO";
+  | "CANCELADO"
+  | "EN_ESPERA"
+  | "ACEPTADO"
+  | "RECHAZADO";
 
 export const ESTADO_LABELS: Record<EstadoServicio, string> = {
   RECIBIDO: "Recibido",
@@ -18,7 +21,10 @@ export const ESTADO_LABELS: Record<EstadoServicio, string> = {
   LISTO_PARA_ENTREGA: "Listo para Entrega",
   ENTREGA_EN_PROGRESO: "Entrega en Progreso",
   ENTREGADO: "Entregado",
-  CANCELADO: "Cancelado"
+  CANCELADO: "Cancelado",
+  EN_ESPERA: "En Espera",
+  ACEPTADO: "Aceptado",
+  RECHAZADO: "Rechazado"
 };
 
 export function getEstadoLabel(estado: string): string {

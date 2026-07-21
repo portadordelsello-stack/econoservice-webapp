@@ -549,6 +549,7 @@ export default function DetalleServicio() {
                   <option value="ENTREGA_EN_PROGRESO">Entrega en Progreso</option>
                   <option value="ENTREGADO">Entregado</option>
                   <option value="CANCELADO">Cancelado</option>
+                  <option value="EN_ESPERA">En Espera</option>
                 </select>
               </div>
 

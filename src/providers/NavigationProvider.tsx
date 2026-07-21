@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 export type ViewType =
-  | "dashboard"
   | "clientes"
   | "equipos"
   | "insumos"
@@ -9,8 +8,6 @@ export type ViewType =
   | "crear-servicio"
   | "detalle-servicio"
   | "presupuestos"
-  | "agenda"
-  | "gastos"
   | "usuarios"
   | "tracker"
   | "logistica";
@@ -33,7 +30,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
         return view as ViewType;
       }
     }
-    return "dashboard";
+    return "servicios";
   });
 
   const [selectedId, setSelectedId] = useState<string | null>(() => {
@@ -73,7 +70,6 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
 
   function isValidView(view: string): boolean {
     const validViews: ViewType[] = [
-      "dashboard",
       "clientes",
       "equipos",
       "insumos",
@@ -81,8 +77,6 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
       "crear-servicio",
       "detalle-servicio",
       "presupuestos",
-      "agenda",
-      "gastos",
       "usuarios",
       "tracker",
       "logistica"
