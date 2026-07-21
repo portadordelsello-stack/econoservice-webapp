@@ -199,9 +199,9 @@ export default function Servicios() {
       // Close expansion and reload data
       setExpandedId(null);
       await loadAllData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving service technicians data:", error);
-      alert("Error al intentar guardar los datos del taller. Verifique su conexión.");
+      alert(`Error al intentar guardar los datos del taller: ${error?.message || "Verifique su conexión e intente nuevamente."}`);
     } finally {
       setSubmittingId(null);
     }

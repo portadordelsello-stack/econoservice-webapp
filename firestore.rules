@@ -52,7 +52,7 @@ service cloud.firestore {
     match /clientes/{clienteId} {
       allow get: if true;
       allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
+      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
     }
     
     // 3. Tecnicos
@@ -65,21 +65,16 @@ service cloud.firestore {
     match /equipos/{equipoId} {
       allow get: if true;
       allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
+      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
     }
     
     // 5. Servicios
     match /servicios/{servicioId} {
       allow get: if true;
       allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-      allow create: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
+      allow create: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
       allow delete: if hasAnyRole(['superadmin', 'admin']);
-      allow update: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']) || (
-        hasAnyRole(['tecnico']) && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'diagnostico', 'estado', 'repuestosComprar', 'repuestosComprados', 'updatedAt'
-        ])
-      );
+      allow update: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
       
       // Historial Subcollection
       match /historial/{historialId} {
@@ -92,12 +87,12 @@ service cloud.firestore {
     // 6. Presupuestos
     match /presupuestos/{presupuestoId} {
       allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-      allow write: if hasAnyRole(['superadmin', 'admin', 'recepcion', 'logistica']);
+      allow write: if hasAnyRole(['superadmin', 'admin', 'recepcion', 'logistica', 'tecnico']);
       
       // Items Subcollection
       match /items/{itemId} {
         allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-        allow write: if hasAnyRole(['superadmin', 'admin', 'recepcion', 'logistica']);
+        allow write: if hasAnyRole(['superadmin', 'admin', 'recepcion', 'logistica', 'tecnico']);
       }
     }
     
