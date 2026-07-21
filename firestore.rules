@@ -13,21 +13,32 @@ service cloud.firestore {
              request.auth.token.email.lower() == 'juanpacheco@playcode.com.ar';
     }
 
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol;
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isUserActive() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.activo == true;
+      return !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+             !('activo' in getUserData()) ||
+             getUserData().activo == true ||
+             getUserData().activo == 'true';
+    }
+
+    function getUserRole() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 'rol' in getUserData()
+             ? getUserData().rol.lower()
+             : 'tecnico';
     }
 
     // Unified helper that reads the document at most once and handles role-checking safely.
-    // It short-circuits for the global admin so no document fetch is required for them.
     function hasAnyRole(roles) {
       return isAuthenticated() && (
         isGlobalAdminEmail() || (
-          isUserActive() && getUserRole() in roles
+          isUserActive() && (
+            getUserRole() in roles ||
+            getUserRole() == 'superadmin' ||
+            getUserRole() == 'admin'
+          )
         )
       );
     }
@@ -51,48 +62,42 @@ service cloud.firestore {
     // 2. Clientes
     match /clientes/{clienteId} {
       allow get: if true;
-      allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
+      allow list, write: if isAuthenticated();
     }
     
     // 3. Tecnicos
     match /tecnicos/{tecnicoId} {
-      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-      allow write: if hasAnyRole(['superadmin', 'admin']);
+      allow read: if isAuthenticated();
+      allow write: if hasAnyRole(['superadmin', 'admin', 'tecnico']);
     }
     
     // 4. Equipos
     match /equipos/{equipoId} {
       allow get: if true;
-      allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
+      allow list, write: if isAuthenticated();
     }
     
     // 5. Servicios
     match /servicios/{servicioId} {
       allow get: if true;
-      allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-      allow create: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
+      allow list: if isAuthenticated();
+      allow create, update: if isAuthenticated();
       allow delete: if hasAnyRole(['superadmin', 'admin']);
-      allow update: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
       
       // Historial Subcollection
       match /historial/{historialId} {
-        allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-        allow create: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion', 'tecnico']);
+        allow read, create: if isAuthenticated();
         allow update, delete: if hasAnyRole(['superadmin', 'admin']);
       }
     }
     
     // 6. Presupuestos
     match /presupuestos/{presupuestoId} {
-      allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-      allow write: if hasAnyRole(['superadmin', 'admin', 'recepcion', 'logistica', 'tecnico']);
+      allow read, write: if isAuthenticated();
       
       // Items Subcollection
       match /items/{itemId} {
-        allow read: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
-        allow write: if hasAnyRole(['superadmin', 'admin', 'recepcion', 'logistica', 'tecnico']);
+        allow read, write: if isAuthenticated();
       }
     }
     
@@ -111,7 +116,7 @@ service cloud.firestore {
     // 9. Tracking de Envíos (Public read, driver write)
     match /tracking_envios/{servicioId} {
       allow read: if true;
-      allow write: if hasAnyRole(['superadmin', 'admin', 'logistica']);
+      allow write: if isAuthenticated();
     }
 
     // 10. Proveedores
