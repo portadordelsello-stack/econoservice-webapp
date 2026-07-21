@@ -20,15 +20,22 @@ import {
   ClipboardList,
   Compass,
   MessageSquare,
-  Info
+  Info,
+  CheckCircle,
+  Wrench,
+  UserCheck,
+  PackageCheck,
+  Check,
+  Save,
+  Loader2
 } from "lucide-react";
 
-type LogisticaView = "hub" | "tracker" | "retiros" | "agenda-general";
+type LogisticaView = "hub" | "tracker" | "retiros" | "agenda-general" | "listos-para-entrega";
 
-export default function Logistica() {
+export default function Logistica({ initialSubView }: { initialSubView?: LogisticaView } = {}) {
   const { navigate } = useNavigation();
   const { profile, user } = useAuth();
-  const [view, setView] = useState<LogisticaView>("hub");
+  const [view, setView] = useState<LogisticaView>(initialSubView || "hub");
   
   // Logistics retiros data states
   const [loading, setLoading] = useState(true);
@@ -36,6 +43,8 @@ export default function Logistica() {
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [listosSearchQuery, setListosSearchQuery] = useState("");
+  const [updatingServiceId, setUpdatingServiceId] = useState<string | null>(null);
 
   const handleToggleRetirado = async (srvId: string, currentVal: boolean) => {
     try {
@@ -73,10 +82,34 @@ export default function Logistica() {
   };
 
   useEffect(() => {
-    if (view === "retiros" || view === "agenda-general") {
+    if (view === "retiros" || view === "agenda-general" || view === "listos-para-entrega") {
       loadData();
     }
   }, [view]);
+
+  const handleMarkEntregado = async (srv: Servicio) => {
+    if (!srv.id) return;
+    setUpdatingServiceId(srv.id);
+    try {
+      const userUid = profile?.uid || user?.uid || "admin";
+      const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Administrador";
+      
+      await ServiciosService.update(
+        srv.id,
+        { estado: "ENTREGADO", entregado: true },
+        userUid,
+        userNombre,
+        "Logística: Orden revisada y entregada al cliente."
+      );
+      alert(`¡Orden de Servicio #${srv.numeroServicio} marcada como ENTREGADA con éxito!`);
+      await loadData();
+    } catch (e) {
+      console.error("Error marking order as delivered:", e);
+      alert("Error al intentar cambiar la orden a entregada.");
+    } finally {
+      setUpdatingServiceId(null);
+    }
+  };
 
   // Client ID formatting function
   const formatClienteId = (c: Cliente): string => {
@@ -218,6 +251,25 @@ export default function Logistica() {
     }
   };
 
+  // Filter listos para entrega
+  const listosParaEntregaList = servicios.filter(
+    s => s.terminado === true || s.estado === "LISTO_PARA_ENTREGA"
+  );
+
+  const filteredListosParaEntrega = listosParaEntregaList.filter(s => {
+    const client = clientMap.get(s.clienteId);
+    const q = listosSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+
+    const nameMatch = client?.nombreApellido?.toLowerCase().includes(q) || false;
+    const serviceNumMatch = s.numeroServicio?.toString().includes(q) || false;
+    const aparatoMatch = s.aparato?.toLowerCase().includes(q) || false;
+    const marcaMatch = s.marcaModelo?.toLowerCase().includes(q) || false;
+    const idMatch = client ? formatClienteId(client).includes(q) : false;
+
+    return nameMatch || serviceNumMatch || aparatoMatch || marcaMatch || idMatch;
+  });
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* HUB / MENU LAUNCHER VIEW */}
@@ -235,7 +287,7 @@ export default function Logistica() {
           </div>
 
           {/* Cards Container */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl pt-2">
             {/* CARD 1: TRACKER */}
             <button
               onClick={() => setView("tracker")}
@@ -286,6 +338,33 @@ export default function Logistica() {
 
               <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                 <span>Ver Retiros y Agenda</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </button>
+
+            {/* CARD 3: LISTOS PARA ENTREGA */}
+            <button
+              onClick={() => setView("listos-para-entrega")}
+              className="group flex flex-col text-left p-6 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-500 dark:hover:border-emerald-500 transition-all cursor-pointer relative overflow-hidden"
+              id="btn-logistica-listos"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50/50 dark:bg-emerald-950/10 rounded-full blur-2xl group-hover:bg-emerald-100/50 transition-colors"></div>
+
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:scale-110 transition-transform">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white font-display">
+                  LISTOS PARA ENTREGA
+                </h2>
+              </div>
+
+              <p className="text-sm text-slate-500 dark:text-gray-400 mb-6 flex-1">
+                Órdenes finalizadas por el área técnica activadas como 'Terminado'. Revisión de administrador para coordinación y entrega final.
+              </p>
+
+              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                <span>Ver Listos para Entrega</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
@@ -812,6 +891,215 @@ export default function Logistica() {
                 </div>
               </div>
 
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* LISTOS PARA ENTREGA VIEW */}
+      {view === "listos-para-entrega" && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-900 p-4 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setView("hub")}
+                className="w-11 h-11 shrink-0 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-gray-800 border border-slate-150 dark:border-gray-800 rounded-xl text-slate-700 dark:text-gray-300 transition-colors cursor-pointer"
+                title="Volver"
+                id="btn-back-listos"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-2">
+                  <PackageCheck className="w-6 h-6 text-emerald-500" />
+                  Listos para Entrega
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-gray-400">
+                  Órdenes marcadas como 'Terminado' por el técnico para revisión del administrador.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={listosSearchQuery}
+                  onChange={(e) => setListosSearchQuery(e.target.value)}
+                  placeholder="Buscar por cliente, orden o equipo..."
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-gray-800 text-slate-900 dark:text-white text-xs rounded-xl border border-slate-200 dark:border-gray-750 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <button
+                onClick={loadData}
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Sincronizar</span>
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 space-y-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl">
+              <RefreshCw className="w-8 h-8 text-emerald-500 animate-spin" />
+              <p className="text-sm font-semibold text-slate-500 dark:text-gray-400">Cargando órdenes listas para entrega...</p>
+            </div>
+          ) : filteredListosParaEntrega.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4 bg-white dark:bg-gray-900 border border-dashed border-slate-200 dark:border-gray-800 rounded-2xl text-center space-y-4">
+              <CheckCircle className="w-12 h-12 text-slate-300 dark:text-gray-700" />
+              <div>
+                <p className="font-bold text-slate-800 dark:text-slate-200 text-base">
+                  No se encontraron órdenes en estado 'Terminado'
+                </p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 max-w-md mx-auto">
+                  {listosSearchQuery 
+                    ? "No hay resultados para la búsqueda ingresada."
+                    : "Cuando un técnico active el switch 'Terminado' en una orden de servicio, aparecerá listada en esta sección para la revisión del administrador."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredListosParaEntrega.map(srv => {
+                const client = clientMap.get(srv.clienteId);
+                const isSubmitting = updatingServiceId === srv.id;
+
+                return (
+                  <div
+                    key={srv.id}
+                    className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-4 hover:border-emerald-500/50 transition-all relative overflow-hidden flex flex-col justify-between"
+                  >
+                    <div className="space-y-4">
+                      {/* Top status bar */}
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 dark:bg-gray-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-gray-700">
+                            Orden #{srv.numeroServicio}
+                          </span>
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/60 px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3 text-emerald-500" />
+                            <span>TERMINADO</span>
+                          </span>
+                        </div>
+
+                        {client && (
+                          <button
+                            onClick={() => navigate("clientes", client.id)}
+                            className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>Ver Cliente</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Client details */}
+                      <div className="bg-slate-50 dark:bg-gray-850 p-3.5 rounded-xl border border-slate-150 dark:border-gray-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-extrabold text-slate-900 dark:text-white text-sm">
+                            {client?.nombreApellido || "Cliente S/D"}
+                          </h3>
+                          {client && (
+                            <span className="text-[10px] font-mono font-bold text-slate-400">
+                              ID: {formatClienteId(client)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-gray-300">
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <span>{client?.telCel || client?.telFijo || "Sin teléfono"}</span>
+                            {client?.telCel && (
+                              <a
+                                href={getWhatsAppUrl(client.telCel)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline ml-1"
+                              >
+                                (WhatsApp)
+                              </a>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                            <span className="truncate">
+                              {client?.calle ? `${client.calle} ${client.numero || ""}` : "Sin dirección"}, {client?.localidad || "Santo Tomé"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Device & Technician Notes */}
+                      <div className="space-y-2.5 text-xs">
+                        <div className="flex items-center justify-between bg-slate-100/70 dark:bg-gray-800/60 p-2.5 rounded-xl">
+                          <span className="font-bold text-slate-700 dark:text-gray-200">Equipo:</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {srv.aparato} ({srv.marcaModelo})
+                          </span>
+                        </div>
+
+                        {srv.desperfectoUsuario && (
+                          <div className="p-2.5 bg-amber-50/50 dark:bg-amber-950/10 rounded-xl border border-amber-100/50 dark:border-amber-950/20 text-slate-700 dark:text-gray-300">
+                            <span className="font-bold text-amber-700 dark:text-amber-400 block mb-0.5">Falla reportada:</span>
+                            <p className="italic">{srv.desperfectoUsuario}</p>
+                          </div>
+                        )}
+
+                        {srv.serviciosRequeridos && (
+                          <div className="p-2.5 bg-indigo-50/50 dark:bg-indigo-950/10 rounded-xl border border-indigo-100/50 dark:border-indigo-950/20 text-slate-700 dark:text-gray-300">
+                            <span className="font-bold text-indigo-700 dark:text-indigo-400 block mb-0.5 flex items-center gap-1">
+                              <Wrench className="w-3 h-3" /> Trabajo técnico realizado:
+                            </span>
+                            <p>{srv.serviciosRequeridos}</p>
+                          </div>
+                        )}
+
+                        {srv.notasInternas && (
+                          <div className="p-2.5 bg-slate-50 dark:bg-gray-850 rounded-xl border border-slate-200/80 dark:border-gray-800 text-slate-600 dark:text-gray-400">
+                            <span className="font-bold text-slate-500 block mb-0.5">Notas / Diagnóstico técnico:</span>
+                            <p>{srv.notasInternas}</p>
+                          </div>
+                        )}
+
+                        {srv.serviciosConvenidos && (
+                          <div className="p-2.5 bg-emerald-50/50 dark:bg-emerald-950/10 rounded-xl border border-emerald-100/50 dark:border-emerald-950/20 text-slate-700 dark:text-gray-300">
+                            <span className="font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">Servicios Convenidos:</span>
+                            <p>{srv.serviciosConvenidos}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Administrator Actions */}
+                    <div className="border-t border-slate-150 dark:border-gray-800 pt-3.5 mt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-gray-400">
+                        <UserCheck className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <span>Revisión por Administrador</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => handleMarkEntregado(srv)}
+                        className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 dark:disabled:bg-gray-800 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer w-full sm:w-auto"
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                        <span>Aprobar y Marcar ENTREGADO</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

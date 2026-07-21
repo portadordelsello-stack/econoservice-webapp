@@ -49,6 +49,7 @@ export default function Servicios() {
   const [formServiciosRequeridos, setFormServiciosRequeridos] = useState("");
   const [formRepuestosComprar, setFormRepuestosComprar] = useState("");
   const [formServiciosConvenidos, setFormServiciosConvenidos] = useState("");
+  const [formTerminado, setFormTerminado] = useState(false);
 
   const formatClienteId = (c: Cliente): string => {
     if (!c?.numeroCliente) return "S/D";
@@ -149,6 +150,7 @@ export default function Servicios() {
       setFormServiciosRequeridos(srv.serviciosRequeridos || "");
       setFormRepuestosComprar(srv.repuestosComprar || "");
       setFormServiciosConvenidos(srv.serviciosConvenidos || "");
+      setFormTerminado(!!srv.terminado || srv.estado === "LISTO_PARA_ENTREGA");
     }
   };
 
@@ -160,21 +162,26 @@ export default function Servicios() {
       const userUid = profile?.uid || user?.uid || "tecnico";
       const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Técnico";
 
+      const finalState: EstadoServicio = formTerminado ? "LISTO_PARA_ENTREGA" : targetState;
+
       const updateData: Partial<Servicio> = {
         notasInternas: formNotasInternas,
         serviciosRequeridos: formServiciosRequeridos,
         repuestosComprar: formRepuestosComprar,
-        estado: targetState
+        terminado: formTerminado,
+        estado: finalState
       };
 
       if (isAdmin) {
         updateData.serviciosConvenidos = formServiciosConvenidos;
-        if (targetState === "ACEPTADO") {
-          updateData.acepta = true;
-          updateData.rechazaDevolver = false;
-        } else if (targetState === "RECHAZADO") {
-          updateData.acepta = false;
-          updateData.rechazaDevolver = true;
+        if (!formTerminado) {
+          if (targetState === "ACEPTADO") {
+            updateData.acepta = true;
+            updateData.rechazaDevolver = false;
+          } else if (targetState === "RECHAZADO") {
+            updateData.acepta = false;
+            updateData.rechazaDevolver = true;
+          }
         }
       }
 
@@ -183,11 +190,11 @@ export default function Servicios() {
         updateData,
         userUid,
         userNombre,
-        `Taller: diagnóstico/presupuesto actualizado por ${isAdmin ? "Administrador" : "Técnico"}. Estado: ${targetState}.`
+        `Taller: diagnóstico/presupuesto actualizado por ${isAdmin ? "Administrador" : "Técnico"}. Estado: ${finalState}. Terminado: ${formTerminado ? "SÍ" : "NO"}.`
       );
 
       // Toast success
-      alert(`¡Orden de Servicio #${srv.numeroServicio} guardada con éxito en estado ${targetState}!`);
+      alert(`¡Orden de Servicio #${srv.numeroServicio} guardada con éxito (${finalState})!`);
       
       // Close expansion and reload data
       setExpandedId(null);
@@ -570,6 +577,36 @@ export default function Servicios() {
                           rows={2}
                           className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
                         />
+                      </div>
+
+                      {/* Switch "Terminado" */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-gray-850 p-3.5 rounded-xl border border-slate-200/80 dark:border-gray-800 my-3">
+                        <div className="flex items-center gap-2.5">
+                          <CheckCircle className={`w-5 h-5 shrink-0 ${formTerminado ? "text-emerald-500" : "text-slate-400"}`} />
+                          <div>
+                            <label className="text-xs font-bold text-slate-800 dark:text-gray-200 block">
+                              Estado de la Orden: Terminado
+                            </label>
+                            <span className="text-[11px] text-slate-500 dark:text-gray-400 block">
+                              Activa este switch para marcar la orden como terminada. Aparecerá en Logística (Listos para Entrega).
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={formTerminado}
+                          onClick={() => setFormTerminado(!formTerminado)}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            formTerminado ? "bg-emerald-600" : "bg-slate-300 dark:bg-gray-700"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                              formTerminado ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
                       </div>
 
                       {isAdmin && (
