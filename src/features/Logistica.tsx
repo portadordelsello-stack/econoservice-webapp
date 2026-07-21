@@ -729,10 +729,10 @@ export default function Logistica() {
                               <div className="flex items-center justify-between border-t border-slate-150/60 dark:border-gray-800 pt-2.5 mt-auto">
                                 <span className="text-[10px] text-slate-400 font-bold">Orden #{srv.numeroServicio}</span>
                                 <button
-                                  onClick={() => navigate("detalle-servicio", srv.id)}
+                                  onClick={() => navigate("clientes", client.id)}
                                   className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-extrabold rounded-xl transition-all cursor-pointer shadow-3xs active:scale-95"
                                 >
-                                  <span>Ver Ficha</span>
+                                  <span>Ver Cliente</span>
                                   <ChevronRight className="w-3.5 h-3.5" />
                                 </button>
                               </div>

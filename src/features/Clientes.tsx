@@ -26,7 +26,7 @@ import {
 
 export default function Clientes() {
   const { profile } = useAuth();
-  const { navigate } = useNavigation();
+  const { navigate, selectedId } = useNavigation();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
@@ -158,7 +158,7 @@ export default function Clientes() {
       setFormSaving(true);
       setFormError("");
       
-      const clientName = formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N";
+      const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
 
       // 1. Create client
       const clienteId = await ClientesService.create({
@@ -324,7 +324,7 @@ export default function Clientes() {
       setFormSaving(true);
       setFormError("");
 
-      const clientName = formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N";
+      const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
 
       // 1. Update client
       await ClientesService.update(editingId, {
@@ -463,6 +463,15 @@ export default function Clientes() {
   useEffect(() => {
     loadClientes();
   }, []);
+
+  useEffect(() => {
+    if (selectedId && clientes.length > 0) {
+      const found = clientes.find(c => c.id === selectedId);
+      if (found) {
+        handleStartEdit(found);
+      }
+    }
+  }, [selectedId, clientes]);
 
   const handleSelectCliente = async (cliente: Cliente) => {
     setSelectedCliente(cliente);
@@ -690,35 +699,40 @@ export default function Clientes() {
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                ¡Cliente Registrado con Éxito!
+                {isEditMode ? "¡Cliente Actualizado con Éxito!" : "¡Cliente Registrado con Éxito!"}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                El cliente con teléfono <strong>{formTelCel || "S/N"}</strong> se ha guardado en la base de datos junto con su equipo y orden de servicio inicial.
+                {isEditMode 
+                  ? "La información del cliente, su equipo y los datos del servicio han sido actualizados de forma correcta."
+                  : <>El cliente con teléfono <strong>{formTelCel || "S/N"}</strong> se ha guardado en la base de datos junto con su equipo y orden de servicio inicial.</>
+                }
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  resetCustomForm();
-                }}
-                className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md cursor-pointer transition-colors"
-              >
-                Ingresar Otro Cliente
-              </button>
+              {!isEditMode && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetCustomForm();
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md cursor-pointer transition-colors"
+                >
+                  Ingresar Otro Cliente
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
                   setCurrentSubView("directorio");
                 }}
-                className="w-full sm:w-auto px-5 py-2.5 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-850 text-gray-700 dark:text-gray-300 font-semibold text-sm rounded-xl cursor-pointer transition-colors"
+                className={`w-full sm:w-auto px-5 py-2.5 ${isEditMode ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md' : 'bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-855 text-gray-700 dark:text-gray-300'} font-semibold text-sm rounded-xl cursor-pointer transition-colors`}
               >
                 Ir al Directorio de Clientes
               </button>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleCustomFormSubmit} className="max-w-4xl mx-auto space-y-6">
+          <form onSubmit={isEditMode ? handleEditFormSubmit : handleCustomFormSubmit} className="max-w-4xl mx-auto space-y-6">
             
             {formError && (
               <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 rounded-xl flex items-center gap-2.5 text-red-800 dark:text-red-300 text-xs font-medium animate-in fade-in">
@@ -815,18 +829,32 @@ export default function Clientes() {
               </h3>
               
               <div className="space-y-4">
-                {/* Celular input left here */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                    Teléfono Celular
-                  </label>
-                  <input
-                    type="text"
-                    value={formTelCel}
-                    onChange={(e) => setFormTelCel(e.target.value)}
-                    placeholder="Ej. +54 9 11 1234-5678"
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
+                {/* Celular & Nombre inputs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                      Nombre y Apellido
+                    </label>
+                    <input
+                      type="text"
+                      value={formNombreApellido}
+                      onChange={(e) => setFormNombreApellido(e.target.value)}
+                      placeholder="Ej. Juan Pérez"
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                      Teléfono Celular
+                    </label>
+                    <input
+                      type="text"
+                      value={formTelCel}
+                      onChange={(e) => setFormTelCel(e.target.value)}
+                      placeholder="Ej. +54 9 11 1234-5678"
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
                 </div>
                  {/* Fecha y Horario de retiro con Notas */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
