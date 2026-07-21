@@ -3,6 +3,7 @@ import Tracker from "./Tracker";
 import { ClientesService, ServiciosService } from "../services/db";
 import { Cliente, Servicio } from "../types";
 import { useNavigation } from "../providers/NavigationProvider";
+import { useAuth } from "../providers/AuthProvider";
 import { 
   Truck, 
   MapPin, 
@@ -26,6 +27,7 @@ type LogisticaView = "hub" | "tracker" | "retiros" | "agenda-general";
 
 export default function Logistica() {
   const { navigate } = useNavigation();
+  const { profile, user } = useAuth();
   const [view, setView] = useState<LogisticaView>("hub");
   
   // Logistics retiros data states
@@ -34,6 +36,25 @@ export default function Logistica() {
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState<string>("");
+
+  const handleToggleRetirado = async (srvId: string, currentVal: boolean) => {
+    try {
+      const userUid = profile?.uid || user?.uid || "logistica";
+      const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Logística";
+      
+      await ServiciosService.update(
+        srvId,
+        { ingresoTaller: !currentVal },
+        userUid,
+        userNombre,
+        `Retiro pactado: marcado como ${!currentVal ? "RETIRADO" : "PENDIENTE"}`
+      );
+      
+      await loadData();
+    } catch (error) {
+      console.error("Error updating retirado status:", error);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -382,6 +403,8 @@ export default function Logistica() {
                     const client = clientMap.get(srv.clienteId);
                     if (!client) return null;
 
+                    const isRetirado = srv.ingresoTaller === true;
+
                     const addressStr = [
                       client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
                       client.piso ? `Piso ${client.piso}` : "",
@@ -398,31 +421,72 @@ export default function Logistica() {
                     return (
                       <div 
                         key={srv.id}
-                        className="bg-gradient-to-br from-amber-50/40 via-white to-white dark:from-amber-950/10 dark:via-gray-900 dark:to-gray-900 border-2 border-amber-200/80 dark:border-amber-900/40 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 relative overflow-hidden"
+                        className={`bg-gradient-to-br border-2 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 relative overflow-hidden transition-all duration-300 ${
+                          isRetirado
+                            ? "from-emerald-50/40 via-white to-white dark:from-emerald-950/10 dark:via-gray-900 dark:to-gray-900 border-emerald-200/80 dark:border-emerald-900/40"
+                            : "from-amber-50/40 via-white to-white dark:from-amber-950/10 dark:via-gray-900 dark:to-gray-900 border-amber-200/80 dark:border-amber-900/40"
+                        }`}
                       >
                         {/* Left highlight band */}
-                        <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-amber-500"></div>
+                        <div className={`absolute top-0 left-0 bottom-0 w-1.5 transition-colors duration-300 ${isRetirado ? "bg-emerald-500" : "bg-amber-500"}`}></div>
 
                         {/* Top bar with time and status */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 pl-2">
-                          <div className="flex items-center gap-2 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 px-3 py-1.5 rounded-xl font-mono text-xs sm:text-sm font-bold">
+                        <div className="flex flex-wrap items-center justify-between gap-2.5 pl-2">
+                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-mono text-xs sm:text-sm font-bold transition-colors duration-300 ${
+                            isRetirado
+                              ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400"
+                              : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400"
+                          }`}>
                             <Clock className="w-4 h-4 shrink-0" />
                             <span>{formatTimeStr(srv.withdrawal.fechaRetiroStr)}</span>
                           </div>
-                          <span className="text-xs font-bold px-2 py-1 rounded bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300">
-                            Orden #{srv.numeroServicio}
-                          </span>
+
+                          {/* Switch de Retirado */}
+                          <div className="flex items-center gap-2 bg-white dark:bg-gray-855 border border-slate-200/60 dark:border-gray-800 px-3 py-1.5 rounded-xl shadow-3xs">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">
+                              {isRetirado ? "Retirado" : "Pendiente"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleRetirado(srv.id!, srv.ingresoTaller)}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                isRetirado ? "bg-emerald-500" : "bg-slate-300 dark:bg-gray-700"
+                              }`}
+                              role="switch"
+                              aria-checked={isRetirado}
+                              title={isRetirado ? "Marcar como pendiente" : "Marcar como retirado"}
+                            >
+                              <span
+                                aria-hidden="true"
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                  isRetirado ? "translate-x-4" : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${
+                              isRetirado
+                                ? "bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/40"
+                                : "bg-amber-100/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/40"
+                            }`}>
+                              {isRetirado ? "En Taller" : "Pendiente"}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Client & Device info */}
                         <div className="pl-2 space-y-3">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] sm:text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded">
-                              ID: {formatClienteId(client)}
+                            <span className="text-xs sm:text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded">
+                              ID del Cliente: {formatClienteId(client)}
                             </span>
-                            <h3 className="font-bold text-slate-950 dark:text-white text-base font-display">
-                              {client.nombreApellido}
-                            </h3>
+                            {client.nombreApellido && !client.nombreApellido.startsWith("Cel: ") && client.nombreApellido !== "Cliente S/N" && (
+                              <h3 className="font-bold text-slate-950 dark:text-white text-base font-display">
+                                {client.nombreApellido}
+                              </h3>
+                            )}
                             {client.clienteProblematico && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-bold border border-red-100 dark:border-red-900/30">
                                 ⚠️ Conflictivo
@@ -513,11 +577,11 @@ export default function Logistica() {
                               )}
                               
                               <button
-                                onClick={() => navigate("detalle-servicio", srv.id)}
-                                className="inline-flex items-center justify-center gap-2 h-11 px-4.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer w-full sm:w-auto"
+                                onClick={() => navigate("clientes", client.id)}
+                                className="inline-flex items-center justify-center gap-1.5 h-11 px-4.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer w-full sm:w-auto"
                               >
-                                <span>Ver Ficha de Servicio</span>
-                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>Ver Cliente</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>
@@ -708,9 +772,11 @@ export default function Logistica() {
                                   <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-slate-150 dark:border-gray-750">
                                     ID: {formatClienteId(client)}
                                   </span>
-                                  <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
-                                    {client.nombreApellido}
-                                  </h4>
+                                  {client.nombreApellido && !client.nombreApellido.startsWith("Cel: ") && client.nombreApellido !== "Cliente S/N" && (
+                                    <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
+                                      {client.nombreApellido}
+                                    </h4>
+                                  )}
                                 </div>
                                 <p className="text-xs text-slate-700 dark:text-gray-350 font-medium leading-relaxed">
                                   {client.calle ? `${client.calle} ${client.numero || ""}` : "S/D"}, {client.localidad || "Santo Tomé"}
