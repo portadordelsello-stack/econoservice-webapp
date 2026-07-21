@@ -65,10 +65,10 @@ function MainLayout() {
 
   // Sidebar link details
   const navigationLinks = [
-    { view: "logistica", label: "Logística", icon: Truck, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "logistica", label: "Logística", icon: Truck, roles: ["superadmin", "administracion", "logistica", "tecnico", "admin", "recepcion", "consulta"] },
     { view: "servicios", label: "Taller", icon: Wrench, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
     { view: "clientes", label: "Clientes", icon: User, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
-    { view: "insumos", label: "Insumos", icon: Package, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "insumos", label: "Insumos", icon: Package, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
     { view: "usuarios", label: "Ajustes", icon: Settings, roles: ["superadmin", "administracion", "admin"] }
   ];
 
