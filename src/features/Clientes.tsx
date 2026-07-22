@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ClienteSchema } from "../schemas";
 import { ClientesService, EquiposService, ServiciosService, toDate } from "../services/db";
+import { DriveService } from "../services/drive";
 import { Cliente, Equipo, Servicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
@@ -21,7 +22,9 @@ import {
   ChevronRight,
   ArrowLeft,
   Trash,
-  Calendar
+  Calendar,
+  Upload,
+  ImageIcon
 } from "lucide-react";
 
 export default function Clientes() {
@@ -131,6 +134,56 @@ export default function Clientes() {
   const [formSuccess, setFormSuccess] = useState(false);
   const [formError, setFormError] = useState("");
 
+  // Drive photo upload states
+  const [driveToken, setDriveToken] = useState<string | null>(null);
+  const [driveFolderId, setDriveFolderId] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadedPhotos, setUploadedPhotos] = useState<{id: string; name: string; url: string}[]>([]);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const token = DriveService.getAccessToken();
+    if (token) setDriveToken(token);
+    DriveService.getFolderId().then(id => setDriveFolderId(id || "")).catch(() => {});
+  }, []);
+
+  const handlePhotoUpload = async (file: File) => {
+    setUploadingPhoto(true);
+    try {
+      let token = driveToken || DriveService.getAccessToken();
+      if (!token) {
+        token = await DriveService.connect();
+        setDriveToken(token);
+      }
+      const folderId = driveFolderId || (await DriveService.getFolderId());
+      if (!folderId) {
+        alert("Configurá primero el ID de carpeta de Google Drive en Ajustes.");
+        return;
+      }
+      const filename = `equipo_${Date.now()}_${file.name}`;
+      const result = await DriveService.uploadPhoto(file, filename);
+      const newPhoto = { id: result.id, name: result.name, url: result.url };
+      setUploadedPhotos(prev => [...prev, newPhoto]);
+      // If we already have a servicio, save immediately
+      if (editingServicioId) {
+        const srv = clienteServicios.find(s => s.id === editingServicioId);
+        const existing = srv?.fotosDrive || [];
+        await ServiciosService.update(
+          editingServicioId,
+          { fotosDrive: [...existing, newPhoto] },
+          profile?.uid || "system",
+          profile?.nombre || "Usuario"
+        );
+      }
+    } catch (err: any) {
+      console.error("Error uploading photo:", err);
+      alert("Error al subir la foto. Verificá que la sesión de Drive esté activa.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+
   const resetCustomForm = () => {
     setFormNombreApellido("");
     setFormTelCel("");
@@ -149,6 +202,7 @@ export default function Clientes() {
     setFormObservaciones("");
     setFormSuccess(false);
     setFormError("");
+    setUploadedPhotos([]);
   };
 
   const handleCustomFormSubmit = async (e: React.FormEvent) => {
@@ -822,6 +876,80 @@ export default function Clientes() {
                     className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
                 </div>
+              </div>
+
+              {/* Photo Upload */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                  Foto del Equipo
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Hidden file input */}
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) await handlePhotoUpload(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  {/* Upload button */}
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={uploadingPhoto}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
+                  >
+                    {uploadingPhoto ? (
+                      <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Subiendo...</>
+                    ) : (
+                      <><Upload className="w-4 h-4" /> Subir Foto</>
+                    )}
+                  </button>
+
+                  {/* Existing servicio photos */}
+                  {editingServicioId && clienteServicios.find(s => s.id === editingServicioId)?.fotosDrive?.map(photo => (
+                    <a
+                      key={photo.id}
+                      href={photo.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative group flex-shrink-0"
+                      title={photo.name}
+                    >
+                      <div className="w-14 h-14 rounded-xl border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center overflow-hidden group-hover:ring-2 group-hover:ring-indigo-500 transition-all">
+                        <ImageIcon className="w-6 h-6 text-indigo-400" />
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 text-[9px] bg-indigo-600 text-white rounded px-1 py-0.5 font-bold">Drive</span>
+                    </a>
+                  ))}
+
+                  {/* Newly uploaded in this session */}
+                  {uploadedPhotos.map(photo => (
+                    <a
+                      key={photo.id}
+                      href={photo.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative group flex-shrink-0"
+                      title={photo.name}
+                    >
+                      <div className="w-14 h-14 rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center overflow-hidden group-hover:ring-2 group-hover:ring-emerald-500 transition-all">
+                        <Check className="w-6 h-6 text-emerald-500" />
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 text-[9px] bg-emerald-600 text-white rounded px-1 py-0.5 font-bold">✓</span>
+                    </a>
+                  ))}
+                </div>
+                {!driveFolderId && (
+                  <p className="text-xs text-amber-500 dark:text-amber-400 mt-2 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Configurá el ID de carpeta de Drive en <strong>Ajustes</strong> para habilitar la subida de fotos.
+                  </p>
+                )}
               </div>
             </div>
 
