@@ -23,7 +23,8 @@ import {
   Inbox,
   UserCheck,
   Handshake,
-  XCircle
+  XCircle,
+  MessageSquare
 } from "lucide-react";
 
 const getEstadoBadgeClass = (estado: string) => {
@@ -616,11 +617,30 @@ export default function Servicios() {
                         <>
                           <hr className="border-slate-150 dark:border-gray-800/60 my-6" />
                           <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                              <Handshake className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                              <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300">
-                                Panel de servicios convenidos
-                              </h4>
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-2">
+                                <Handshake className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300">
+                                  Panel de servicios convenidos
+                                </h4>
+                              </div>
+                              {(() => {
+                                const client = clientMap.get(srv.clienteId);
+                                const rawPhone = client?.telCel || client?.telCelBis || client?.telCelOtro || client?.telFijo || "";
+                                const cleanPhone = rawPhone.replace(/\D/g, "");
+                                if (!cleanPhone) return null;
+                                return (
+                                  <a
+                                    href={`https://wa.me/${cleanPhone}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    <span>Escribirle al Cliente</span>
+                                  </a>
+                                );
+                              })()}
                             </div>
                             <div className="space-y-1.5">
                               <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
