@@ -138,6 +138,8 @@ export default function Clientes() {
   const [driveToken, setDriveToken] = useState<string | null>(null);
   const [driveFolderId, setDriveFolderId] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [connectingDrive, setConnectingDrive] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<{id: string; name: string; url: string}[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -147,24 +149,38 @@ export default function Clientes() {
     DriveService.getFolderId().then(id => setDriveFolderId(id || "")).catch(() => {});
   }, []);
 
-  const handlePhotoUpload = async (file: File) => {
-    setUploadingPhoto(true);
-    try {
-      let token = driveToken || DriveService.getAccessToken();
-      if (!token) {
+  // Step 1 - button click: connect if needed, then open picker
+  const handleConnectAndUpload = async () => {
+    setUploadError(null);
+    let token = driveToken || DriveService.getAccessToken();
+    if (!token) {
+      try {
+        setConnectingDrive(true);
         token = await DriveService.connect();
         setDriveToken(token);
-      }
-      const folderId = driveFolderId || (await DriveService.getFolderId());
-      if (!folderId) {
-        alert("Configurá primero el ID de carpeta de Google Drive en Ajustes.");
+      } catch (err: any) {
+        console.error("Error connecting to Drive:", err);
+        setUploadError("No se pudo conectar a Google Drive. Intentá de nuevo.");
+        setConnectingDrive(false);
         return;
+      } finally {
+        setConnectingDrive(false);
       }
+    }
+    // Token OK → open file picker
+    photoInputRef.current?.click();
+  };
+
+  // Step 2 - file selected: upload to Drive
+  const uploadFileToDrive = async (file: File) => {
+    setUploadingPhoto(true);
+    setUploadError(null);
+    try {
       const filename = `equipo_${Date.now()}_${file.name}`;
       const result = await DriveService.uploadPhoto(file, filename);
       const newPhoto = { id: result.id, name: result.name, url: result.url };
       setUploadedPhotos(prev => [...prev, newPhoto]);
-      // If we already have a servicio, save immediately
+      // Save immediately to Firestore if servicio exists
       if (editingServicioId) {
         const srv = clienteServicios.find(s => s.id === editingServicioId);
         const existing = srv?.fotosDrive || [];
@@ -177,7 +193,7 @@ export default function Clientes() {
       }
     } catch (err: any) {
       console.error("Error uploading photo:", err);
-      alert("Error al subir la foto. Verificá que la sesión de Drive esté activa.");
+      setUploadError(err.message || "Error al subir la foto a Google Drive.");
     } finally {
       setUploadingPhoto(false);
     }
@@ -203,6 +219,7 @@ export default function Clientes() {
     setFormSuccess(false);
     setFormError("");
     setUploadedPhotos([]);
+    setUploadError(null);
   };
 
   const handleCustomFormSubmit = async (e: React.FormEvent) => {
@@ -892,21 +909,23 @@ export default function Clientes() {
                     className="hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
-                      if (file) await handlePhotoUpload(file);
+                      if (file) await uploadFileToDrive(file);
                       e.target.value = "";
                     }}
                   />
                   {/* Upload button */}
                   <button
                     type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    disabled={uploadingPhoto}
+                    onClick={handleConnectAndUpload}
+                    disabled={uploadingPhoto || connectingDrive}
                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
                   >
-                    {uploadingPhoto ? (
+                    {connectingDrive ? (
+                      <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Conectando Drive...</>
+                    ) : uploadingPhoto ? (
                       <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Subiendo...</>
                     ) : (
-                      <><Upload className="w-4 h-4" /> Subir Foto</>
+                      <><Upload className="w-4 h-4" /> {driveToken ? "Subir Foto" : "Conectar Drive y Subir"}</>
                     )}
                   </button>
 
@@ -944,6 +963,13 @@ export default function Clientes() {
                     </a>
                   ))}
                 </div>
+                {/* Error message */}
+                {uploadError && (
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-2 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    {uploadError}
+                  </p>
+                )}
                 {!driveFolderId && (
                   <p className="text-xs text-amber-500 dark:text-amber-400 mt-2 flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5" />
