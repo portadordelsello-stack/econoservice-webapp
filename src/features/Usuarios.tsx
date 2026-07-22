@@ -194,6 +194,7 @@ export default function Usuarios() {
     }
   };
 
+  const [geminiApiKey, setGeminiApiKey] = useState("");
   const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
   const [savingGeminiConfig, setSavingGeminiConfig] = useState(false);
   const [geminiSuccessMsg, setGeminiSuccessMsg] = useState<string | null>(null);
