@@ -65,9 +65,11 @@ export function NotificationsCenter({ align = "right" }: NotificationsCenterProp
     if (notif.id) {
       await NotificationsService.markAsRead(notif.id, user.uid);
     }
+    setIsOpen(false);
     if (notif.serviceId) {
       navigate("detalle-servicio", notif.serviceId);
-      setIsOpen(false);
+    } else {
+      navigate("notificaciones");
     }
   };
 

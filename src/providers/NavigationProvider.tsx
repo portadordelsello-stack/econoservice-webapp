@@ -10,7 +10,8 @@ export type ViewType =
   | "presupuestos"
   | "usuarios"
   | "tracker"
-  | "logistica";
+  | "logistica"
+  | "notificaciones";
 
 interface NavigationContextType {
   currentView: ViewType;
