@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ClientesService, EquiposService, ServiciosService } from "../services/db";
+import { ClientesService, EquiposService, ServiciosService, NotificationsService } from "../services/db";
 import { Cliente, Equipo, Servicio, EstadoServicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
@@ -282,6 +282,33 @@ export default function Servicios() {
           userNombre,
           `Taller: diagnóstico actualizado por Técnico. Estado: ${finalState}.`
         );
+      }
+
+      // Send automatic notifications based on state transitions
+      if (finalState === "EN_ESPERA") {
+        // Taller -> Admin: Equipment diagnosed, ready for quote communication
+        await NotificationsService.create({
+          targetRole: "admin",
+          title: "Diagnóstico Completo",
+          message: `El Taller completó el diagnóstico del Servicio #${srv.numeroServicio}. Comunicar presupuesto al cliente.`,
+          serviceId: srv.id
+        });
+      } else if (finalState === "ACEPTADO") {
+        // Admin -> Taller: Quote accepted, begin repair
+        await NotificationsService.create({
+          targetRole: "taller",
+          title: "Presupuesto Aceptado",
+          message: `El cliente aceptó el presupuesto del Servicio #${srv.numeroServicio}. Iniciar reparación.`,
+          serviceId: srv.id
+        });
+      } else if (finalState === "LISTO_PARA_ENTREGA") {
+        // Taller -> Logistica & Admin: Repair finished, ready for delivery
+        await NotificationsService.create({
+          targetRole: "logistica",
+          title: "Equipo Listo para Entrega",
+          message: `El Servicio #${srv.numeroServicio} fue marcado como listo para entrega. Coordinar despacho.`,
+          serviceId: srv.id
+        });
       }
 
       // Toast success

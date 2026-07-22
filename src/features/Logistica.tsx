@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Tracker from "./Tracker";
-import { ClientesService, ServiciosService, toDate } from "../services/db";
+import { ClientesService, ServiciosService, NotificationsService, toDate } from "../services/db";
 import { Cliente, Servicio } from "../types";
 import { useNavigation } from "../providers/NavigationProvider";
 import { useAuth } from "../providers/AuthProvider";
@@ -55,13 +55,24 @@ export default function Logistica() {
       const userUid = profile?.uid || user?.uid || "logistica";
       const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Logística";
       
+      const newVal = !currentVal;
       await ServiciosService.update(
         srvId,
-        { ingresoTaller: !currentVal },
+        { ingresoTaller: newVal },
         userUid,
         userNombre,
-        `Retiro pactado: marcado como ${!currentVal ? "RETIRADO" : "PENDIENTE"}`
+        `Retiro pactado: marcado como ${newVal ? "RETIRADO" : "PENDIENTE"}`
       );
+
+      if (newVal) {
+        const targetSrv = servicios.find(s => s.id === srvId);
+        await NotificationsService.create({
+          targetRole: "taller",
+          title: "Nuevo Equipo Ingresado",
+          message: `Logística retiró e ingresó el equipo ${targetSrv?.aparato || ""} #${targetSrv?.numeroServicio || ""} para diagnóstico.`,
+          serviceId: srvId
+        });
+      }
       
       await loadData();
     } catch (error) {

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ClienteSchema } from "../schemas";
-import { ClientesService, EquiposService, ServiciosService, toDate } from "../services/db";
+import { ClientesService, EquiposService, ServiciosService, NotificationsService, toDate } from "../services/db";
 import { DriveService } from "../services/drive";
 import { Cliente, Equipo, Servicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
@@ -272,7 +272,7 @@ export default function Clientes() {
           selectedNS ? `Config: ${selectedNS}` : ""
         ].filter(Boolean).join(" | ");
 
-        await ServiciosService.create({
+        const newServId = await ServiciosService.create({
           clienteId,
           equipoId,
           fechaIngreso: new Date(),
@@ -293,6 +293,14 @@ export default function Clientes() {
           contado: false,
           createdBy: profile?.uid || "system"
         }, profile?.uid || "system", profile?.nombre || "Usuario");
+
+        // Notify Logistica
+        await NotificationsService.create({
+          targetRole: "logistica",
+          title: "Nuevo Retiro Programado",
+          message: `Se registró un nuevo cliente (${clientName}) con retiro/servicio a coordinar.`,
+          serviceId: newServId
+        });
       }
 
       setFormSuccess(true);

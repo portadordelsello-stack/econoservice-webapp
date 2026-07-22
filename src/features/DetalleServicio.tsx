@@ -370,6 +370,24 @@ export default function DetalleServicio() {
         textMessage || `Campos actualizados en la pestaña de ${tab.toUpperCase()}`
       );
 
+      // Workflow notification triggers from DetalleServicio edits
+      const newStatus = fieldsToUpdate.estado || editEstado;
+      if (tab === "diagnostico" && (newStatus === "EN_ESPERA" || newStatus === "DIAGNOSTICO")) {
+        await NotificationsService.create({
+          targetRole: "admin",
+          title: "Diagnóstico Completo",
+          message: `El Taller completó el diagnóstico del Servicio #${servicio.numeroServicio}. Comunicar presupuesto.`,
+          serviceId: selectedId
+        });
+      } else if (tab === "presupuesto" && editAcepta) {
+        await NotificationsService.create({
+          targetRole: "taller",
+          title: "Presupuesto Aceptado",
+          message: `El cliente aceptó el presupuesto del Servicio #${servicio.numeroServicio}. Iniciar reparación.`,
+          serviceId: selectedId
+        });
+      }
+
       // Sincronizar automáticamente con el Stock Central (Inventario)
       if (tab === "repuestos" && editRepuestosComprados) {
         await syncRepuestosToStock(editRepuestosComprados);
