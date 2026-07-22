@@ -661,10 +661,10 @@ export default function Insumos() {
               <>
                 <button
                   onClick={() => setViewMode("orders")}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-850 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-semibold shadow-xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white border border-indigo-200/80 dark:border-indigo-800/60 rounded-xl text-xs font-extrabold shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95 group"
                 >
-                  <ArrowLeft className="w-4 h-4" />
-                  VOLVER A REQUERIMIENTOS
+                  <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                  <span>Volver a Requerimientos</span>
                 </button>
                 <button
                   onClick={loadStockData}

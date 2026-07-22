@@ -335,9 +335,11 @@ export default function CrearServicio() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate("servicios")}
-          className="p-2 border border-gray-100 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-500 cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer shrink-0 active:scale-95 group"
+          title="Volver a la lista de servicios"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <span>Volver</span>
         </button>
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">

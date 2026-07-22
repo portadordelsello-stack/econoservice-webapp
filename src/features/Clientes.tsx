@@ -753,10 +753,10 @@ export default function Clientes() {
           <div className="space-y-1">
             <button
               onClick={() => setCurrentSubView(isEditMode ? "directorio" : "menu")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors bg-gray-50 dark:bg-gray-855 rounded-xl border border-gray-150 dark:border-gray-800 cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-indigo-700 dark:text-indigo-300 hover:text-white bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95 group"
             >
-              <ArrowLeft className="w-4 h-4" />
-              {isEditMode ? "Volver al directorio" : "Volver al panel"}
+              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+              <span>{isEditMode ? "Volver al directorio" : "Volver al panel"}</span>
             </button>
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white pt-2">
               {isEditMode ? "Editar Cliente" : "Ingresar Nuevo Cliente"}
@@ -1150,10 +1150,11 @@ export default function Clientes() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setCurrentSubView("menu")}
-            className="p-2 bg-gray-55 dark:bg-gray-855 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-150 dark:border-gray-800 rounded-xl text-gray-500 dark:text-gray-400 cursor-pointer transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer active:scale-95 group"
             title="Volver al panel principal"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span>Volver</span>
           </button>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">

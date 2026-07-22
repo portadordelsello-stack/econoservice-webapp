@@ -374,11 +374,11 @@ export default function Logistica() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => setView("hub")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 font-bold rounded-xl transition-all cursor-pointer text-xs"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white font-extrabold rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer text-xs active:scale-95 group"
               id="btn-back-tracker"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Volver al Menú de Logística
+              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+              <span>Volver al Menú de Logística</span>
             </button>
             <span className="text-xs font-mono text-slate-400">TRACKER SATELITAL ACTIVO</span>
           </div>
@@ -396,11 +396,12 @@ export default function Logistica() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setView("hub")}
-                className="w-11 h-11 shrink-0 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-gray-800 border border-slate-150 dark:border-gray-800 rounded-xl text-slate-700 dark:text-gray-300 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer active:scale-95 group"
                 title="Volver"
                 id="btn-back-retiros"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                <span>Volver</span>
               </button>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-2">
@@ -674,11 +675,12 @@ export default function Logistica() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setView("retiros")}
-                className="w-11 h-11 shrink-0 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-gray-800 border border-slate-150 dark:border-gray-800 rounded-xl text-slate-700 dark:text-gray-300 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer active:scale-95 group"
                 title="Volver"
                 id="btn-back-agenda-general"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                <span>Volver</span>
               </button>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-2">
@@ -694,9 +696,9 @@ export default function Logistica() {
             <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 w-full sm:w-auto">
               <button
                 onClick={() => setView("retiros")}
-                className="inline-flex items-center justify-center gap-2 h-11 px-4 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all cursor-pointer w-full sm:w-auto"
+                className="inline-flex items-center justify-center gap-2 h-11 px-4 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white border border-indigo-200/80 dark:border-indigo-800/60 rounded-xl text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer w-full sm:w-auto active:scale-95 group"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                 <span>Volver a Hoy</span>
               </button>
               <button
@@ -890,11 +892,12 @@ export default function Logistica() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setView("hub")}
-                className="w-11 h-11 shrink-0 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-gray-800 border border-slate-150 dark:border-gray-800 rounded-xl text-slate-700 dark:text-gray-300 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer active:scale-95 group"
                 title="Volver"
                 id="btn-back-entregas"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                <span>Volver</span>
               </button>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-2">
@@ -1244,10 +1247,11 @@ export default function Logistica() {
                     setView("entregas");
                     setEditingDeliveryId(null);
                   }}
-                  className="w-11 h-11 shrink-0 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-gray-800 border border-slate-150 dark:border-gray-800 rounded-xl text-slate-700 dark:text-gray-300 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer active:scale-95 group"
                   title="Volver a Entregas"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                  <span>Volver</span>
                 </button>
                 <div>
                   <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-2">
