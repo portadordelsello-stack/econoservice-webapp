@@ -48,6 +48,7 @@ export default function Logistica() {
   const [deliveryHoraHasta, setDeliveryHoraHasta] = useState("");
   const [deliveryInfo, setDeliveryInfo] = useState("");
   const [selectedDelivery, setSelectedDelivery] = useState<Servicio | null>(null);
+  const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
 
   const handleToggleRetirado = async (srvId: string, currentVal: boolean) => {
     try {
@@ -906,14 +907,34 @@ export default function Logistica() {
               </div>
             </div>
 
-            <button
-              onClick={loadData}
-              disabled={loading}
-              className="inline-flex items-center justify-center gap-2 h-11 px-4 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer w-full sm:w-auto"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              <span>Sincronizar</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+              <button
+                onClick={() => {
+                  if (selectedReceipts.length === 0) {
+                    alert("Por favor, selecciona al menos una entrega para generar recibos.");
+                    return;
+                  }
+                  if (selectedReceipts.length > 5) {
+                    alert("Puedes seleccionar un máximo de 5 clientes para generar recibos.");
+                    return;
+                  }
+                  window.print();
+                }}
+                disabled={selectedReceipts.length === 0}
+                className="inline-flex items-center justify-center gap-2 h-11 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md shadow-indigo-600/10 disabled:shadow-none active:scale-95 w-full sm:w-auto"
+              >
+                <ClipboardList className="w-4 h-4" />
+                <span>Generar Recibos {selectedReceipts.length > 0 ? `(${selectedReceipts.length})` : ""}</span>
+              </button>
+              <button
+                onClick={loadData}
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 h-11 px-4 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer w-full sm:w-auto"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                <span>Sincronizar</span>
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -941,6 +962,9 @@ export default function Logistica() {
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
                       <tr className="border-b border-slate-150 dark:border-gray-850 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider bg-slate-50/50 dark:bg-gray-850/20">
+                        <th className="py-3.5 pl-4 pr-2 font-extrabold w-10">
+                          <span className="sr-only">Seleccionar</span>
+                        </th>
                         <th className="py-3.5 px-4 font-extrabold">Orden</th>
                         <th className="py-3.5 px-4 font-extrabold">Cliente / Dirección</th>
                         <th className="py-3.5 px-4 font-extrabold">Equipo</th>
@@ -961,13 +985,45 @@ export default function Logistica() {
                           client.localidad ? `${client.localidad}` : ""
                         ].filter(Boolean).join(", ");
 
+                        const isChecked = selectedReceipts.includes(srv.id);
+                        const maxReached = selectedReceipts.length >= 5 && !isChecked;
+
                         return (
-                          <tr key={srv.id} className="hover:bg-slate-50/40 dark:hover:bg-gray-850/10 transition-colors">
+                          <tr
+                            key={srv.id}
+                            className={`transition-colors cursor-pointer ${
+                              isChecked
+                                ? "bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/30"
+                                : "hover:bg-slate-50/40 dark:hover:bg-gray-850/10"
+                            }`}
+                            onClick={() => {
+                              if (isChecked) {
+                                setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
+                              } else if (!maxReached) {
+                                setSelectedReceipts(prev => [...prev, srv.id]);
+                              }
+                            }}
+                          >
+                            <td className="py-3.5 pl-4 pr-2 w-10" onClick={e => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                disabled={maxReached}
+                                onChange={() => {
+                                  if (isChecked) {
+                                    setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
+                                  } else if (!maxReached) {
+                                    setSelectedReceipts(prev => [...prev, srv.id]);
+                                  }
+                                }}
+                                className="w-4 h-4 rounded border-slate-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={maxReached ? "Máximo 5 clientes" : ""}
+                              />
+                            </td>
                             <td className="py-3.5 px-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
                               #{srv.numeroServicio}
                             </td>
                             <td className="py-3.5 px-4 text-xs text-slate-900 dark:text-white">
-
                               {clientAddress && (
                                 <div className="text-[15px] text-slate-800 dark:text-gray-200 font-bold flex items-center gap-1.5">
                                   <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
@@ -987,7 +1043,7 @@ export default function Logistica() {
                                 {isDespachado ? "Despachado" : "Listo"}
                               </span>
                             </td>
-                            <td className="py-3.5 px-4 text-right">
+                            <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
                               <button
                                 onClick={() => {
                                   setSelectedDelivery(srv);
@@ -1005,12 +1061,124 @@ export default function Logistica() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Warning when 5 selected */}
+                {selectedReceipts.length === 5 && (
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl text-xs font-semibold text-amber-700 dark:text-amber-400">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>Límite alcanzado: máximo 5 recibos por vez. Desmarca alguno para elegir otro.</span>
+                  </div>
+                )}
               </>
             )}
           </div>
         )}
       </div>
     )}
+
+    {/* ===================== PRINT-ONLY RECEIPTS ===================== */}
+    {/* Hidden on screen, shown only when printing */}
+    {view === "entregas" && selectedReceipts.length > 0 && (() => {
+      const selectedSrvs = readyDeliveries.filter(s => selectedReceipts.includes(s.id));
+      const today = new Date();
+      const dayName = today.toLocaleDateString("es-AR", { weekday: "long" });
+      const dayNum = today.getDate();
+      const monthName = today.toLocaleDateString("es-AR", { month: "long" });
+      const year = today.getFullYear();
+      const fechaStr = `${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dayNum} de ${monthName} de ${year}`;
+
+      return (
+        <div id="print-receipts" style={{ display: "none" }} className="print-block">
+          <style>{`
+            @media print {
+              body > *:not(#root) { display: none !important; }
+              #root > * { display: none !important; }
+              #print-receipts { display: block !important; font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 0; margin: 0; }
+              .receipt-item { border-bottom: 4px dashed #000; padding: 10px 16px 14px; page-break-inside: avoid; }
+              .receipt-item:last-child { border-bottom: none; }
+              .receipt-title { text-align: center; font-size: 15px; font-weight: bold; text-decoration: underline; margin-bottom: 8px; letter-spacing: 0.5px; }
+              .receipt-row { display: flex; align-items: flex-start; gap: 4px; margin: 3px 0; flex-wrap: wrap; }
+              .receipt-row-space { display: flex; justify-content: space-between; align-items: flex-start; margin: 2px 0; }
+              .receipt-label { font-weight: normal; white-space: nowrap; }
+              .receipt-field { border-bottom: 1px dashed #555; flex: 1; min-width: 40px; height: 14px; display: inline-block; }
+              .receipt-field-sm { border-bottom: 1px dashed #555; width: 40px; height: 14px; display: inline-block; }
+              .receipt-box { border: 1px solid #555; min-height: 42px; padding: 4px 6px; font-size: 10px; line-height: 1.4; min-width: 110px; max-width: 130px; word-break: break-word; }
+              .receipt-aparato-row { display: flex; gap: 16px; margin: 4px 0; align-items: flex-end; }
+              .receipt-firma-row { display: flex; gap: 24px; margin: 6px 0 2px; align-items: flex-end; }
+              .receipt-firma-field { border-bottom: 1px dashed #555; flex: 1; height: 14px; }
+              .receipt-main { display: flex; gap: 8px; align-items: flex-start; }
+              .receipt-body { flex: 1; }
+              * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          `}</style>
+          {selectedSrvs.map((srv) => {
+            const client = clientMap.get(srv.clienteId);
+            if (!client) return null;
+            const calle = client.calle || "";
+            const numero = client.numero || "";
+            const piso = client.piso || "";
+            const depto = client.depto || "";
+            const localidad = client.localidad || "Santa Fe";
+            const horaDesde = srv.horaEntregaDesde || "";
+            const horaHasta = srv.horaEntregaHasta || "";
+            const aparato = srv.aparato || "";
+            const marcaModelo = srv.marcaModelo || "";
+            const infoBox = srv.infoLogistica || srv.notas || "";
+
+            return (
+              <div key={srv.id} className="receipt-item">
+                <div className="receipt-title">Recepcion Conforme</div>
+                <div className="receipt-main">
+                  <div className="receipt-body">
+                    {/* Location + Date row */}
+                    <div className="receipt-row-space">
+                      <span className="receipt-label">{localidad},</span>
+                      <span className="receipt-label">&nbsp;&nbsp;{fechaStr}</span>
+                      <span style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                        <span className="receipt-label">entre las</span>
+                        <span className="receipt-field-sm" style={{ minWidth: "38px" }}>{horaDesde}</span>
+                        <span className="receipt-label">y las</span>
+                        <span className="receipt-field-sm" style={{ minWidth: "38px" }}>{horaHasta}</span>
+                      </span>
+                      <span style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                        <span className="receipt-label">Piso</span>
+                        <span className="receipt-field-sm" style={{ minWidth: "28px" }}>{piso}</span>
+                        <span className="receipt-label">Dpto.</span>
+                        <span className="receipt-field-sm" style={{ minWidth: "28px" }}>{depto}</span>
+                      </span>
+                    </div>
+
+                    {/* Address row */}
+                    <div className="receipt-row">
+                      <span className="receipt-label">En el día de la fecha, recibí en mi domicilio de</span>
+                      <span style={{ fontWeight: "bold" }}>&nbsp;{calle}&nbsp;</span>
+                      <span style={{ fontWeight: "bold" }}>{numero}</span>
+                    </div>
+
+                    {/* Aparato row */}
+                    <div className="receipt-aparato-row">
+                      <span className="receipt-label">{aparato}</span>
+                      <span style={{ fontWeight: "normal" }}>{marcaModelo}</span>
+                    </div>
+
+                    {/* Firma / DNI row */}
+                    <div className="receipt-firma-row">
+                      <span className="receipt-label">DNI</span>
+                      <span className="receipt-firma-field"></span>
+                      <span className="receipt-label">FIRMA</span>
+                      <span className="receipt-firma-field"></span>
+                    </div>
+                  </div>
+
+                  {/* Right side box */}
+                  <div className="receipt-box">{infoBox}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    })()}
 
       {/* DETALLE DE ENTREGA PAGE VIEW */}
       {view === "detalle-entrega" && selectedDelivery && (() => {
