@@ -1192,30 +1192,30 @@ export default function Clientes() {
         </div>
       </div>
 
-      {/* List Layout of Clientes */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-800/50 animate-scale-up">
+      {/* List Layout of Clientes with separated rows/cards */}
+      <div className="space-y-3 animate-scale-up">
         {filteredClientes.length > 0 && (
-          <div className="hidden sm:grid grid-cols-12 gap-4 px-5 py-3 bg-gray-50 dark:bg-gray-850 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+          <div className="hidden sm:grid grid-cols-12 gap-4 px-5 py-2.5 bg-white/50 dark:bg-gray-900/50 rounded-xl border border-gray-150/60 dark:border-gray-800/60 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             <div className="col-span-7">Domicilio / ID</div>
             <div className="col-span-3">Celular</div>
             <div className="col-span-2 text-right">Acciones</div>
           </div>
         )}
         {filteredClientes.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-8 text-center text-gray-400 dark:text-gray-500 text-sm shadow-xs">
             No se encontraron clientes.
           </div>
         ) : (
           filteredClientes.map((c) => (
             <div
               key={c.id}
-              className="p-5 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all"
+              className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 shadow-xs hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-900/50 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center transition-all duration-200"
             >
               {/* Col 1: ID & Address & Note */}
               <div className="sm:col-span-7 space-y-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   {c.id && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-900/30">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-900/30">
                       ID: {formatClienteId(c)}
                     </span>
                   )}
@@ -1227,7 +1227,7 @@ export default function Clientes() {
                     ].filter(Boolean).join(", ") || "Domicilio no registrado"}
                   </span>
                   {c.clienteProblematico && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400 text-[10px] font-bold">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400 text-[10px] font-bold">
                       <AlertTriangle className="w-3 h-3 animate-pulse" />
                       Conflictivo
                     </span>
@@ -1256,7 +1256,7 @@ export default function Clientes() {
               <div className="sm:col-span-2 flex items-center justify-end gap-2 shrink-0 self-end sm:self-center">
                 <button
                   onClick={() => handleStartEdit(c)}
-                  className="p-2.5 text-indigo-600 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 rounded-xl transition-all cursor-pointer border border-transparent hover:border-indigo-200 dark:hover:border-indigo-900/40 flex items-center justify-center"
+                  className="p-2.5 text-indigo-600 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 rounded-xl transition-all cursor-pointer border border-indigo-100/50 dark:border-indigo-900/30 flex items-center justify-center hover:scale-105 active:scale-95"
                   title="Editar Cliente"
                 >
                   <Edit2 className="w-4 h-4" />
@@ -1264,7 +1264,7 @@ export default function Clientes() {
                 {isSuperadmin && (
                   <button
                     onClick={() => handleDeleteCliente(c.id || "")}
-                    className="p-2.5 text-red-600 hover:text-red-700 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-xl transition-all cursor-pointer border border-transparent hover:border-red-200 dark:hover:border-red-900/40 flex items-center justify-center"
+                    className="p-2.5 text-red-600 hover:text-red-700 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-xl transition-all cursor-pointer border border-red-100/50 dark:border-red-900/30 flex items-center justify-center hover:scale-105 active:scale-95"
                     title="Eliminar Cliente"
                   >
                     <Trash className="w-4 h-4" />
