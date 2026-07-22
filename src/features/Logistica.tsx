@@ -910,15 +910,118 @@ export default function Logistica() {
             <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
               <button
                 onClick={() => {
-                  if (selectedReceipts.length === 0) {
-                    alert("Por favor, selecciona al menos una entrega para generar recibos.");
-                    return;
+                  const selectedSrvs = readyDeliveries.filter(s => selectedReceipts.includes(s.id));
+                  const today = new Date();
+                  const dayName = today.toLocaleDateString("es-AR", { weekday: "long" });
+                  const dayNum = today.getDate();
+                  const monthName = today.toLocaleDateString("es-AR", { month: "long" });
+                  const year = today.getFullYear();
+                  const fechaStr = `${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dayNum} de ${monthName} de ${year}`;
+
+                  const receiptsHtml = selectedSrvs.map(srv => {
+                    const client = clientMap.get(srv.clienteId);
+                    if (!client) return "";
+                    const calle = client.calle || "";
+                    const numero = client.numero || "";
+                    const piso = client.piso || "";
+                    const depto = client.depto || "";
+                    const localidad = client.localidad || "Santa Fe";
+                    const horaDesde = srv.horaEntregaDesde || "";
+                    const horaHasta = srv.horaEntregaHasta || "";
+                    const aparato = srv.aparato || "";
+                    const marcaModelo = srv.marcaModelo || "";
+                    const infoBox = srv.infoLogistica || srv.notasInternas || "";
+
+                    return `
+                      <div class="receipt-item">
+                        <div class="receipt-title">Recepcion Conforme</div>
+                        <div class="receipt-main">
+                          <div class="receipt-body">
+                            <div class="receipt-top-row">
+                              <span class="receipt-label">${localidad},</span>
+                              <span class="receipt-label">&nbsp;&nbsp;${fechaStr}</span>
+                              <span class="hora-group">
+                                <span class="receipt-label">entre las</span>
+                                <span class="dashed-field">${horaDesde}</span>
+                                <span class="receipt-label">y las</span>
+                                <span class="dashed-field">${horaHasta}</span>
+                              </span>
+                              <span class="hora-group">
+                                <span class="receipt-label">Piso</span>
+                                <span class="dashed-field-sm">${piso}</span>
+                                <span class="receipt-label">Dpto.</span>
+                                <span class="dashed-field-sm">${depto}</span>
+                              </span>
+                            </div>
+                            <div class="receipt-addr-row">
+                              <span class="receipt-label">En el día de la fecha, recibí en mi domicilio de</span>
+                              <span class="addr-bold">&nbsp;${calle}&nbsp;${numero}</span>
+                            </div>
+                            <div class="receipt-aparato-row">
+                              <span class="receipt-label">${aparato}</span>
+                              <span class="receipt-label">&nbsp;&nbsp;${marcaModelo}</span>
+                            </div>
+                            <div class="receipt-firma-row">
+                              <span class="receipt-label">DNI</span>
+                              <span class="firma-line"></span>
+                              <span class="receipt-label">FIRMA</span>
+                              <span class="firma-line"></span>
+                            </div>
+                          </div>
+                          <div class="receipt-box">${infoBox}</div>
+                        </div>
+                      </div>
+                    `;
+                  }).join("");
+
+                  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Recibos de Entrega</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #000; background: #fff; }
+    .receipt-item { border-bottom: 4px dashed #000; padding: 10px 16px 14px; page-break-inside: avoid; }
+    .receipt-item:last-child { border-bottom: none; }
+    .receipt-title { text-align: center; font-size: 15px; font-weight: bold; text-decoration: underline; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .receipt-main { display: flex; gap: 10px; align-items: flex-start; }
+    .receipt-body { flex: 1; }
+    .receipt-top-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 4px; }
+    .hora-group { display: inline-flex; align-items: center; gap: 3px; }
+    .receipt-label { white-space: nowrap; }
+    .dashed-field { display: inline-block; border-bottom: 1px dashed #555; min-width: 38px; height: 13px; vertical-align: bottom; }
+    .dashed-field-sm { display: inline-block; border-bottom: 1px dashed #555; min-width: 25px; height: 13px; vertical-align: bottom; }
+    .receipt-addr-row { display: flex; flex-wrap: wrap; align-items: baseline; margin: 4px 0; }
+    .addr-bold { font-weight: bold; }
+    .receipt-aparato-row { display: flex; gap: 6px; align-items: baseline; margin: 4px 0; }
+    .receipt-firma-row { display: flex; gap: 18px; align-items: flex-end; margin-top: 8px; }
+    .firma-line { flex: 1; border-bottom: 1px dashed #555; height: 13px; }
+    .receipt-box { border: 1px solid #555; min-height: 48px; padding: 4px 6px; font-size: 10px; line-height: 1.4; min-width: 110px; max-width: 130px; word-break: break-word; align-self: flex-start; }
+    @media print {
+      body { margin: 0; }
+      .receipt-item { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  ${receiptsHtml}
+  <script>
+    window.onload = function() {
+      window.print();
+      window.onafterprint = function() { window.close(); };
+    };
+  </script>
+</body>
+</html>`;
+
+                  const popup = window.open("", "_blank", "width=800,height=900");
+                  if (popup) {
+                    popup.document.write(html);
+                    popup.document.close();
+                  } else {
+                    alert("El navegador bloqueó la ventana emergente. Por favor, permitir ventanas emergentes para este sitio.");
                   }
-                  if (selectedReceipts.length > 5) {
-                    alert("Puedes seleccionar un máximo de 5 clientes para generar recibos.");
-                    return;
-                  }
-                  window.print();
                 }}
                 disabled={selectedReceipts.length === 0}
                 className="inline-flex items-center justify-center gap-2 h-11 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md shadow-indigo-600/10 disabled:shadow-none active:scale-95 w-full sm:w-auto"
@@ -1075,110 +1178,6 @@ export default function Logistica() {
         )}
       </div>
     )}
-
-    {/* ===================== PRINT-ONLY RECEIPTS ===================== */}
-    {/* Hidden on screen, shown only when printing */}
-    {view === "entregas" && selectedReceipts.length > 0 && (() => {
-      const selectedSrvs = readyDeliveries.filter(s => selectedReceipts.includes(s.id));
-      const today = new Date();
-      const dayName = today.toLocaleDateString("es-AR", { weekday: "long" });
-      const dayNum = today.getDate();
-      const monthName = today.toLocaleDateString("es-AR", { month: "long" });
-      const year = today.getFullYear();
-      const fechaStr = `${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dayNum} de ${monthName} de ${year}`;
-
-      return (
-        <div id="print-receipts" style={{ display: "none" }} className="print-block">
-          <style>{`
-            @media print {
-              body > *:not(#root) { display: none !important; }
-              #root > * { display: none !important; }
-              #print-receipts { display: block !important; font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 0; margin: 0; }
-              .receipt-item { border-bottom: 4px dashed #000; padding: 10px 16px 14px; page-break-inside: avoid; }
-              .receipt-item:last-child { border-bottom: none; }
-              .receipt-title { text-align: center; font-size: 15px; font-weight: bold; text-decoration: underline; margin-bottom: 8px; letter-spacing: 0.5px; }
-              .receipt-row { display: flex; align-items: flex-start; gap: 4px; margin: 3px 0; flex-wrap: wrap; }
-              .receipt-row-space { display: flex; justify-content: space-between; align-items: flex-start; margin: 2px 0; }
-              .receipt-label { font-weight: normal; white-space: nowrap; }
-              .receipt-field { border-bottom: 1px dashed #555; flex: 1; min-width: 40px; height: 14px; display: inline-block; }
-              .receipt-field-sm { border-bottom: 1px dashed #555; width: 40px; height: 14px; display: inline-block; }
-              .receipt-box { border: 1px solid #555; min-height: 42px; padding: 4px 6px; font-size: 10px; line-height: 1.4; min-width: 110px; max-width: 130px; word-break: break-word; }
-              .receipt-aparato-row { display: flex; gap: 16px; margin: 4px 0; align-items: flex-end; }
-              .receipt-firma-row { display: flex; gap: 24px; margin: 6px 0 2px; align-items: flex-end; }
-              .receipt-firma-field { border-bottom: 1px dashed #555; flex: 1; height: 14px; }
-              .receipt-main { display: flex; gap: 8px; align-items: flex-start; }
-              .receipt-body { flex: 1; }
-              * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            }
-          `}</style>
-          {selectedSrvs.map((srv) => {
-            const client = clientMap.get(srv.clienteId);
-            if (!client) return null;
-            const calle = client.calle || "";
-            const numero = client.numero || "";
-            const piso = client.piso || "";
-            const depto = client.depto || "";
-            const localidad = client.localidad || "Santa Fe";
-            const horaDesde = srv.horaEntregaDesde || "";
-            const horaHasta = srv.horaEntregaHasta || "";
-            const aparato = srv.aparato || "";
-            const marcaModelo = srv.marcaModelo || "";
-            const infoBox = srv.infoLogistica || srv.notas || "";
-
-            return (
-              <div key={srv.id} className="receipt-item">
-                <div className="receipt-title">Recepcion Conforme</div>
-                <div className="receipt-main">
-                  <div className="receipt-body">
-                    {/* Location + Date row */}
-                    <div className="receipt-row-space">
-                      <span className="receipt-label">{localidad},</span>
-                      <span className="receipt-label">&nbsp;&nbsp;{fechaStr}</span>
-                      <span style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-                        <span className="receipt-label">entre las</span>
-                        <span className="receipt-field-sm" style={{ minWidth: "38px" }}>{horaDesde}</span>
-                        <span className="receipt-label">y las</span>
-                        <span className="receipt-field-sm" style={{ minWidth: "38px" }}>{horaHasta}</span>
-                      </span>
-                      <span style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-                        <span className="receipt-label">Piso</span>
-                        <span className="receipt-field-sm" style={{ minWidth: "28px" }}>{piso}</span>
-                        <span className="receipt-label">Dpto.</span>
-                        <span className="receipt-field-sm" style={{ minWidth: "28px" }}>{depto}</span>
-                      </span>
-                    </div>
-
-                    {/* Address row */}
-                    <div className="receipt-row">
-                      <span className="receipt-label">En el día de la fecha, recibí en mi domicilio de</span>
-                      <span style={{ fontWeight: "bold" }}>&nbsp;{calle}&nbsp;</span>
-                      <span style={{ fontWeight: "bold" }}>{numero}</span>
-                    </div>
-
-                    {/* Aparato row */}
-                    <div className="receipt-aparato-row">
-                      <span className="receipt-label">{aparato}</span>
-                      <span style={{ fontWeight: "normal" }}>{marcaModelo}</span>
-                    </div>
-
-                    {/* Firma / DNI row */}
-                    <div className="receipt-firma-row">
-                      <span className="receipt-label">DNI</span>
-                      <span className="receipt-firma-field"></span>
-                      <span className="receipt-label">FIRMA</span>
-                      <span className="receipt-firma-field"></span>
-                    </div>
-                  </div>
-
-                  {/* Right side box */}
-                  <div className="receipt-box">{infoBox}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-    })()}
 
       {/* DETALLE DE ENTREGA PAGE VIEW */}
       {view === "detalle-entrega" && selectedDelivery && (() => {
