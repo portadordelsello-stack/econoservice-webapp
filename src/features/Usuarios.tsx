@@ -36,10 +36,17 @@ import {
 
 export default function Usuarios() {
   const { profile } = useAuth();
-  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini" | "apariencia" | "importar" | "backup">("menu");
+  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini" | "apariencia" | "importar" | "backup" | "restaurar">("menu");
   const [exportingBackup, setExportingBackup] = useState(false);
   const [backupSuccessMsg, setBackupSuccessMsg] = useState<string | null>(null);
   const [backupErrorMsg, setBackupErrorMsg] = useState<string | null>(null);
+  // Restore states
+  const [restoreData, setRestoreData] = useState<Record<string, any[]> | null>(null);
+  const [restoreFileName, setRestoreFileName] = useState<string | null>(null);
+  const [restoringBackup, setRestoringBackup] = useState(false);
+  const [restoreProgress, setRestoreProgress] = useState<{ done: number; total: number; currentCol: string } | null>(null);
+  const [restoreSuccessMsg, setRestoreSuccessMsg] = useState<string | null>(null);
+  const [restoreErrorMsg, setRestoreErrorMsg] = useState<string | null>(null);
   const [usuarios, setUsuarios] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -144,7 +151,59 @@ export default function Usuarios() {
     }
   };
 
+  // Restore Handler — reads uploaded JSON and writes to Firestore in batches of 400 docs
+  const BATCH_SIZE = 400; // Firestore max is 500 ops; 400 is safe
+  const handleRestoreDatabase = async () => {
+    if (!restoreData) return;
+    setRestoringBackup(true);
+    setRestoreSuccessMsg(null);
+    setRestoreErrorMsg(null);
+
+    let totalDocs = 0;
+    let doneCount = 0;
+
+    // Count total docs first for accurate progress
+    for (const docs of Object.values(restoreData)) {
+      totalDocs += docs.length;
+    }
+
+    try {
+      for (const [colName, docs] of Object.entries(restoreData)) {
+        if (!Array.isArray(docs) || docs.length === 0) continue;
+
+        setRestoreProgress({ done: doneCount, total: totalDocs, currentCol: colName });
+
+        // Split collection into batches of BATCH_SIZE
+        for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+          const chunk = docs.slice(i, i + BATCH_SIZE);
+          const batch = writeBatch(db);
+
+          for (const docData of chunk) {
+            const { id, ...fields } = docData;
+            if (!id) continue;
+            const ref = doc(db, colName, id);
+            batch.set(ref, fields, { merge: false });
+          }
+
+          await batch.commit();
+          doneCount += chunk.length;
+          setRestoreProgress({ done: doneCount, total: totalDocs, currentCol: colName });
+        }
+      }
+
+      setRestoreProgress(null);
+      setRestoreSuccessMsg(`¡Restauración completada! Se restauraron ${doneCount} registros en ${Object.keys(restoreData).length} colecciones.`);
+    } catch (err: any) {
+      console.error("Error restoring backup:", err);
+      setRestoreProgress(null);
+      setRestoreErrorMsg(`Error durante la restauración: ${err.message || "Error desconocido"}. Los lotes enviados antes del error sí fueron guardados.`);
+    } finally {
+      setRestoringBackup(false);
+    }
+  };
+
   // Backup Exporter Logic
+
   const handleExportDatabase = async () => {
     setExportingBackup(true);
     setBackupSuccessMsg(null);
@@ -733,6 +792,33 @@ export default function Usuarios() {
             </div>
           </div>
 
+          {/* Card: Restaurar Backup */}
+          <div 
+            onClick={() => { setActiveSubView("restaurar"); setRestoreData(null); setRestoreFileName(null); setRestoreSuccessMsg(null); setRestoreErrorMsg(null); }}
+            className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs hover:shadow-md hover:border-amber-100 dark:hover:border-amber-950/40 cursor-pointer transition-all flex flex-col justify-between"
+          >
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <UploadCloud className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  Restaurar Backup
+                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-amber-600 dark:text-amber-400" />
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Sube un archivo JSON de respaldo y el sistema restaurará la base de datos enviando los datos en lotes seguros a Firestore.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-amber-600 dark:text-amber-400">
+              <span>Importar copia de seguridad</span>
+              <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300">
+                JSON
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
     );
@@ -1220,7 +1306,217 @@ export default function Usuarios() {
     );
   }
 
+  if (activeSubView === "restaurar") {
+    const totalRestoreDocs = restoreData
+      ? Object.values(restoreData).reduce((acc, d) => acc + d.length, 0)
+      : 0;
+    const progressPct = restoreProgress && restoreProgress.total > 0
+      ? Math.round((restoreProgress.done / restoreProgress.total) * 100)
+      : 0;
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setRestoreFileName(file.name);
+      setRestoreSuccessMsg(null);
+      setRestoreErrorMsg(null);
+      setRestoreData(null);
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target?.result as string);
+          // Validate: must be an object where each value is an array
+          const isValid = typeof parsed === "object" && !Array.isArray(parsed) &&
+            Object.values(parsed).every(v => Array.isArray(v));
+          if (!isValid) throw new Error("Formato inválido");
+          setRestoreData(parsed);
+        } catch {
+          setRestoreErrorMsg("El archivo no es un backup válido. Asegúrate de subir un JSON generado por este sistema.");
+          setRestoreFileName(null);
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        {/* Header */}
+        <div>
+          <button
+            onClick={() => setActiveSubView("menu")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-indigo-700 dark:text-indigo-300 hover:text-white bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95 group mb-2"
+          >
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span>Volver a Ajustes</span>
+          </button>
+
+          <div className="flex items-center gap-3 mt-2">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <UploadCloud className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-gray-900 dark:text-white">Restaurar Backup</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Sube un archivo JSON y el sistema lo enviará a Firestore en lotes seguros</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Warning */}
+        <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-800/40 rounded-2xl">
+          <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0 mt-0.5">
+            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-red-700 dark:text-red-300">⚠️ Esta acción sobrescribirá los datos existentes</p>
+            <p className="text-xs text-red-600/80 dark:text-red-400/70 leading-relaxed">
+              Los documentos del backup se escribirán sobre los actuales en Firestore. Los registros que <strong>no estén en el backup</strong> permanecerán sin cambios. Se recomienda hacer un backup previo antes de restaurar.
+            </p>
+          </div>
+        </div>
+
+        {/* File upload zone */}
+        <div className="bg-white dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-8 text-center space-y-4 hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center mx-auto">
+            <Database className="w-7 h-7" />
+          </div>
+          {restoreFileName ? (
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-gray-800 dark:text-gray-200">📄 {restoreFileName}</p>
+              {restoreData && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                  ✅ Archivo válido — {Object.keys(restoreData).length} colecciones · {totalRestoreDocs} registros en total
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Selecciona tu archivo de backup</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Solo archivos <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">econoservice_backup_*.json</code></p>
+            </div>
+          )}
+          <label className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm shadow-sm transition-all cursor-pointer active:scale-95">
+            <UploadCloud className="w-4 h-4" />
+            {restoreFileName ? "Cambiar archivo" : "Seleccionar archivo JSON"}
+            <input
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={handleFileChange}
+              disabled={restoringBackup}
+            />
+          </label>
+        </div>
+
+        {/* Status messages */}
+        {restoreSuccessMsg && (
+          <div className="flex items-start gap-3 p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+              <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">¡Restauración completada!</p>
+              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70 mt-0.5">{restoreSuccessMsg}</p>
+            </div>
+          </div>
+        )}
+        {restoreErrorMsg && (
+          <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-2xl">
+            <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-red-700 dark:text-red-300">Error en la restauración</p>
+              <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-0.5">{restoreErrorMsg}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Preview table */}
+        {restoreData && !restoreSuccessMsg && (
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-850/40">
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Vista previa del backup</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Se restaurarán estas colecciones en lotes de hasta 400 documentos</p>
+            </div>
+            <div className="divide-y divide-gray-50 dark:divide-gray-800/60">
+              {Object.entries(restoreData).map(([colName, docs]) => (
+                <div key={colName} className="flex items-center gap-3 px-6 py-3">
+                  <span className="text-[10px] font-mono font-bold text-gray-400 dark:text-gray-500 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-md w-28 shrink-0 text-center">
+                    {colName}
+                  </span>
+                  <div className="flex-1">
+                    <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-amber-400 dark:bg-amber-500 transition-all"
+                        style={{ width: `${totalRestoreDocs > 0 ? Math.max(4, (docs.length / totalRestoreDocs) * 100) : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 tabular-nums w-20 text-right">
+                    {docs.length.toLocaleString("es-AR")} docs
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="px-6 py-3 bg-gray-50/80 dark:bg-gray-850/40 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
+              <span className="text-xs text-gray-500 dark:text-gray-400">Total</span>
+              <span className="text-sm font-extrabold text-gray-800 dark:text-gray-200">{totalRestoreDocs.toLocaleString("es-AR")} documentos</span>
+            </div>
+          </div>
+        )}
+
+        {/* Progress bar while restoring */}
+        {restoreProgress && (
+          <div className="bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-amber-500 animate-spin" />
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-200">Restaurando...</span>
+              </div>
+              <span className="text-sm font-extrabold text-amber-600 dark:text-amber-400">{progressPct}%</span>
+            </div>
+            <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-300"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Colección actual: <strong className="text-gray-700 dark:text-gray-300 font-mono">{restoreProgress.currentCol}</strong>
+              &nbsp;·&nbsp;{restoreProgress.done.toLocaleString("es-AR")} / {restoreProgress.total.toLocaleString("es-AR")} documentos
+            </p>
+          </div>
+        )}
+
+        {/* Restore button */}
+        {restoreData && !restoreSuccessMsg && (
+          <div className="flex justify-center pt-2 pb-4">
+            <button
+              onClick={handleRestoreDatabase}
+              disabled={restoringBackup}
+              className="inline-flex items-center gap-3 px-8 py-4 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold rounded-2xl shadow-lg hover:shadow-amber-200 dark:hover:shadow-amber-900/40 transition-all duration-200 text-sm active:scale-95 cursor-pointer"
+            >
+              {restoringBackup ? (
+                <>
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <span>Restaurando en Firestore...</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="w-5 h-5" />
+                  <span>Iniciar Restauración ({totalRestoreDocs.toLocaleString("es-AR")} docs)</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (activeSubView === "backup") {
+
     const collections = [
       { name: "clientes",      label: "Clientes",        icon: "👤" },
       { name: "equipos",       label: "Equipos",          icon: "🖥️" },
