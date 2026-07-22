@@ -29,12 +29,17 @@ import {
   Lock,
   Sparkles,
   Palette,
-  UploadCloud
+  UploadCloud,
+  Database,
+  Download
 } from "lucide-react";
 
 export default function Usuarios() {
   const { profile } = useAuth();
-  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini" | "apariencia" | "importar">("menu");
+  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini" | "apariencia" | "importar" | "backup">("menu");
+  const [exportingBackup, setExportingBackup] = useState(false);
+  const [backupSuccessMsg, setBackupSuccessMsg] = useState<string | null>(null);
+  const [backupErrorMsg, setBackupErrorMsg] = useState<string | null>(null);
   const [usuarios, setUsuarios] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -139,8 +144,56 @@ export default function Usuarios() {
     }
   };
 
-  // Gemini Config states
-  const [geminiApiKey, setGeminiApiKey] = useState("");
+  // Backup Exporter Logic
+  const handleExportDatabase = async () => {
+    setExportingBackup(true);
+    setBackupSuccessMsg(null);
+    setBackupErrorMsg(null);
+    try {
+      const collectionsToExport = [
+        "clientes",
+        "equipos",
+        "servicios",
+        "presupuestos",
+        "stock",
+        "gastos",
+        "proveedores",
+        "notifications",
+        "users",
+        "config"
+      ];
+
+      const backupData: Record<string, any[]> = {};
+
+      for (const colName of collectionsToExport) {
+        const snap = await getDocs(collection(db, colName));
+        backupData[colName] = snap.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        }));
+      }
+
+      const jsonString = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const dateStr = new Date().toISOString().split("T")[0];
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `econoservice_backup_${dateStr}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setBackupSuccessMsg(`Backup descargado con éxito. Se exportaron ${Object.values(backupData).reduce((acc, curr) => acc + curr.length, 0)} registros.`);
+    } catch (err: any) {
+      console.error("Error exporting database backup:", err);
+      setBackupErrorMsg("Error al generar la copia de seguridad. Verifique sus permisos de red.");
+    } finally {
+      setExportingBackup(false);
+    }
+  };
+
   const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
   const [savingGeminiConfig, setSavingGeminiConfig] = useState(false);
   const [geminiSuccessMsg, setGeminiSuccessMsg] = useState<string | null>(null);
@@ -652,6 +705,33 @@ export default function Usuarios() {
             </div>
           </div>
 
+          {/* Card: Backup */}
+          <div 
+            onClick={() => setActiveSubView("backup")}
+            className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-950/40 cursor-pointer transition-all flex flex-col justify-between"
+          >
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Database className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  Backup de Base de Datos
+                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-emerald-600 dark:text-emerald-400" />
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Genera y descarga un respaldo completo en formato JSON de todas las colecciones (clientes, servicios, taller, stock, gastos y usuarios).
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <span>Descargar copia de seguridad</span>
+              <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300">
+                JSON
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
     );
@@ -1139,7 +1219,127 @@ export default function Usuarios() {
     );
   }
 
+  if (activeSubView === "backup") {
+    const collections = [
+      { name: "clientes",      label: "Clientes",        icon: "👤" },
+      { name: "equipos",       label: "Equipos",          icon: "🖥️" },
+      { name: "servicios",     label: "Servicios / Órdenes", icon: "🔧" },
+      { name: "presupuestos",  label: "Presupuestos",     icon: "📋" },
+      { name: "stock",         label: "Stock / Insumos",  icon: "📦" },
+      { name: "gastos",        label: "Gastos",           icon: "💸" },
+      { name: "proveedores",   label: "Proveedores",      icon: "🏭" },
+      { name: "notifications", label: "Notificaciones",   icon: "🔔" },
+      { name: "users",         label: "Usuarios",         icon: "👥" },
+      { name: "config",        label: "Configuración",    icon: "⚙️" },
+    ];
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <div>
+          <button
+            onClick={() => setActiveSubView("menu")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-indigo-700 dark:text-indigo-300 hover:text-white bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95 group mb-2"
+          >
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span>Volver a Ajustes</span>
+          </button>
+
+          <div className="flex items-center gap-3 mt-2">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Database className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-gray-900 dark:text-white">Backup de Base de Datos</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Descarga una copia de seguridad completa en formato JSON</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Status messages */}
+        {backupSuccessMsg && (
+          <div className="flex items-start gap-3 p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+              <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">¡Backup generado con éxito!</p>
+              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70 mt-0.5">{backupSuccessMsg}</p>
+            </div>
+          </div>
+        )}
+        {backupErrorMsg && (
+          <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-2xl">
+            <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-red-700 dark:text-red-300">Error al generar el backup</p>
+              <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-0.5">{backupErrorMsg}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Info card */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-850/40">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Colecciones incluidas en el backup</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Se exportarán todas las colecciones activas de Firestore</p>
+          </div>
+          <div className="divide-y divide-gray-50 dark:divide-gray-800/60">
+            {collections.map((col) => (
+              <div key={col.name} className="flex items-center gap-3 px-6 py-3">
+                <span className="text-base">{col.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{col.label}</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-gray-400 dark:text-gray-500 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  {col.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Format info */}
+        <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 rounded-2xl">
+          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0 mt-0.5">
+            <Database className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-blue-700 dark:text-blue-300">Formato JSON — Portátil y legible</p>
+            <p className="text-xs text-blue-600/80 dark:text-blue-400/70 leading-relaxed">
+              El archivo descargado incluirá todos los documentos de cada colección con sus IDs. 
+              El nombre del archivo será <code className="font-mono bg-blue-100 dark:bg-blue-900/40 px-1 py-0.5 rounded text-[11px]">econoservice_backup_YYYY-MM-DD.json</code>.
+            </p>
+          </div>
+        </div>
+
+        {/* Export button */}
+        <div className="flex justify-center pt-2 pb-4">
+          <button
+            onClick={handleExportDatabase}
+            disabled={exportingBackup}
+            className="inline-flex items-center gap-3 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold rounded-2xl shadow-lg hover:shadow-emerald-200 dark:hover:shadow-emerald-900/40 transition-all duration-200 text-sm active:scale-95 cursor-pointer"
+          >
+            {exportingBackup ? (
+              <>
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                <span>Generando backup...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5" />
+                <span>Descargar Backup Ahora</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (activeSubView === "importar") {
+
     return (
       <div className="space-y-6 animate-in fade-in duration-200">
         <div>
