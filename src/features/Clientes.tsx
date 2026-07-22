@@ -176,7 +176,10 @@ export default function Clientes() {
     setUploadingPhoto(true);
     setUploadError(null);
     try {
-      const filename = `equipo_${Date.now()}_${file.name}`;
+      const ext = file.name.split(".").pop() || "jpg";
+      const direccion = [formCalle.trim(), formNumero.trim()].filter(Boolean).join("_");
+      const dirClean = direccion.replace(/[^a-zA-Z0-9_\-áéíóúÁÉÍÓÚüÜñÑ]/g, "_").replace(/_+/g, "_");
+      const filename = `equipo_${dirClean || "sin_dir"}_${Date.now()}.${ext}`;
       const result = await DriveService.uploadPhoto(file, filename);
       const newPhoto = { id: result.id, name: result.name, url: result.url };
       setUploadedPhotos(prev => [...prev, newPhoto]);
