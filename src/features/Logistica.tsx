@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Tracker from "./Tracker";
-import { ClientesService, ServiciosService } from "../services/db";
+import { ClientesService, ServiciosService, toDate } from "../services/db";
 import { Cliente, Servicio } from "../types";
 import { useNavigation } from "../providers/NavigationProvider";
 import { useAuth } from "../providers/AuthProvider";
@@ -20,10 +20,14 @@ import {
   ClipboardList,
   Compass,
   MessageSquare,
-  Info
+  Info,
+  Check,
+  Save,
+  Eye,
+  X
 } from "lucide-react";
 
-type LogisticaView = "hub" | "tracker" | "retiros" | "agenda-general";
+type LogisticaView = "hub" | "tracker" | "retiros" | "agenda-general" | "entregas" | "detalle-entrega";
 
 export default function Logistica() {
   const { navigate } = useNavigation();
@@ -36,6 +40,14 @@ export default function Logistica() {
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState<string>("");
+
+  // Delivery states
+  const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null);
+  const [deliveryCita, setDeliveryCita] = useState("");
+  const [deliveryHoraDesde, setDeliveryHoraDesde] = useState("");
+  const [deliveryHoraHasta, setDeliveryHoraHasta] = useState("");
+  const [deliveryInfo, setDeliveryInfo] = useState("");
+  const [selectedDelivery, setSelectedDelivery] = useState<Servicio | null>(null);
 
   const handleToggleRetirado = async (srvId: string, currentVal: boolean) => {
     try {
@@ -73,7 +85,7 @@ export default function Logistica() {
   };
 
   useEffect(() => {
-    if (view === "retiros" || view === "agenda-general") {
+    if (view === "retiros" || view === "agenda-general" || view === "entregas" || view === "detalle-entrega") {
       loadData();
     }
   }, [view]);
@@ -179,6 +191,37 @@ export default function Logistica() {
   todayWithdrawals.sort(sortByTime);
   filteredOtherWithdrawals.sort(sortByTime);
 
+  // Extract all services that are ready for delivery or in progress
+  const readyDeliveries = servicios.filter(s => 
+    (s.estado === "LISTO_PARA_ENTREGA" || s.estado === "ENTREGA_EN_PROGRESO" || s.terminado === true) &&
+    s.entregado !== true
+  );
+
+  const handleSaveDeliveryInfo = async (srvId: string) => {
+    try {
+      const userUid = profile?.uid || user?.uid || "logistica";
+      const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Logística";
+
+      await ServiciosService.update(
+        srvId,
+        {
+          citaEntrega: deliveryCita ? new Date(deliveryCita) : null,
+          horaEntregaDesde: deliveryHoraDesde,
+          horaEntregaHasta: deliveryHoraHasta,
+          infoLogistica: deliveryInfo
+        },
+        userUid,
+        userNombre,
+        "Logística: datos de planificación de entrega actualizados"
+      );
+      setEditingDeliveryId(null);
+      await loadData();
+    } catch (e) {
+      console.error("Error saving delivery info:", e);
+      alert("Error al intentar guardar los datos de envío.");
+    }
+  };
+
   // Helper for WhatsApp URLs
   const getWhatsAppUrl = (phone?: string) => {
     if (!phone) return "";
@@ -218,6 +261,8 @@ export default function Logistica() {
     }
   };
 
+  const isAdmin = profile?.rol === "superadmin" || profile?.rol === "admin" || profile?.rol === "administracion";
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* HUB / MENU LAUNCHER VIEW */}
@@ -230,12 +275,41 @@ export default function Logistica() {
               Logística
             </h1>
             <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
-              Selecciona una de las herramientas de ruteo, geolocalización o retiro de equipos.
+              Selecciona una de las herramientas de ruteo, geolocalización o entrega/retiro de equipos.
             </p>
           </div>
 
           {/* Cards Container */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl pt-2">
+          <div className={`grid grid-cols-1 ${isAdmin ? "md:grid-cols-3" : "md:grid-cols-2"} gap-6 max-w-5xl pt-2`}>
+            {isAdmin && (
+              /* CARD: ENTREGAS */
+              <button
+                onClick={() => setView("entregas")}
+                className="group flex flex-col text-left p-6 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-500 dark:hover:border-emerald-500 transition-all cursor-pointer relative overflow-hidden"
+                id="btn-logistica-entregas"
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50/50 dark:bg-emerald-950/10 rounded-full blur-2xl group-hover:bg-emerald-100/50 transition-colors"></div>
+                
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:scale-110 transition-transform">
+                    <Truck className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-white font-display">
+                    ENTREGAS
+                  </h2>
+                </div>
+                
+                <p className="text-sm text-slate-500 dark:text-gray-400 mb-6 flex-1">
+                  Planificación, programación de horarios, inicio de despacho y entrega de equipos reparados en taller.
+                </p>
+                
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  <span>Gestionar Entregas</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+            )}
+
             {/* CARD 1: TRACKER */}
             <button
               onClick={() => setView("tracker")}
@@ -249,7 +323,7 @@ export default function Logistica() {
                   <Compass className="w-6 h-6" />
                 </div>
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white font-display">
-                  TRACKER SATELITAL
+                  TRACKER
                 </h2>
               </div>
               
@@ -276,7 +350,7 @@ export default function Logistica() {
                   <Calendar className="w-6 h-6" />
                 </div>
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white font-display">
-                  RETIROS DE CLIENTES
+                  RETIROS
                 </h2>
               </div>
 
@@ -285,7 +359,7 @@ export default function Logistica() {
               </p>
 
               <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                <span>Ver Retiros y Agenda</span>
+                <span>Gestionar Retiros</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
@@ -482,11 +556,7 @@ export default function Logistica() {
                             <span className="text-xs sm:text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded">
                               ID del Cliente: {formatClienteId(client)}
                             </span>
-                            {client.nombreApellido && !client.nombreApellido.startsWith("Cel: ") && client.nombreApellido !== "Cliente S/N" && (
-                              <h3 className="font-bold text-slate-950 dark:text-white text-base font-display">
-                                {client.nombreApellido}
-                              </h3>
-                            )}
+
                             {client.clienteProblematico && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-bold border border-red-100 dark:border-red-900/30">
                                 ⚠️ Conflictivo
@@ -772,11 +842,6 @@ export default function Logistica() {
                                   <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-slate-150 dark:border-gray-750">
                                     ID: {formatClienteId(client)}
                                   </span>
-                                  {client.nombreApellido && !client.nombreApellido.startsWith("Cel: ") && client.nombreApellido !== "Cliente S/N" && (
-                                    <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
-                                      {client.nombreApellido}
-                                    </h4>
-                                  )}
                                 </div>
                                 <p className="text-xs text-slate-700 dark:text-gray-350 font-medium leading-relaxed">
                                   {client.calle ? `${client.calle} ${client.numero || ""}` : "S/D"}, {client.localidad || "Santo Tomé"}
@@ -816,6 +881,300 @@ export default function Logistica() {
           )}
         </div>
       )}
+      {/* ENTREGAS VIEW */}
+      {view === "entregas" && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Title & Action bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-900 p-4 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setView("hub")}
+                className="w-11 h-11 shrink-0 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-gray-800 border border-slate-150 dark:border-gray-800 rounded-xl text-slate-700 dark:text-gray-300 transition-colors cursor-pointer"
+                title="Volver"
+                id="btn-back-entregas"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-2">
+                  <Truck className="w-6 h-6 text-emerald-500" />
+                  Entregas Pendientes
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-gray-400">
+                  Equipos reparados en taller listos para ser entregados.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 h-11 px-4 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer w-full sm:w-auto"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <span>Sincronizar</span>
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 space-y-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl">
+              <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+              <p className="text-sm font-semibold text-slate-500 dark:text-gray-400">Cargando entregas...</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {readyDeliveries.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 px-4 bg-emerald-50/20 dark:bg-emerald-950/5 border border-dashed border-emerald-200/50 dark:border-emerald-900/20 rounded-2xl text-center space-y-4 max-w-2xl mx-auto">
+                  <Info className="w-12 h-12 text-emerald-500/70" />
+                  <div>
+                    <p className="font-bold text-slate-800 dark:text-slate-200 text-base">
+                      No hay entregas pendientes
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-1.5 max-w-sm mx-auto">
+                      Todos los equipos reparados han sido entregados a los clientes. Cuando un técnico marque un trabajo como terminado en el taller, aparecerá en esta sección.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
+                  <table className="w-full text-left border-collapse min-w-[700px]">
+                    <thead>
+                      <tr className="border-b border-slate-150 dark:border-gray-850 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider bg-slate-50/50 dark:bg-gray-850/20">
+                        <th className="py-3.5 px-4 font-extrabold">Orden</th>
+                        <th className="py-3.5 px-4 font-extrabold">Cliente / Dirección</th>
+                        <th className="py-3.5 px-4 font-extrabold">Equipo</th>
+                        <th className="py-3.5 px-4 font-extrabold">Estado</th>
+                        <th className="py-3.5 px-4 font-extrabold text-right">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-gray-800/80">
+                      {readyDeliveries.map(srv => {
+                        const client = clientMap.get(srv.clienteId);
+                        if (!client) return null;
+
+                        const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
+                        const clientAddress = [
+                          client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+                          client.piso ? `Piso ${client.piso}` : "",
+                          client.depto ? `Depto ${client.depto}` : "",
+                          client.localidad ? `${client.localidad}` : ""
+                        ].filter(Boolean).join(", ");
+
+                        return (
+                          <tr key={srv.id} className="hover:bg-slate-50/40 dark:hover:bg-gray-850/10 transition-colors">
+                            <td className="py-3.5 px-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                              #{srv.numeroServicio}
+                            </td>
+                            <td className="py-3.5 px-4 text-xs text-slate-900 dark:text-white">
+
+                              {clientAddress && (
+                                <div className="text-[15px] text-slate-800 dark:text-gray-200 font-bold flex items-center gap-1.5">
+                                  <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+                                  <span className="truncate max-w-[300px]" title={clientAddress}>{clientAddress}</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-xs text-slate-650 dark:text-gray-300 font-medium">
+                              {srv.aparato} {srv.marcaModelo ? `- ${srv.marcaModelo}` : ""}
+                            </td>
+                            <td className="py-3.5 px-4 text-xs">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border ${
+                                isDespachado
+                                  ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/30"
+                                  : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-100/30 dark:border-emerald-900/30"
+                              }`}>
+                                {isDespachado ? "Despachado" : "Listo"}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedDelivery(srv);
+                                  setView("detalle-entrega");
+                                }}
+                                className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
+                                title="Ver detalles y planificar"
+                              >
+                                <Eye className="w-4.5 h-4.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
+      {/* DETALLE DE ENTREGA PAGE VIEW */}
+      {view === "detalle-entrega" && selectedDelivery && (() => {
+        const srv = servicios.find(s => s.id === selectedDelivery.id);
+        if (!srv) {
+          return (
+            <div className="flex flex-col items-center justify-center py-20 space-y-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl max-w-lg mx-auto shadow-sm">
+              <Info className="w-12 h-12 text-slate-450" />
+              <div className="text-center">
+                <p className="font-bold text-slate-800 dark:text-slate-200 text-base">La entrega ya no está pendiente</p>
+                <p className="text-xs text-slate-500 mt-1">El servicio fue finalizado o removido de entregas pendientes.</p>
+              </div>
+              <button
+                onClick={() => setView("entregas")}
+                className="h-10 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Volver a Entregas
+              </button>
+            </div>
+          );
+        }
+
+        const client = clientMap.get(srv.clienteId);
+        if (!client) return null;
+
+        const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
+        const isEditing = editingDeliveryId === srv.id;
+
+        const addressStr = [
+          client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+          client.piso ? `Piso ${client.piso}` : "",
+          client.depto ? `Depto ${client.depto}` : "",
+          client.barrio ? `Barrio ${client.barrio}` : "",
+          client.localidad ? `${client.localidad}` : "",
+          client.zona ? `(Zona: ${client.zona})` : ""
+        ].filter(Boolean).join(", ");
+
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          `${client.calle || ""} ${client.numero || ""}, ${client.barrio || ""}, ${client.localidad || "Santo Tome"}, Santa Fe, Argentina`
+        )}`;
+
+        return (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header / Title bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-4 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setView("entregas");
+                    setEditingDeliveryId(null);
+                  }}
+                  className="w-11 h-11 shrink-0 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-gray-800 border border-slate-150 dark:border-gray-800 rounded-xl text-slate-700 dark:text-gray-300 transition-colors cursor-pointer"
+                  title="Volver a Entregas"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-2">
+                    <Truck className="w-6 h-6 text-indigo-505 text-indigo-600" />
+                    Detalle de Envío #{srv.numeroServicio}
+                  </h1>
+                  <p className="text-xs text-slate-500 dark:text-gray-400">
+                    Planificación y control logístico del despacho de equipos.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1.5 rounded-xl text-xs font-extrabold uppercase tracking-wider border ${
+                  isDespachado 
+                    ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-850 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900" 
+                    : "bg-emerald-50 dark:bg-emerald-950 text-emerald-850 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900"
+                }`}>
+                  {isDespachado ? "Entrega en Progreso" : "Listo para entregar"}
+                </span>
+              </div>
+            </div>
+
+            {/* Centered Content */}
+            <div className="max-w-3xl mx-auto space-y-6">
+              
+              {/* Customer Details */}
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 p-5 sm:p-6 shadow-xs space-y-4">
+                <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-450 border-b border-slate-100 dark:border-gray-800 pb-3">
+                  Datos del Cliente
+                </h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1">Celular</span>
+                    {client.telCel ? (
+                      <span className="text-sm font-semibold text-slate-700 dark:text-gray-200 flex items-center gap-1.5">
+                        <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
+                        {client.telCel}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400 dark:text-gray-500 italic">No registrado</span>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1">Dirección Completa</span>
+                  <div className="bg-slate-50/50 dark:bg-gray-855/30 bg-slate-50 dark:bg-gray-850 p-3.5 rounded-xl border border-slate-150 dark:border-gray-805 border-slate-205 dark:border-gray-800 flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                    <span className="text-xs font-semibold text-slate-700 dark:text-gray-200 leading-relaxed">
+                      {addressStr || "Sin dirección cargada"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Contact & Map Links */}
+                <div className="flex flex-wrap gap-3 pt-4 border-t border-slate-100 dark:border-gray-800">
+                  {client.telCel && (
+                    <a
+                      href={getWhatsAppUrl(client.telCel)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="h-9 px-4 flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all border border-emerald-150 dark:border-emerald-900/30 text-xs font-bold"
+                      title="Enviar WhatsApp"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>WhatsApp</span>
+                    </a>
+                  )}
+                  
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="h-9 px-4 flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-gray-855 dark:hover:bg-gray-800 text-slate-600 dark:text-gray-300 rounded-xl transition-all border border-slate-200 dark:border-gray-800 text-xs font-bold"
+                    title="Ver Mapa"
+                  >
+                    <MapIcon className="w-4 h-4" />
+                    <span>Ver Mapa</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Device Details */}
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 p-5 sm:p-6 shadow-xs space-y-4">
+                <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-450 border-b border-slate-100 dark:border-gray-805 border-slate-205 dark:border-gray-800 pb-3">
+                  Datos del Equipo
+                </h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1">Aparato / Tipo</span>
+                    <span className="text-sm font-extrabold text-slate-800 dark:text-white">{srv.aparato}</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1">Marca / Modelo</span>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-gray-255">{srv.marcaModelo || "S/D"}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* RETIROS VIEW */}
     </div>
   );
 }

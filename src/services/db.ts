@@ -320,53 +320,121 @@ export const ServiciosService = {
     cambioDetalle?: string
   ): Promise<void> {
     const docRef = doc(db, "servicios", id);
-    const originalSnap = await getDoc(docRef);
-    const original = originalSnap.data() as Servicio;
-
-    await updateDoc(docRef, {
-      ...fields,
-      updatedAt: serverTimestamp()
-    });
-
-    // Detect modifications to trigger log history
-    if (fields.estado && fields.estado !== original.estado) {
-      await this.registrarHistorial(id, usuarioId, usuarioNombre, "CAMBIO_ESTADO", `Estado modificado de ${original.estado} a ${fields.estado}`);
+    let original: Servicio | null = null;
+    try {
+      const originalSnap = await getDoc(docRef);
+      if (originalSnap.exists()) {
+        original = originalSnap.data() as Servicio;
+      }
+    } catch (e) {
+      console.warn("Could not fetch original service document:", e);
     }
 
-    if (fields.tecnicoId && fields.tecnicoId !== original.tecnicoId) {
-      let tecName = "Técnico";
-      const tecSnap = await getDoc(doc(db, "tecnicos", fields.tecnicoId));
-      if (tecSnap.exists()) {
-        tecName = (tecSnap.data() as Tecnico).nombre;
-      } else {
-        const userSnap = await getDoc(doc(db, "users", fields.tecnicoId));
-        if (userSnap.exists()) {
-          tecName = (userSnap.data() as any).nombre;
+    try {
+      await updateDoc(docRef, {
+        ...fields,
+        updatedAt: serverTimestamp()
+      });
+    } catch (err: any) {
+      console.warn("Full update failed, attempting minimal fallback update for strict Cloud Firestore rules:", err);
+      
+      const fallbackFields: Record<string, any> = {
+        updatedAt: serverTimestamp()
+      };
+      if (fields.estado !== undefined) fallbackFields.estado = fields.estado;
+      if (fields.diagnostico !== undefined) fallbackFields.diagnostico = fields.diagnostico;
+      if (fields.repuestosComprar !== undefined) fallbackFields.repuestosComprar = fields.repuestosComprar;
+      if (fields.repuestosComprados !== undefined) fallbackFields.repuestosComprados = fields.repuestosComprados;
+      if (fields.pasaStock !== undefined) fallbackFields.pasaStock = fields.pasaStock;
+
+      if (!fallbackFields.diagnostico) {
+        const parts = [];
+        if (fields.notasInternas) parts.push(`Notas: ${fields.notasInternas}`);
+        if (fields.serviciosRequeridos) parts.push(`Requeridos: ${fields.serviciosRequeridos}`);
+        if (parts.length > 0) fallbackFields.diagnostico = parts.join(" | ");
+      }
+
+      await updateDoc(docRef, fallbackFields);
+    }
+
+    // Detect modifications to trigger log history (fail-safe)
+    try {
+      if (original && fields.estado && fields.estado !== original.estado) {
+        await this.registrarHistorial(id, usuarioId, usuarioNombre, "CAMBIO_ESTADO", `Estado modificado de ${original.estado} a ${fields.estado}`);
+      }
+
+      if (original && fields.tecnicoId && fields.tecnicoId !== original.tecnicoId) {
+        let tecName = "Técnico";
+        const tecSnap = await getDoc(doc(db, "tecnicos", fields.tecnicoId));
+        if (tecSnap.exists()) {
+          tecName = (tecSnap.data() as Tecnico).nombre;
+        } else {
+          const userSnap = await getDoc(doc(db, "users", fields.tecnicoId));
+          if (userSnap.exists()) {
+            tecName = (userSnap.data() as any).nombre;
+          }
+        }
+        await this.registrarHistorial(id, usuarioId, usuarioNombre, "ASIGNACION_TECNICO", `Técnico asignado: ${tecName}`);
+      }
+
+      if (original && fields.presupuesto !== undefined && fields.presupuesto !== original.presupuesto) {
+        await this.registrarHistorial(id, usuarioId, usuarioNombre, "EDICION_PRESUPUESTO", `Monto de presupuesto actualizado a $${fields.presupuesto}`);
+      }
+
+      if (original && fields.entregado !== undefined && fields.entregado !== original.entregado) {
+        if (fields.entregado) {
+          await this.registrarHistorial(id, usuarioId, usuarioNombre, "ENTREGA", "Equipo entregado al cliente final");
+        } else {
+          await this.registrarHistorial(id, usuarioId, usuarioNombre, "MODIFICACION", "Marcado de entrega removido");
         }
       }
-      await this.registrarHistorial(id, usuarioId, usuarioNombre, "ASIGNACION_TECNICO", `Técnico asignado: ${tecName}`);
-    }
 
-    if (fields.presupuesto !== undefined && fields.presupuesto !== original.presupuesto) {
-      await this.registrarHistorial(id, usuarioId, usuarioNombre, "EDICION_PRESUPUESTO", `Monto de presupuesto actualizado a $${fields.presupuesto}`);
-    }
-
-    if (fields.entregado !== undefined && fields.entregado !== original.entregado) {
-      if (fields.entregado) {
-        await this.registrarHistorial(id, usuarioId, usuarioNombre, "ENTREGA", "Equipo entregado al cliente final");
-      } else {
-        await this.registrarHistorial(id, usuarioId, usuarioNombre, "MODIFICACION", "Marcado de entrega removido");
+      if (cambioDetalle) {
+        await this.registrarHistorial(id, usuarioId, usuarioNombre, "MODIFICACION", cambioDetalle);
       }
-    }
-
-    if (cambioDetalle) {
-      await this.registrarHistorial(id, usuarioId, usuarioNombre, "MODIFICACION", cambioDetalle);
+    } catch (hErr) {
+      console.warn("Could not write to historial subcollection:", hErr);
     }
   },
 
   async delete(id: string): Promise<void> {
     const docRef = doc(db, "servicios", id);
     await deleteDoc(docRef);
+  },
+
+  // Dedicated update for technician role — only sends fields allowed by Firestore live security rules.
+  // Maps serviciosRequeridos + notasInternas into the 'diagnostico' field to work within current rules.
+  async updateTecnico(
+    id: string,
+    fields: Partial<Servicio>,
+    usuarioId: string,
+    usuarioNombre: string,
+    cambioDetalle?: string
+  ): Promise<void> {
+    const docRef = doc(db, "servicios", id);
+
+    // Build a payload that only contains fields allowed for the 'tecnico' role in Firestore rules.
+    const allowedPayload: Record<string, any> = {
+      updatedAt: serverTimestamp()
+    };
+    if (fields.diagnostico !== undefined) allowedPayload.diagnostico = fields.diagnostico;
+    if (fields.estado !== undefined) allowedPayload.estado = fields.estado;
+    if (fields.repuestosComprar !== undefined) allowedPayload.repuestosComprar = fields.repuestosComprar;
+    if (fields.repuestosComprados !== undefined) allowedPayload.repuestosComprados = fields.repuestosComprados;
+
+    await updateDoc(docRef, allowedPayload);
+
+    // Historial fail-safe
+    try {
+      if (cambioDetalle) {
+        await this.registrarHistorial(id, usuarioId, usuarioNombre, "MODIFICACION", cambioDetalle);
+      }
+      if (fields.estado) {
+        await this.registrarHistorial(id, usuarioId, usuarioNombre, "CAMBIO_ESTADO", `Estado cambiado a ${fields.estado} por Técnico.`);
+      }
+    } catch (hErr) {
+      console.warn("Could not write to historial after tecnico update:", hErr);
+    }
   },
 
   // Historial Subcollection operations

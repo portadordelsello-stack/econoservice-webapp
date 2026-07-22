@@ -533,13 +533,17 @@ export default function Clientes() {
 
   const onSubmitForm = async (data: any) => {
     try {
+      const finalData = { ...data };
+      if (!finalData.nombreApellido || finalData.nombreApellido.trim() === "") {
+        finalData.nombreApellido = finalData.telCel?.trim() ? `Cel: ${finalData.telCel.trim()}` : "Cliente S/N";
+      }
       if (editingCliente && editingCliente.id) {
-        await ClientesService.update(editingCliente.id, data);
+        await ClientesService.update(editingCliente.id, finalData);
         if (selectedCliente?.id === editingCliente.id) {
-          setSelectedCliente({ ...selectedCliente, ...data });
+          setSelectedCliente({ ...selectedCliente, ...finalData });
         }
       } else {
-        await ClientesService.create(data);
+        await ClientesService.create(finalData);
       }
       setIsFormOpen(false);
       reset();
@@ -829,20 +833,8 @@ export default function Clientes() {
               </h3>
               
               <div className="space-y-4">
-                {/* Celular & Nombre inputs */}
+                {/* Celular input */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                      Nombre y Apellido
-                    </label>
-                    <input
-                      type="text"
-                      value={formNombreApellido}
-                      onChange={(e) => setFormNombreApellido(e.target.value)}
-                      placeholder="Ej. Juan Pérez"
-                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
-                  </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                       Teléfono Celular
@@ -1045,6 +1037,13 @@ export default function Clientes() {
 
       {/* List Layout of Clientes */}
       <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-800/50 animate-scale-up">
+        {filteredClientes.length > 0 && (
+          <div className="hidden sm:grid grid-cols-12 gap-4 px-5 py-3 bg-gray-50 dark:bg-gray-850 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            <div className="col-span-7">Domicilio / ID</div>
+            <div className="col-span-3">Celular</div>
+            <div className="col-span-2 text-right">Acciones</div>
+          </div>
+        )}
         {filteredClientes.length === 0 ? (
           <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
             No se encontraron clientes.
@@ -1053,54 +1052,51 @@ export default function Clientes() {
           filteredClientes.map((c) => (
             <div
               key={c.id}
-              className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all"
+              className="p-5 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all"
             >
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                
-                <div className="space-y-1 flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {c.id && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-900/30">
-                        ID: {formatClienteId(c)}
-                      </span>
-                    )}
-                    <span className="font-bold text-gray-900 dark:text-white text-base">
-                      {[
-                        c.calle ? `${c.calle} ${c.numero || ""}` : "",
-                        c.barrio ? `B° ${c.barrio}` : "",
-                        c.localidad || ""
-                      ].filter(Boolean).join(", ") || "Domicilio no registrado"}
+              {/* Col 1: ID & Address & Note */}
+              <div className="sm:col-span-7 space-y-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  {c.id && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-mono font-bold border border-indigo-100 dark:border-indigo-900/30">
+                      ID: {formatClienteId(c)}
                     </span>
-                    {c.clienteProblematico && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400 text-[10px] font-bold">
-                        <AlertTriangle className="w-3 h-3 animate-pulse" />
-                        Conflictivo
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <span className="font-semibold text-gray-750 dark:text-gray-300">Cliente:</span>
-                      <span>{c.nombreApellido}</span>
-                    </div>
-                    {c.telCel && (
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>{c.telCel}</span>
-                      </div>
-                    )}
-                  </div>
-                  {c.observaciones && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 italic max-w-2xl truncate">
-                      Nota: {c.observaciones}
-                    </p>
+                  )}
+                  <span className="font-bold text-gray-900 dark:text-white text-base">
+                    {[
+                      c.calle ? `${c.calle} ${c.numero || ""}` : "",
+                      c.barrio ? `B° ${c.barrio}` : "",
+                      c.localidad || ""
+                    ].filter(Boolean).join(", ") || "Domicilio no registrado"}
+                  </span>
+                  {c.clienteProblematico && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400 text-[10px] font-bold">
+                      <AlertTriangle className="w-3 h-3 animate-pulse" />
+                      Conflictivo
+                    </span>
                   )}
                 </div>
+                {c.observaciones && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic max-w-2xl truncate">
+                    Nota: {c.observaciones}
+                  </p>
+                )}
               </div>
 
-              {/* Action Area */}
-              <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              {/* Col 2: Celular */}
+              <div className="sm:col-span-3 text-sm text-gray-700 dark:text-gray-300 font-medium">
+                {c.telCel ? (
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{c.telCel}</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-400 dark:text-gray-500 italic">No registrado</span>
+                )}
+              </div>
+
+              {/* Col 3: Actions */}
+              <div className="sm:col-span-2 flex items-center justify-end gap-2 shrink-0 self-end sm:self-center">
                 <button
                   onClick={() => handleStartEdit(c)}
                   className="p-2.5 text-indigo-600 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 rounded-xl transition-all cursor-pointer border border-transparent hover:border-indigo-200 dark:hover:border-indigo-900/40 flex items-center justify-center"

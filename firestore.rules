@@ -74,10 +74,12 @@ service cloud.firestore {
       allow list: if hasAnyRole(['superadmin', 'admin', 'administracion', 'tecnico', 'logistica', 'recepcion', 'consulta']);
       allow create: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']);
       allow delete: if hasAnyRole(['superadmin', 'admin']);
-      allow update: if hasAnyRole(['superadmin', 'admin', 'logistica', 'recepcion']) || (
+      allow update: if hasAnyRole(['superadmin', 'admin', 'administracion', 'logistica', 'recepcion']) || (
         hasAnyRole(['tecnico']) && 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'diagnostico', 'estado', 'repuestosComprar', 'repuestosComprados', 'updatedAt'
+          'diagnostico', 'notasInternas', 'serviciosRequeridos', 'serviciosConvenidos', 
+          'estado', 'repuestosComprar', 'repuestosComprados', 'pasaStock', 'tecnicoId', 
+          'terminado', 'presupuesto', 'presupuestoTexto', 'fotosDrive', 'updatedAt'
         ])
       );
       

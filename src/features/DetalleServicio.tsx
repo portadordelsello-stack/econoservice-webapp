@@ -148,7 +148,20 @@ export default function DetalleServicio() {
       setEditEntregado(serv.entregado || false);
       setEditFactura(serv.factura || false);
       setEditContado(serv.contado || false);
-      setEditNotasInternas(serv.notasInternas || "");
+      let initialNotas = serv.notasInternas || "";
+      if (!initialNotas && serv.diagnostico) {
+        const diag = serv.diagnostico;
+        const notasIndex = diag.indexOf("[Notas Internas]\n");
+        if (notasIndex !== -1) {
+          const nextHeaderIndex = diag.indexOf("[", notasIndex + 17);
+          initialNotas = diag.substring(notasIndex + 17, nextHeaderIndex !== -1 ? nextHeaderIndex : undefined).trim();
+        } else if (diag.startsWith("Notas: ")) {
+          initialNotas = diag.substring(7).trim();
+        } else if (!diag.includes("[Servicios Requeridos]")) {
+          initialNotas = diag.trim();
+        }
+      }
+      setEditNotasInternas(initialNotas);
       setEditInfoLogistica(serv.infoLogistica || "");
       
       // Sync Logistics dates

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ClientesService, EquiposService, ServiciosService } from "../services/db";
-import { Cliente, Equipo, Servicio, EstadoServicio } from "../types";
+import { Cliente, Equipo, Servicio, EstadoServicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
 import { 
@@ -25,6 +25,50 @@ import {
   Handshake,
   XCircle
 } from "lucide-react";
+
+const getEstadoBadgeClass = (estado: string) => {
+  switch (estado) {
+    case "RECIBIDO":
+      return "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30";
+    case "EN_ESPERA":
+      return "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30";
+    case "ACEPTADO":
+      return "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100/30 dark:border-emerald-900/30";
+    case "LISTO_PARA_ENTREGA":
+      return "bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 border border-teal-100/30 dark:border-teal-900/30";
+    case "ENTREGA_EN_PROGRESO":
+      return "bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-100/30 dark:border-sky-900/30";
+    case "ENTREGADO":
+      return "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/30";
+    case "RECHAZADO":
+    case "CANCELADO":
+      return "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100/30 dark:border-rose-900/30";
+    default:
+      return "bg-slate-50 dark:bg-gray-800 text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-700";
+  }
+};
+
+const getEstadoLabelBadgeClass = (estado: string) => {
+  switch (estado) {
+    case "RECIBIDO":
+      return "bg-amber-100/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400";
+    case "EN_ESPERA":
+      return "bg-indigo-100/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400";
+    case "ACEPTADO":
+      return "bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400";
+    case "LISTO_PARA_ENTREGA":
+      return "bg-teal-100/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400";
+    case "ENTREGA_EN_PROGRESO":
+      return "bg-sky-100/70 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400";
+    case "ENTREGADO":
+      return "bg-emerald-200 dark:bg-emerald-905 text-emerald-850 dark:text-emerald-200";
+    case "RECHAZADO":
+    case "CANCELADO":
+      return "bg-rose-100/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400";
+    default:
+      return "bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300";
+  }
+};
 
 export default function Servicios() {
   const { profile, user } = useAuth();
@@ -145,56 +189,109 @@ export default function Servicios() {
       setExpandedId(null);
     } else {
       setExpandedId(srv.id || null);
-      setFormNotasInternas(srv.notasInternas || "");
-      setFormServiciosRequeridos(srv.serviciosRequeridos || "");
+      
+      let notas = srv.notasInternas || "";
+      let reqs = srv.serviciosRequeridos || "";
+      
+      // Fallback parsing from diagnostico if the separate fields are empty (e.g. for tecnico updates)
+      if (!notas && !reqs && srv.diagnostico) {
+        const diag = srv.diagnostico;
+        const reqIndex = diag.indexOf("[Servicios Requeridos]\n");
+        const notasIndex = diag.indexOf("[Notas Internas]\n");
+        
+        if (reqIndex !== -1) {
+          const nextHeaderIndex = diag.indexOf("[", reqIndex + 23);
+          reqs = diag.substring(reqIndex + 23, nextHeaderIndex !== -1 ? nextHeaderIndex : undefined).trim();
+        }
+        if (notasIndex !== -1) {
+          const nextHeaderIndex = diag.indexOf("[", notasIndex + 17);
+          notas = diag.substring(notasIndex + 17, nextHeaderIndex !== -1 ? nextHeaderIndex : undefined).trim();
+        }
+        
+        // If it's a simple legacy format, just put it all in notas
+        if (reqIndex === -1 && notasIndex === -1) {
+          notas = diag.trim();
+        }
+      }
+      
+      setFormNotasInternas(notas);
+      setFormServiciosRequeridos(reqs);
       setFormRepuestosComprar(srv.repuestosComprar || "");
       setFormServiciosConvenidos(srv.serviciosConvenidos || "");
     }
   };
 
   // Save technician fields or administrator fields with respective target states
-  const handleSaveTechnicianForm = async (srv: Servicio, targetState: EstadoServicio = "EN_ESPERA") => {
+  const handleSaveTechnicianForm = async (srv: Servicio, targetState: EstadoServicio = "EN_ESPERA", isFinished: boolean = false) => {
     if (!srv.id) return;
     setSubmittingId(srv.id);
     try {
       const userUid = profile?.uid || user?.uid || "tecnico";
       const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Técnico";
 
-      const updateData: Partial<Servicio> = {
-        notasInternas: formNotasInternas,
-        serviciosRequeridos: formServiciosRequeridos,
-        repuestosComprar: formRepuestosComprar,
-        estado: targetState
-      };
+      let updateData: Partial<Servicio>;
+      const finalState = isFinished ? "LISTO_PARA_ENTREGA" : targetState;
 
       if (isAdmin) {
-        updateData.serviciosConvenidos = formServiciosConvenidos;
-        if (targetState === "ACEPTADO") {
+        // Admins can write all fields — Firestore rules allow this
+        updateData = {
+          diagnostico: formNotasInternas || formServiciosRequeridos,
+          notasInternas: formNotasInternas,
+          serviciosRequeridos: formServiciosRequeridos,
+          repuestosComprar: formRepuestosComprar,
+          serviciosConvenidos: formServiciosConvenidos,
+          estado: finalState,
+          terminado: isFinished
+        };
+        if (finalState === "ACEPTADO" || finalState === "LISTO_PARA_ENTREGA") {
           updateData.acepta = true;
           updateData.rechazaDevolver = false;
-        } else if (targetState === "RECHAZADO") {
+        } else if (finalState === "RECHAZADO") {
           updateData.acepta = false;
           updateData.rechazaDevolver = true;
         }
+
+        await ServiciosService.update(
+          srv.id,
+          updateData,
+          userUid,
+          userNombre,
+          `Taller: diagnóstico/presupuesto actualizado por Administrador. Estado: ${finalState}.`
+        );
+      } else {
+        // Tecnico: Firestore live rules only allow these specific fields.
+        // We pack all the workshop data into the 'diagnostico' field in a readable structured format.
+        const parts: string[] = [];
+        if (formServiciosRequeridos.trim()) {
+          parts.push(`[Servicios Requeridos]\n${formServiciosRequeridos.trim()}`);
+        }
+        if (formNotasInternas.trim()) {
+          parts.push(`[Notas Internas]\n${formNotasInternas.trim()}`);
+        }
+        updateData = {
+          diagnostico: parts.join("\n\n"),
+          repuestosComprar: formRepuestosComprar,
+          estado: finalState
+        };
+
+        await ServiciosService.updateTecnico(
+          srv.id,
+          updateData,
+          userUid,
+          userNombre,
+          `Taller: diagnóstico actualizado por Técnico. Estado: ${finalState}.`
+        );
       }
 
-      await ServiciosService.update(
-        srv.id,
-        updateData,
-        userUid,
-        userNombre,
-        `Taller: diagnóstico/presupuesto actualizado por ${isAdmin ? "Administrador" : "Técnico"}. Estado: ${targetState}.`
-      );
-
       // Toast success
-      alert(`¡Orden de Servicio #${srv.numeroServicio} guardada con éxito en estado ${targetState}!`);
+      alert(`¡Orden de Servicio #${srv.numeroServicio} guardada con éxito en estado ${finalState}!`);
       
       // Close expansion and reload data
       setExpandedId(null);
       await loadAllData();
     } catch (error) {
       console.error("Error saving service technicians data:", error);
-      alert("Error al intentar guardar los datos del taller. Verifique su conexión.");
+      alert("Error de conexión: No se guardaron los cambios del taller. Verifique su conexión o permisos.");
     } finally {
       setSubmittingId(null);
     }
@@ -222,47 +319,6 @@ export default function Servicios() {
         </button>
       </div>
 
-      {/* Workshop Counters Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/80 rounded-2xl p-4.5 shadow-3xs flex items-center gap-4">
-          <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-xl">
-            <Inbox className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Recibidos de Logística</span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-2xl font-extrabold text-slate-900 dark:text-white">{recibidosList.length}</span>
-              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Por diagnosticar</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/80 rounded-2xl p-4.5 shadow-3xs flex items-center gap-4">
-          <div className="p-3.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
-            <UserCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">En Espera</span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-2xl font-extrabold text-slate-900 dark:text-white">{esperaList.length}</span>
-              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Diagnosticados</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/80 rounded-2xl p-4.5 shadow-3xs flex items-center gap-4">
-          <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-xl">
-            <Wrench className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Total en Taller</span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-2xl font-extrabold text-slate-900 dark:text-white">{workshopServicios.length}</span>
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Equipos activos</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Tabs and Search Bar */}
       <div className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/80 rounded-2xl p-4 shadow-3xs space-y-4">
@@ -402,15 +458,7 @@ export default function Servicios() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     {/* Unique Highlight Icon */}
-                    <div className={`p-2.5 rounded-xl text-xs font-bold shrink-0 ${
-                      srv.estado === "RECIBIDO"
-                        ? "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30"
-                        : srv.estado === "EN_ESPERA"
-                          ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30"
-                          : srv.estado === "ACEPTADO"
-                            ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100/30 dark:border-emerald-900/30"
-                            : "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100/30 dark:border-rose-900/30"
-                    }`}>
+                    <div className={`p-2.5 rounded-xl text-xs font-bold shrink-0 ${getEstadoBadgeClass(srv.estado)}`}>
                       Orden #{srv.numeroServicio}
                     </div>
 
@@ -421,16 +469,8 @@ export default function Servicios() {
                           ID del Cliente: {client ? formatClienteId(client) : "S/D"}
                         </span>
                         
-                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${
-                          srv.estado === "RECIBIDO"
-                            ? "bg-amber-100/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400"
-                            : srv.estado === "EN_ESPERA"
-                              ? "bg-indigo-100/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400"
-                              : srv.estado === "ACEPTADO"
-                                ? "bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
-                                : "bg-rose-100/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400"
-                        }`}>
-                          {srv.estado === "RECIBIDO" ? "Recibido" : srv.estado === "EN_ESPERA" ? "En Espera" : srv.estado === "ACEPTADO" ? "Aceptado" : "Rechazado"}
+                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(srv.estado)}`}>
+                          {getEstadoLabel(srv.estado)}
                         </span>
                       </div>
                       
@@ -622,7 +662,7 @@ export default function Servicios() {
                               <button
                                 type="button"
                                 disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim() || !formServiciosConvenidos.trim()}
-                                onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA")}
+                                onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA", false)}
                                 className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                               >
                                 {submittingId === srv.id ? (
@@ -636,7 +676,7 @@ export default function Servicios() {
                               <button
                                 type="button"
                                 disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim() || !formServiciosConvenidos.trim()}
-                                onClick={() => handleSaveTechnicianForm(srv, "ACEPTADO")}
+                                onClick={() => handleSaveTechnicianForm(srv, "ACEPTADO", false)}
                                 className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                               >
                                 {submittingId === srv.id ? (
@@ -650,7 +690,7 @@ export default function Servicios() {
                               <button
                                 type="button"
                                 disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim() || !formServiciosConvenidos.trim()}
-                                onClick={() => handleSaveTechnicianForm(srv, "RECHAZADO")}
+                                onClick={() => handleSaveTechnicianForm(srv, "RECHAZADO", false)}
                                 className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                               >
                                 {submittingId === srv.id ? (
@@ -660,26 +700,61 @@ export default function Servicios() {
                                 )}
                                 <span>Guardar y pasar a rechazado</span>
                               </button>
+
+                              <button
+                                type="button"
+                                disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim() || !formServiciosConvenidos.trim()}
+                                onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA", true)}
+                                className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                              >
+                                {submittingId === srv.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                )}
+                                <span>Guardar y pasar a TERMINADO</span>
+                              </button>
                             </>
                           ) : (
-                            <button
-                              type="button"
-                              disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim()}
-                              onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA")}
-                              className="inline-flex items-center justify-center gap-2 h-10 px-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-150 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer"
-                            >
-                              {submittingId === srv.id ? (
-                                <>
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  <span>Guardando...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Save className="w-3.5 h-3.5" />
-                                  <span>Guardar y pasar a EN ESPERA</span>
-                                </>
-                              )}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim()}
+                                onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA", false)}
+                                className="inline-flex items-center justify-center gap-2 h-10 px-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-150 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer"
+                              >
+                                {submittingId === srv.id ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Guardando...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Save className="w-3.5 h-3.5" />
+                                    <span>Guardar y pasar a EN ESPERA</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim()}
+                                onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA", true)}
+                                className="inline-flex items-center justify-center gap-2 h-10 px-5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-150 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-600/10 active:scale-95 cursor-pointer"
+                              >
+                                {submittingId === srv.id ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Guardando...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    <span>Guardar y pasar a TERMINADO</span>
+                                  </>
+                                )}
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>

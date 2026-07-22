@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const ClienteSchema = z.object({
-  nombreApellido: z.string().min(3, "El nombre y apellido es obligatorio (mínimo 3 caracteres)"),
+  nombreApellido: z.string().optional().or(z.literal("")),
   telFijo: z.string().optional().or(z.literal("")),
   telCel: z.string().optional().or(z.literal("")),
   telCelBis: z.string().optional().or(z.literal("")),
