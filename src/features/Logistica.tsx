@@ -930,7 +930,22 @@ export default function Logistica() {
                     const horaHasta = srv.horaEntregaHasta || "";
                     const aparato = srv.aparato || "";
                     const marcaModelo = srv.marcaModelo || "";
-                    const infoBox = srv.infoLogistica || srv.notasInternas || "";
+                    // Parse infoLogistica and only keep the actual notes, stripping metadata fields
+                    const rawInfo = srv.infoLogistica || "";
+                    const infoBox = rawInfo
+                      .split(" | ")
+                      .filter(part =>
+                        !part.startsWith("Retiro acordado:") &&
+                        !part.startsWith("Config:") &&
+                        !part.startsWith("Notas retiro:")
+                      )
+                      .concat(
+                        rawInfo.split(" | ")
+                          .filter(part => part.startsWith("Notas retiro:"))
+                          .map(part => part.replace("Notas retiro: ", "").trim())
+                      )
+                      .filter(Boolean)
+                      .join("\n") || srv.notasInternas || "";
 
                     return `
                       <div class="receipt-item">
