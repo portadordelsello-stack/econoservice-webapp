@@ -362,43 +362,18 @@ export default function LandingPage() {
           </div>
 
           <div className="lg:col-span-7">
-            {/* Contact details / Message Form Card */}
-            <div className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800 rounded-3xl p-6 sm:p-8 shadow-xs text-left">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Envianos tu consulta</h3>
-              <form className="space-y-4" onSubmit={e => e.preventDefault()}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre Completo</label>
-                    <input 
-                      type="text" 
-                      placeholder="Ej. Juan Pérez"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-gray-850 text-slate-950 dark:text-white border border-slate-200 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Celular / Teléfono</label>
-                    <input 
-                      type="tel" 
-                      placeholder="Ej. 3425000000"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-gray-850 text-slate-950 dark:text-white border border-slate-200 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detalle del problema del lavarropas</label>
-                  <textarea 
-                    rows={4} 
-                    placeholder="Ej. Mi lavarropas Drean no centrifuga y hace un ruido fuerte al desagotar..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-gray-850 text-slate-950 dark:text-white border border-slate-200 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-md shadow-indigo-600/10 active:scale-95 transition-all cursor-pointer text-center"
-                >
-                  Enviar Mensaje por WhatsApp
-                </button>
-              </form>
+            {/* Google Maps Card */}
+            <div className="w-full h-full min-h-[380px] bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800 rounded-3xl overflow-hidden shadow-xs relative">
+              <iframe
+                title="Ubicación de EconoService"
+                width="100%"
+                height="100%"
+                className="min-h-[380px] border-0"
+                src="https://maps.google.com/maps?q=-31.669201216063104,-60.775140171163656&z=16&output=embed"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
           </div>
         </div>
