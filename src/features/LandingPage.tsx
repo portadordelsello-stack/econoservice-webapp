@@ -20,10 +20,10 @@ export default function LandingPage() {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const stats = [
-    { value: "+15.000", label: "Equipos Reparados" },
+    { value: "+5.000", label: "Equipos Reparados" },
     { value: "6 Meses", label: "Garantía Escrita" },
     { value: "100%", label: "Repuestos Originales" },
-    { value: "24-48hs", label: "Tiempo de Respuesta" },
+    { value: "1-3 hs", label: "Tiempo de Respuesta" },
   ];
 
   const features = [
@@ -247,7 +247,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               { step: "01", title: "Contacto y Agenda", desc: "Nos enviás un WhatsApp o llamás. Coordinamos el retiro de tu lavarropas en la fecha y rango horario que te convenga." },
-              { step: "02", title: "Retiro y Ruteo GPS", desc: "Nuestra camioneta retira el lavarropas en tu domicilio. El chofer te entrega tu orden física con código QR." },
+              { step: "02", title: "Retiro y Ruteo GPS", desc: "Nuestra camioneta retira el lavarropas en tu domicilio. El chofer te entrega tu orden fisica y vos te quedas tranquilo, tu equipo queda en las manos de profesionales." },
               { step: "03", title: "Diagnóstico y Presupuesto", desc: "El técnico evalúa el equipo en taller, detecta la falla y te notificamos el presupuesto detallado para su aprobación." },
               { step: "04", title: "Reparación y Entrega", desc: "Reparamos y realizamos rigurosos tests de lavado antes de coordinar el retorno del equipo a tu domicilio." }
             ].map((step, idx) => (
