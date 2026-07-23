@@ -47,8 +47,8 @@ export default function Logistica() {
   const [deliveryHoraDesde, setDeliveryHoraDesde] = useState("");
   const [deliveryHoraHasta, setDeliveryHoraHasta] = useState("");
   const [deliveryInfo, setDeliveryInfo] = useState("");
-  const [selectedDelivery, setSelectedDelivery] = useState<Servicio | null>(null);
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
+  const [activeEntregaTab, setActiveEntregaTab] = useState<"pendientes" | "entregados">("pendientes");
 
   const handleToggleRetirado = async (srvId: string, currentVal: boolean) => {
     try {
@@ -207,6 +207,11 @@ export default function Logistica() {
   const readyDeliveries = servicios.filter(s => 
     (s.estado === "LISTO_PARA_ENTREGA" || s.estado === "ENTREGA_EN_PROGRESO" || s.terminado === true) &&
     s.entregado !== true
+  );
+
+  // Extract all services that have been successfully delivered
+  const deliveredDeliveries = servicios.filter(s => 
+    s.entregado === true || s.estado === "ENTREGADO"
   );
 
   const handleSaveDeliveryInfo = async (srvId: string) => {
@@ -913,16 +918,19 @@ export default function Logistica() {
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-2">
                   <Truck className="w-6 h-6 text-emerald-500" />
-                  Entregas Pendientes
+                  {activeEntregaTab === "pendientes" ? "Entregas Pendientes" : "Historial de Entregas"}
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-gray-400">
-                  Equipos reparados en taller listos para ser entregados.
+                  {activeEntregaTab === "pendientes"
+                    ? "Equipos reparados en taller listos para ser entregados."
+                    : "Historial de equipos que ya fueron entregados al cliente."}
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-              <button
+              {activeEntregaTab === "pendientes" && (
+                <button
                 onClick={() => {
                   const selectedSrvs = readyDeliveries.filter(s => selectedReceipts.includes(s.id));
                   const today = new Date();
@@ -1058,6 +1066,7 @@ export default function Logistica() {
                 <ClipboardList className="w-4 h-4" />
                 <span>Generar Recibos {selectedReceipts.length > 0 ? `(${selectedReceipts.length})` : ""}</span>
               </button>
+              )}
               <button
                 onClick={loadData}
                 disabled={loading}
@@ -1069,6 +1078,32 @@ export default function Logistica() {
             </div>
           </div>
 
+          {/* Tabs */}
+          <div className="flex gap-2 border-b border-slate-100 dark:border-gray-800/60 pb-px">
+            <button
+              type="button"
+              onClick={() => setActiveEntregaTab("pendientes")}
+              className={`pb-3 text-xs sm:text-sm font-extrabold border-b-2 px-6 transition-all duration-200 cursor-pointer ${
+                activeEntregaTab === "pendientes"
+                  ? "border-indigo-600 text-indigo-650 dark:text-indigo-400 text-indigo-600 border-b-2"
+                  : "border-transparent text-slate-400 dark:text-gray-500 hover:text-slate-650 dark:hover:text-gray-300"
+              }`}
+            >
+              Pendientes ({readyDeliveries.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveEntregaTab("entregados")}
+              className={`pb-3 text-xs sm:text-sm font-extrabold border-b-2 px-6 transition-all duration-200 cursor-pointer ${
+                activeEntregaTab === "entregados"
+                  ? "border-indigo-600 text-indigo-655 dark:text-indigo-400 text-indigo-600 border-b-2"
+                  : "border-transparent text-slate-400 dark:text-gray-500 hover:text-slate-650 dark:hover:text-gray-300"
+              }`}
+            >
+              Entregados ({deliveredDeliveries.length})
+            </button>
+          </div>
+
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl">
               <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
@@ -1076,135 +1111,238 @@ export default function Logistica() {
             </div>
           ) : (
             <div className="space-y-6">
-              {readyDeliveries.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 px-4 bg-emerald-50/20 dark:bg-emerald-950/5 border border-dashed border-emerald-200/50 dark:border-emerald-900/20 rounded-2xl text-center space-y-4 max-w-2xl mx-auto">
-                  <Info className="w-12 h-12 text-emerald-500/70" />
-                  <div>
-                    <p className="font-bold text-slate-800 dark:text-slate-200 text-base">
-                      No hay entregas pendientes
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-1.5 max-w-sm mx-auto">
-                      Todos los equipos reparados han sido entregados a los clientes. Cuando un técnico marque un trabajo como terminado en el taller, aparecerá en esta sección.
-                    </p>
+              {activeEntregaTab === "pendientes" ? (
+                readyDeliveries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 px-4 bg-emerald-50/20 dark:bg-emerald-950/5 border border-dashed border-emerald-200/50 dark:border-emerald-900/20 rounded-2xl text-center space-y-4 max-w-2xl mx-auto w-full">
+                    <Info className="w-12 h-12 text-emerald-500/70" />
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 text-base">
+                        No hay entregas pendientes
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-1.5 max-w-sm mx-auto">
+                        Todos los equipos reparados han sido entregados a los clientes. Cuando un técnico marque un trabajo como terminado en el taller, aparecerá en esta sección.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
-                  <table className="w-full text-left border-collapse min-w-[700px]">
-                    <thead>
-                      <tr className="border-b border-slate-150 dark:border-gray-850 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider bg-slate-50/50 dark:bg-gray-850/20">
-                        <th className="py-3.5 pl-4 pr-2 font-extrabold w-10">
-                          <span className="sr-only">Seleccionar</span>
-                        </th>
-                        <th className="py-3.5 px-4 font-extrabold">Orden</th>
-                        <th className="py-3.5 px-4 font-extrabold">Cliente / Dirección</th>
-                        <th className="py-3.5 px-4 font-extrabold">Equipo</th>
-                        <th className="py-3.5 px-4 font-extrabold">Estado</th>
-                        <th className="py-3.5 px-4 font-extrabold text-right">Acción</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-gray-800/80">
-                      {readyDeliveries.map(srv => {
-                        const client = clientMap.get(srv.clienteId);
-                        if (!client) return null;
+                ) : (
+                  <>
+                    <div className="overflow-x-auto bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
+                      <table className="w-full text-left border-collapse min-w-[700px]">
+                        <thead>
+                          <tr className="border-b border-slate-150 dark:border-gray-850 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider bg-slate-50/50 dark:bg-gray-850/20">
+                            <th className="py-3.5 pl-4 pr-2 font-extrabold w-10">
+                              <span className="sr-only">Seleccionar</span>
+                            </th>
+                            <th className="py-3.5 px-4 font-extrabold">Orden</th>
+                            <th className="py-3.5 px-4 font-extrabold">Cliente / Dirección</th>
+                            <th className="py-3.5 px-4 font-extrabold">Equipo</th>
+                            <th className="py-3.5 px-4 font-extrabold">Estado</th>
+                            <th className="py-3.5 px-4 font-extrabold text-right">Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-gray-800/80">
+                          {readyDeliveries.map(srv => {
+                            const client = clientMap.get(srv.clienteId);
+                            if (!client) return null;
 
-                        const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
-                        const clientAddress = [
-                          client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
-                          client.piso ? `Piso ${client.piso}` : "",
-                          client.depto ? `Depto ${client.depto}` : "",
-                          client.localidad ? `${client.localidad}` : ""
-                        ].filter(Boolean).join(", ");
+                            const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
+                            const clientAddress = [
+                              client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+                              client.piso ? `Piso ${client.piso}` : "",
+                              client.depto ? `Depto ${client.depto}` : "",
+                              client.localidad ? `${client.localidad}` : ""
+                            ].filter(Boolean).join(", ");
 
-                        const isChecked = selectedReceipts.includes(srv.id);
-                        const maxReached = selectedReceipts.length >= 5 && !isChecked;
+                            const isChecked = selectedReceipts.includes(srv.id);
+                            const maxReached = selectedReceipts.length >= 5 && !isChecked;
 
-                        return (
-                          <tr
-                            key={srv.id}
-                            className={`transition-colors cursor-pointer ${
-                              isChecked
-                                ? "bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/30"
-                                : "hover:bg-slate-50/40 dark:hover:bg-gray-850/10"
-                            }`}
-                            onClick={() => {
-                              if (isChecked) {
-                                setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
-                              } else if (!maxReached) {
-                                setSelectedReceipts(prev => [...prev, srv.id]);
-                              }
-                            }}
-                          >
-                            <td className="py-3.5 pl-4 pr-2 w-10" onClick={e => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                disabled={maxReached}
-                                onChange={() => {
+                            return (
+                              <tr
+                                key={srv.id}
+                                className={`transition-colors cursor-pointer ${
+                                  isChecked
+                                    ? "bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/30"
+                                    : "hover:bg-slate-50/40 dark:hover:bg-gray-850/10"
+                                }`}
+                                onClick={() => {
                                   if (isChecked) {
                                     setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
                                   } else if (!maxReached) {
                                     setSelectedReceipts(prev => [...prev, srv.id]);
                                   }
                                 }}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                title={maxReached ? "Máximo 5 clientes" : ""}
-                              />
-                            </td>
-                            <td className="py-3.5 px-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                              #{srv.numeroServicio}
-                            </td>
-                            <td className="py-3.5 px-4 text-xs text-slate-900 dark:text-white">
-                              {clientAddress && (
-                                <div className="text-[15px] text-slate-800 dark:text-gray-200 font-bold flex items-center gap-1.5">
-                                  <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
-                                  <span className="truncate max-w-[300px]" title={clientAddress}>{clientAddress}</span>
-                                </div>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4 text-xs text-slate-650 dark:text-gray-300 font-medium">
-                              {srv.aparato} {srv.marcaModelo ? `- ${srv.marcaModelo}` : ""}
-                            </td>
-                            <td className="py-3.5 px-4 text-xs">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border ${
-                                isDespachado
-                                  ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/30"
-                                  : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-100/30 dark:border-emerald-900/30"
-                              }`}>
-                                {isDespachado ? "Despachado" : "Listo"}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
-                              <button
-                                onClick={() => {
-                                  setSelectedDelivery(srv);
-                                  setView("detalle-entrega");
-                                }}
-                                className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
-                                title="Ver detalles y planificar"
                               >
-                                <Eye className="w-4.5 h-4.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                                <td className="py-3.5 pl-4 pr-2 w-10" onClick={e => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={maxReached}
+                                    onChange={() => {
+                                      if (isChecked) {
+                                        setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
+                                      } else if (!maxReached) {
+                                        setSelectedReceipts(prev => [...prev, srv.id]);
+                                      }
+                                    }}
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                    title={maxReached ? "Máximo 5 clientes" : ""}
+                                  />
+                                </td>
+                                <td className="py-3.5 px-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                  #{srv.numeroServicio}
+                                </td>
+                                <td className="py-3.5 px-4 text-xs text-slate-900 dark:text-white">
+                                  {clientAddress && (
+                                    <div className="text-[15px] text-slate-800 dark:text-gray-200 font-bold flex items-center gap-1.5">
+                                      <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+                                      <span className="truncate max-w-[300px]" title={clientAddress}>{clientAddress}</span>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-3.5 px-4 text-xs text-slate-650 dark:text-gray-300 font-medium">
+                                  {srv.aparato} {srv.marcaModelo ? `- ${srv.marcaModelo}` : ""}
+                                </td>
+                                <td className="py-3.5 px-4 text-xs">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border ${
+                                    isDespachado
+                                      ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/30"
+                                      : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-100/30 dark:border-emerald-900/30"
+                                  }`}>
+                                    {isDespachado ? "Despachado" : "Listo"}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedDelivery(srv);
+                                      setView("detalle-entrega");
+                                    }}
+                                    className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
+                                    title="Ver detalles y planificar"
+                                  >
+                                    <Eye className="w-4.5 h-4.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
 
-                {/* Warning when 5 selected */}
-                {selectedReceipts.length === 5 && (
-                  <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl text-xs font-semibold text-amber-700 dark:text-amber-400">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    <span>Límite alcanzado: máximo 5 recibos por vez. Desmarca alguno para elegir otro.</span>
+                    {/* Warning when 5 selected */}
+                    {selectedReceipts.length === 5 && (
+                      <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl text-xs font-semibold text-amber-700 dark:text-amber-400">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        <span>Límite alcanzado: máximo 5 recibos por vez. Desmarca alguno para elegir otro.</span>
+                      </div>
+                    )}
+                  </>
+                )
+              ) : (
+                deliveredDeliveries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 px-4 bg-slate-50/20 dark:bg-gray-900/5 border border-dashed border-slate-200 dark:border-gray-800 rounded-2xl text-center space-y-4 max-w-2xl mx-auto w-full">
+                    <Info className="w-12 h-12 text-slate-400" />
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 text-base">
+                        No hay entregas registradas
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-1.5 max-w-sm mx-auto">
+                        Aquí aparecerán los equipos una vez que el repartidor confirme la entrega en el Tracker.
+                      </p>
+                    </div>
                   </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
+                ) : (
+                  <div className="overflow-x-auto bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
+                    <table className="w-full text-left border-collapse min-w-[700px]">
+                      <thead>
+                        <tr className="border-b border-slate-150 dark:border-gray-850 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider bg-slate-50/50 dark:bg-gray-850/20">
+                          <th className="py-3.5 px-4 font-extrabold">Orden</th>
+                          <th className="py-3.5 px-4 font-extrabold">Cliente / Dirección</th>
+                          <th className="py-3.5 px-4 font-extrabold">Equipo</th>
+                          <th className="py-3.5 px-4 font-extrabold">Fecha Entrega</th>
+                          <th className="py-3.5 px-4 font-extrabold text-right">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-gray-800/80">
+                        {deliveredDeliveries.map(srv => {
+                          const client = clientMap.get(srv.clienteId);
+                          if (!client) return null;
+
+                          const clientAddress = [
+                            client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+                            client.piso ? `Piso ${client.piso}` : "",
+                            client.depto ? `Depto ${client.depto}` : "",
+                            client.localidad ? `${client.localidad}` : ""
+                          ].filter(Boolean).join(", ");
+
+                          let fechaEntregaFormatted = "Entregado";
+                          if (srv.citaEntrega) {
+                            try {
+                              const dateVal = new Date(srv.citaEntrega);
+                              fechaEntregaFormatted = dateVal.toLocaleDateString("es-AR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              });
+                            } catch (e) {
+                              fechaEntregaFormatted = String(srv.citaEntrega);
+                            }
+                          }
+
+                          return (
+                            <tr
+                              key={srv.id}
+                              className="hover:bg-slate-50/40 dark:hover:bg-gray-850/10 transition-colors"
+                            >
+                              <td className="py-3.5 px-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                #{srv.numeroServicio}
+                              </td>
+                              <td className="py-3.5 px-4 text-xs text-slate-900 dark:text-white">
+                                {clientAddress && (
+                                  <div className="text-[15px] text-slate-800 dark:text-gray-200 font-bold flex items-center gap-1.5">
+                                    <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+                                    <span className="truncate max-w-[300px]" title={clientAddress}>{clientAddress}</span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4 text-xs text-slate-650 dark:text-gray-300 font-medium">
+                                {srv.aparato} {srv.marcaModelo ? `- ${srv.marcaModelo}` : ""}
+                              </td>
+                              <td className="py-3.5 px-4 text-xs">
+                                <div className="flex flex-col">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100/30 dark:border-emerald-900/30 w-fit">
+                                    Entregado
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 dark:text-gray-500 mt-0.5 font-semibold">
+                                    {fechaEntregaFormatted}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                <button
+                                  onClick={() => {
+                                    setSelectedDelivery(srv);
+                                    setView("detalle-entrega");
+                                  }}
+                                  className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
+                                  title="Ver detalles"
+                                >
+                                  <Eye className="w-4.5 h-4.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              )}
+            </div>
+          )}
       </div>
     )}
 
@@ -1232,6 +1370,7 @@ export default function Logistica() {
         const client = clientMap.get(srv.clienteId);
         if (!client) return null;
 
+        const isEntregado = srv.estado === "ENTREGADO" || srv.entregado === true;
         const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
         const isEditing = editingDeliveryId === srv.id;
 
@@ -1277,11 +1416,13 @@ export default function Logistica() {
 
               <div className="flex items-center gap-2">
                 <span className={`px-3 py-1.5 rounded-xl text-xs font-extrabold uppercase tracking-wider border ${
-                  isDespachado 
+                  isEntregado
+                    ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40"
+                    : isDespachado 
                     ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-850 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900" 
-                    : "bg-emerald-50 dark:bg-emerald-950 text-emerald-850 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900"
+                    : "bg-amber-50 dark:bg-amber-950 text-amber-850 dark:text-amber-450 border border-amber-200 dark:border-amber-900"
                 }`}>
-                  {isDespachado ? "Entrega en Progreso" : "Listo para entregar"}
+                  {isEntregado ? "Entregado" : isDespachado ? "Entrega en Progreso" : "Listo para entregar"}
                 </span>
               </div>
             </div>
