@@ -367,9 +367,9 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
       <header className="sticky top-0 z-50 bg-[#0f172a] text-white py-4 px-6 shadow-md border-b border-slate-800">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5 min-w-0">
-            {branding.logo ? (
+            {branding.logo || "/logo.png" ? (
               <img 
-                src={branding.logo} 
+                src={branding.logo || "/logo.png"} 
                 alt="Logo" 
                 className="h-8 max-w-[120px] object-contain rounded-md" 
                 referrerPolicy="no-referrer" 

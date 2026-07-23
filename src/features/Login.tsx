@@ -49,10 +49,10 @@ export default function Login() {
         
         {/* Brand Header */}
         <div className="text-center mb-8">
-          {branding.logo ? (
+          {branding.logo || "/logo.png" ? (
             <div className="inline-flex items-center justify-center mb-3">
               <img 
-                src={branding.logo} 
+                src={branding.logo || "/logo.png"} 
                 alt="Logo" 
                 className="max-h-20 max-w-[200px] object-contain rounded-xl shadow-xs"
                 referrerPolicy="no-referrer"

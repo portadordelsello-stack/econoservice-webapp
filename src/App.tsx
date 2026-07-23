@@ -171,9 +171,9 @@ function MainLayout() {
       {/* MOBILE HEADER */}
       <header className="md:hidden flex items-center justify-between p-4 bg-[#0f172a] text-white border-b border-slate-800">
         <div className="flex items-center gap-2 min-w-0">
-          {branding.logo ? (
+          {branding.logo || "/logo.png" ? (
             <img 
-              src={branding.logo} 
+              src={branding.logo || "/logo.png"} 
               alt="Logo" 
               className="h-8 max-w-[100px] object-contain rounded-md" 
               referrerPolicy="no-referrer" 
@@ -210,9 +210,9 @@ function MainLayout() {
         {/* Brand details */}
         <div className="p-6">
           <div className="flex items-center gap-2.5">
-            {branding.logo ? (
+            {branding.logo || "/logo.png" ? (
               <img 
-                src={branding.logo} 
+                src={branding.logo || "/logo.png"} 
                 alt="Logo" 
                 className="max-h-11 max-w-[110px] object-contain rounded-lg shadow-sm" 
                 referrerPolicy="no-referrer" 
