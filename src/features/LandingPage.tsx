@@ -115,7 +115,7 @@ export default function LandingPage() {
               Líderes en Santo Tomé y Santa Fe
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.1] font-display">
-              Reparación Profesional de <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-indigo-400 dark:from-indigo-400 dark:to-indigo-300">Lavarropas</span> a Domicilio
+              Reparación Profesional de <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-indigo-400 dark:from-indigo-400 dark:to-indigo-300">Lavarropas</span> y Lavavajillas
             </h1>
             <p className="text-sm sm:text-base text-slate-550 dark:text-gray-400 leading-relaxed max-w-xl">
               No dejes que un lavarropas roto altere tu rutina. En EconoService reparamos tu equipo con repuestos legítimos, garantía escrita de 6 meses y la comodidad de retiro y entrega en tu casa con ruteo GPS.
