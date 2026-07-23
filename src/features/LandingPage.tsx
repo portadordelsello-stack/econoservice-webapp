@@ -23,7 +23,7 @@ export default function LandingPage() {
     { value: "+5.000", label: "Equipos Reparados" },
     { value: "6 Meses", label: "Garantía Escrita" },
     { value: "100%", label: "Repuestos Originales" },
-    { value: "1-3 hs", label: "Tiempo de Respuesta" },
+    { value: "24-48 hs", label: "Para Tu Diagnostico" },
   ];
 
   const features = [
