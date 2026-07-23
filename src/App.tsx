@@ -15,6 +15,7 @@ import Logistica from "./features/Logistica";
 import TrackingCliente from "./features/TrackingCliente";
 import Insumos from "./features/Insumos";
 import Notificaciones from "./features/Notificaciones";
+import LandingPage from "./features/LandingPage";
 import { NotificationsCenter } from "./components/NotificationsCenter";
 import { BrandingService } from "./services/branding";
 import { BrandingConfig } from "./types";
@@ -45,6 +46,12 @@ function MainLayout() {
   const { user, profile, signOut: logout } = useAuth();
   const { currentView, navigate } = useNavigation();
   const { theme, toggleTheme } = useTheme();
+  
+  const handleLogout = () => {
+    sessionStorage.removeItem("showLogin");
+    window.location.hash = "";
+    logout();
+  };
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [branding, setBranding] = React.useState<BrandingConfig>(() => BrandingService.getLocalConfig());
 
@@ -99,9 +106,22 @@ function MainLayout() {
     return <TrackingCliente servicioId={id} />;
   }
 
-  // If not logged in, force Login screen
+  // If not logged in, show LandingPage unless accessing the hidden /econo URL
   if (!user) {
-    return <Login />;
+    const isEconoRoute = window.location.pathname === "/econo" || 
+                         window.location.hash === "#econo" || 
+                         window.location.hash.startsWith("#econo");
+    
+    if (isEconoRoute) {
+      sessionStorage.setItem("showLogin", "true");
+      return <Login />;
+    }
+
+    if (sessionStorage.getItem("showLogin") === "true") {
+      return <Login />;
+    }
+
+    return <LandingPage />;
   }
 
   const handleNavLinkClick = (view: string) => {
@@ -270,7 +290,7 @@ function MainLayout() {
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="flex-1 py-1.5 px-3 bg-slate-800 hover:bg-red-600 hover:text-white text-slate-300 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer border border-transparent hover:border-transparent transition-all"
             >
               <LogOut className="w-3.5 h-3.5" />
