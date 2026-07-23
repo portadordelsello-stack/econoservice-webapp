@@ -409,7 +409,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <img 
-              src="/logo.png" 
+              src="/logo-footer.jpg" 
               alt="Logo EconoService" 
               className="w-7 h-7 object-contain rounded-lg"
             />
