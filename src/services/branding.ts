@@ -3,7 +3,7 @@ import { db } from "../lib/firebase";
 import { BrandingConfig } from "../types";
 
 export const DEFAULT_BRANDING: BrandingConfig = {
-  logo: "",
+  logo: "/logo.png",
   titulo: "EconoService",
   subtitulo: "Gestión de Servicio Técnico de Electrodomésticos",
   badge: "Migrado de MS Access • Google Auth Activo"
@@ -37,7 +37,7 @@ export const BrandingService = {
       if (snap.exists()) {
         const data = snap.data();
         const config: BrandingConfig = {
-          logo: data.logo || "",
+          logo: data.logo || DEFAULT_BRANDING.logo,
           titulo: data.titulo || DEFAULT_BRANDING.titulo,
           subtitulo: data.subtitulo || DEFAULT_BRANDING.subtitulo,
           badge: data.badge || DEFAULT_BRANDING.badge,
