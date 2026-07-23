@@ -78,9 +78,11 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-slate-100 dark:border-gray-800/60 transition-colors">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-md">
-              <Wrench className="w-5 h-5" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Logo EconoService" 
+              className="w-10 h-10 object-contain rounded-xl shadow-md"
+            />
             <div>
               <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white block">
                 EconoService
@@ -406,9 +408,11 @@ export default function LandingPage() {
       <footer className="bg-[#0f172a] text-slate-400 py-12 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-indigo-600 text-white rounded-lg">
-              <Wrench className="w-4 h-4" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Logo EconoService" 
+              className="w-7 h-7 object-contain rounded-lg"
+            />
             <span className="font-extrabold text-sm tracking-tight text-white">
               EconoService
             </span>
