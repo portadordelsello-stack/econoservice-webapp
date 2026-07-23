@@ -122,7 +122,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-wrap gap-4 pt-2">
               <a
-                href="https://wa.me/5493425000000"
+                href="https://wa.me/5493425328992"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-xs sm:text-sm shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
@@ -335,7 +335,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Teléfono / WhatsApp</span>
-                  <a href="tel:+5493425000000" className="text-xs sm:text-sm font-bold hover:text-indigo-600 transition-colors">+54 9 342 500-0000</a>
+                  <a href="tel:+5493425328992" className="text-xs sm:text-sm font-bold hover:text-indigo-600 transition-colors">+54 9 342 532-8992</a>
                 </div>
               </div>
 
@@ -345,17 +345,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Taller Central</span>
-                  <span className="text-xs sm:text-sm font-semibold">Av. Luján 2845, Santo Tomé, Santa Fe</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                  <Mail className="w-5 h-5" />
-                </div>
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email</span>
-                  <a href="mailto:soporte@econoservice.com.ar" className="text-xs sm:text-sm font-bold hover:text-indigo-600 transition-colors">soporte@econoservice.com.ar</a>
+                  <span className="text-xs sm:text-sm font-semibold">Vélez Sarsfield 2569, S3016 Santo Tomé, Santa Fe</span>
                 </div>
               </div>
             </div>
@@ -397,6 +387,19 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
+      {/* Floating WhatsApp Button */}
+      <a
+        href="https://wa.me/5493425328992"
+        target="_blank"
+        rel="noreferrer"
+        className="fixed bottom-6 right-6 z-50 p-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer group"
+        title="Contactar por WhatsApp"
+      >
+        <MessageSquare className="w-6 h-6 animate-pulse" />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 text-xs font-extrabold uppercase tracking-wider whitespace-nowrap">
+          WhatsApp
+        </span>
+      </a>
     </div>
   );
 }
