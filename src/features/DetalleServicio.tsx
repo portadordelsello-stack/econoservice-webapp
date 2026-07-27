@@ -456,23 +456,25 @@ export default function DetalleServicio() {
             <span>Volver</span>
           </button>
           
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className={`p-2.5 rounded-xl text-xs font-bold shrink-0 ${getEstadoBadgeClass(servicio.estado)}`}>
-                Orden #{servicio.numeroServicio}
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-extrabold text-indigo-600 dark:text-indigo-400">
-                    ID del Cliente: {cliente ? formatClienteId(cliente) : "S/D"}
-                  </span>
-                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(servicio.estado)}`}>
-                    {getEstadoLabel(servicio.estado)}
-                  </span>
+          {profile?.rol !== "tecnico" && (
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className={`p-2.5 rounded-xl text-xs font-bold shrink-0 ${getEstadoBadgeClass(servicio.estado)}`}>
+                  Orden #{servicio.numeroServicio}
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm sm:text-base font-extrabold text-indigo-600 dark:text-indigo-400">
+                      ID del Cliente: {cliente ? formatClienteId(cliente) : "S/D"}
+                    </span>
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(servicio.estado)}`}>
+                      {getEstadoLabel(servicio.estado)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Warning Badge for Problematic customer */}
