@@ -1106,7 +1106,7 @@ export default function Clientes() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                      Notas del Retiro
+                      Info Logística
                     </label>
                     <input
                       type="text"
