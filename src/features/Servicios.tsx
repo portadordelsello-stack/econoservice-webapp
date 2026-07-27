@@ -378,7 +378,7 @@ export default function Servicios() {
                   : "text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200"
               }`}
             >
-              En Espera ({esperaList.length})
+              Diagnosticados ({esperaList.length})
             </button>
             <button
               onClick={() => {
@@ -391,7 +391,7 @@ export default function Servicios() {
                   : "text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200"
               }`}
             >
-              Aceptados ({aceptadosList.length})
+              Confirmados ({aceptadosList.length})
             </button>
             <button
               onClick={() => {
@@ -453,7 +453,7 @@ export default function Servicios() {
               : activeTab === "recibidos" 
                 ? "No hay nuevos equipos recibidos de logística pendientes de diagnóstico." 
                 : activeTab === "espera"
-                  ? "Aún no se han guardado órdenes en estado 'En Espera'."
+                  ? "Aún no se han guardado órdenes en estado 'Diagnosticados'."
                   : "No hay ningún equipo registrado en el taller."}
           </p>
         </div>
