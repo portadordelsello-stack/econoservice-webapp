@@ -140,6 +140,11 @@ export default function DetalleServicio() {
   const [filesList, setFilesList] = useState<{ name: string; url: string }[]>([]);
   const [uploading, setUploading] = useState(false);
 
+  // History Modal states
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyServices, setHistoryServices] = useState<Servicio[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   const loadServiceDetails = async () => {
     if (!selectedId) return;
     try {
@@ -235,6 +240,32 @@ export default function DetalleServicio() {
   useEffect(() => {
     loadServiceDetails();
   }, [selectedId]);
+
+  const handleLoadEquiposHistory = async () => {
+    if (!servicio || !servicio.clienteId) return;
+    try {
+      setLoadingHistory(true);
+      setShowHistoryModal(true);
+      
+      // Fetch all services
+      const allServs = await ServiciosService.getAll();
+      // Filter for this client, excluding current service
+      const clientServs = allServs.filter(s => s.clienteId === servicio.clienteId && s.id !== servicio.id);
+      
+      // Sort by date descending
+      clientServs.sort((a, b) => {
+        const dateA = toDate(a.fechaIngreso)?.getTime() || 0;
+        const dateB = toDate(b.fechaIngreso)?.getTime() || 0;
+        return dateB - dateA;
+      });
+
+      setHistoryServices(clientServs);
+    } catch (err) {
+      console.error("Error loading client service history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   // Auth permissions
   const isAdmin = profile?.rol === "superadmin" || profile?.rol === "admin" || profile?.rol === "administracion";
@@ -482,9 +513,19 @@ export default function DetalleServicio() {
 
           {/* Datos del Equipo */}
           <div className="bg-slate-50/50 dark:bg-gray-850 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
-            <div className="flex items-center gap-2 text-slate-400 mb-2">
-              <Cpu className="w-4 h-4 text-indigo-500" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Datos del Equipo</h4>
+            <div className="flex items-center justify-between text-slate-400 mb-2">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-indigo-500" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Datos del Equipo</h4>
+              </div>
+              <button
+                type="button"
+                onClick={handleLoadEquiposHistory}
+                title="Ver historial de reparaciones de este cliente"
+                className="p-1.5 hover:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-150 dark:hover:border-indigo-900/30 shadow-3xs"
+              >
+                <Wrench className="w-3.5 h-3.5" />
+              </button>
             </div>
             <div className="space-y-1.5 text-xs">
               <p className="text-sm font-bold text-slate-800 dark:text-white">
@@ -983,6 +1024,102 @@ export default function DetalleServicio() {
         </div>
 
       </div>
+
+      {/* History Modal */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden max-h-[85vh] flex flex-col animate-fade-in">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-gray-800 flex justify-between items-center bg-slate-50/50 dark:bg-gray-850">
+              <div className="flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-indigo-650 animate-pulse" />
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                  Historial de Reparaciones del Cliente
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="text-slate-450 hover:text-slate-655 dark:text-gray-500 dark:hover:text-gray-300 font-bold text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              {loadingHistory ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-650" />
+                </div>
+              ) : historyServices.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-gray-400 italic text-center py-6">
+                  No se registran órdenes de servicio anteriores para este cliente.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {historyServices.map((histSrv) => (
+                    <div
+                      key={histSrv.id}
+                      className="p-4 bg-slate-55/50 dark:bg-gray-850 border border-slate-150 dark:border-gray-800 rounded-xl space-y-2.5 shadow-3xs hover:border-indigo-150 dark:hover:border-indigo-900/30 transition-all"
+                    >
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
+                            Orden #{histSrv.numeroServicio}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-semibold">
+                            {toDate(histSrv.fechaIngreso)?.toLocaleDateString() || "Sin Fecha"}
+                          </span>
+                        </div>
+                        <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(histSrv.estado)}`}>
+                          {getEstadoLabel(histSrv.estado)}
+                        </span>
+                      </div>
+
+                      <div className="text-xs space-y-1">
+                        <p className="font-bold text-slate-800 dark:text-white">
+                          {histSrv.aparato} - {histSrv.marcaModelo}
+                        </p>
+                        
+                        <div className="mt-2 space-y-1 bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-slate-100 dark:border-gray-850">
+                          <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Desperfecto Reportado:</p>
+                          <p className="text-slate-650 dark:text-gray-300 italic">"{histSrv.desperfectoUsuario || "No detallado"}"</p>
+                        </div>
+
+                        {(histSrv.diagnostico || histSrv.serviciosRequeridos) && (
+                          <div className="mt-2 space-y-1 bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-slate-100 dark:border-gray-850">
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Trabajo Técnico Realizado:</p>
+                            <p className="text-slate-650 dark:text-gray-350">{histSrv.diagnostico || histSrv.serviciosRequeridos}</p>
+                          </div>
+                        )}
+
+                        {histSrv.serviciosConvenidos && (
+                          <div className="mt-2 space-y-1 bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-slate-100 dark:border-gray-850">
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Servicios Convenidos / Notas:</p>
+                            <p className="text-slate-655 dark:text-gray-350">{histSrv.serviciosConvenidos}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 dark:border-gray-800 flex justify-end bg-slate-50/50 dark:bg-gray-855">
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
