@@ -335,8 +335,9 @@ export default function DetalleServicio() {
       } else if (tab === "diagnostico") {
         fieldsToUpdate = {
           diagnostico: editDiagnostico,
-          estado: editEstado, // Technicians can modify state to 'DIAGNOSTICO' or 'PENDIENTE_APROBACION'
-          tecnicoId: editTecnicoId || undefined
+          estado: editEstado,
+          tecnicoId: editTecnicoId || undefined,
+          terminado: editTerminado
         };
       } else if (tab === "presupuesto") {
         fieldsToUpdate = {
@@ -864,28 +865,59 @@ export default function DetalleServicio() {
 
           {!isConsulta && (
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-50 dark:border-gray-800/50">
-              <button
-                type="button"
-                onClick={async () => {
-                  setEditEstado("DIAGNOSTICO");
-                  setTimeout(() => handleSave("diagnostico", "Técnico actualizó diagnóstico e inició etapa de DIAGNÓSTICO"), 100);
-                }}
-                className="px-4 py-2 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 cursor-pointer"
-              >
-                Marcar como "EN DIAGNÓSTICO"
-              </button>
-              
-              <button
-                type="button"
-                onClick={async () => {
-                  setEditEstado("PENDIENTE_APROBACION");
-                  setTimeout(() => handleSave("diagnostico", "Diagnóstico finalizado. Presupuesto listo para enviar a cliente"), 100);
-                }}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl flex items-center gap-1.5 cursor-pointer"
-              >
-                <Check className="w-4 h-4" />
-                Diagnóstico Listo
-              </button>
+              {profile?.rol === "tecnico" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setEditEstado("EN_ESPERA");
+                      setTimeout(() => handleSave("diagnostico", "Técnico guardó el diagnóstico y marcó como DIAGNOSTICADO"), 100);
+                    }}
+                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  >
+                    <Check className="w-4 h-4" />
+                    DIAGNOSTICADO
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setEditEstado("LISTO_PARA_ENTREGA");
+                      setEditTerminado(true);
+                      setTimeout(() => handleSave("diagnostico", "Técnico completó la reparación y marcó como TERMINADO"), 100);
+                    }}
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  >
+                    <Check className="w-4 h-4" />
+                    TERMINADO
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setEditEstado("DIAGNOSTICO");
+                      setTimeout(() => handleSave("diagnostico", "Técnico actualizó diagnóstico e inició etapa de DIAGNÓSTICO"), 100);
+                    }}
+                    className="px-4 py-2 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 cursor-pointer"
+                  >
+                    Marcar como "EN DIAGNÓSTICO"
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setEditEstado("PENDIENTE_APROBACION");
+                      setTimeout(() => handleSave("diagnostico", "Diagnóstico finalizado. Presupuesto listo para enviar a cliente"), 100);
+                    }}
+                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    Diagnóstico Listo
+                  </button>
+                </>
+              )}
             </div>
           )}
 
