@@ -490,21 +490,17 @@ export default function Servicios() {
                       Orden #{srv.numeroServicio}
                     </div>
 
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        {/* ID del Cliente (Bold & Slightly larger as requested) */}
-                        <span className="text-sm sm:text-base font-extrabold text-indigo-600 dark:text-indigo-400">
-                          ID del Cliente: {client ? formatClienteId(client) : "S/D"}
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Address (Bold & Medium size) */}
+                        <span className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-gray-250 flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+                          {addressStr}
                         </span>
                         
                         <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(srv.estado)}`}>
                           {getEstadoLabel(srv.estado)}
                         </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-gray-400">
-                        <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                        <span className="font-medium truncate max-w-md">{addressStr}</span>
                       </div>
                     </div>
                   </div>
