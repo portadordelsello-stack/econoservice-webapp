@@ -151,6 +151,7 @@ export default function Clientes() {
     marca: string;
     modelo: string;
     desperfectoUsuario: string;
+    fechaRetiro: string;
     fotosDrive: { id: string; name: string; url: string }[];
   }[]>([]);
   const [deletedEquipoIds, setDeletedEquipoIds] = useState<string[]>([]);
@@ -162,6 +163,7 @@ export default function Clientes() {
   const [equipoModalMarca, setEquipoModalMarca] = useState("");
   const [equipoModalModelo, setEquipoModalModelo] = useState("");
   const [equipoModalDesperfecto, setEquipoModalDesperfecto] = useState("");
+  const [equipoModalFechaRetiro, setEquipoModalFechaRetiro] = useState("");
   const [equipoModalPhotos, setEquipoModalPhotos] = useState<{ id: string; name: string; url: string }[]>([]);
 
   useEffect(() => {
@@ -265,6 +267,7 @@ export default function Clientes() {
     setEquipoModalMarca("");
     setEquipoModalModelo("");
     setEquipoModalDesperfecto("");
+    setEquipoModalFechaRetiro("");
     setEquipoModalPhotos([]);
   };
 
@@ -282,6 +285,7 @@ export default function Clientes() {
           marca: formMarca.trim() || "Genérico",
           modelo: formModelo.trim() || "Genérico",
           desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
+          fechaRetiro: formFechaRetiro.trim() || "",
           fotosDrive: uploadedPhotos
         });
       }
@@ -313,12 +317,6 @@ export default function Clientes() {
         formNS3 ? "NS3" : ""
       ].filter(Boolean).join(", ");
 
-      const infoLogisticaFull = [
-        formFechaRetiro.trim() ? `Retiro acordado: ${formFechaRetiro.trim()}` : "",
-        formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
-        selectedNS ? `Config: ${selectedNS}` : ""
-      ].filter(Boolean).join(" | ");
-
       for (const eq of finalEquipos) {
         const equipoId = await EquiposService.create({
           clienteId,
@@ -327,6 +325,12 @@ export default function Clientes() {
           modelo: eq.modelo.trim() || "Genérico",
           observaciones: ""
         });
+
+        const infoLogisticaFull = [
+          eq.fechaRetiro && eq.fechaRetiro.trim() ? `Retiro acordado: ${eq.fechaRetiro.trim()}` : "",
+          formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
+          selectedNS ? `Config: ${selectedNS}` : ""
+        ].filter(Boolean).join(" | ");
 
         const newServId = await ServiciosService.create({
           clienteId,
@@ -489,6 +493,7 @@ export default function Clientes() {
           marca: formMarca.trim() || "Genérico",
           modelo: formModelo.trim() || "Genérico",
           desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
+          fechaRetiro: formFechaRetiro.trim() || "",
           fotosDrive: uploadedPhotos
         });
       }
@@ -519,16 +524,16 @@ export default function Clientes() {
         formNS3 ? "NS3" : ""
       ].filter(Boolean).join(", ");
 
-      const infoLogisticaFull = [
-        formFechaRetiro.trim() ? `Retiro acordado: ${formFechaRetiro.trim()}` : "",
-        formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
-        selectedNS ? `Config: ${selectedNS}` : ""
-      ].filter(Boolean).join(" | ");
-
       // 3. Process equipments
       const allServices = await ServiciosService.getAll();
       
       for (const eq of finalEquipos) {
+        const infoLogisticaFull = [
+          eq.fechaRetiro && eq.fechaRetiro.trim() ? `Retiro acordado: ${eq.fechaRetiro.trim()}` : "",
+          formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
+          selectedNS ? `Config: ${selectedNS}` : ""
+        ].filter(Boolean).join(" | ");
+
         if (eq.id) {
           // Existing equipment: update details
           await EquiposService.update(eq.id, {
@@ -545,6 +550,7 @@ export default function Clientes() {
               aparato: eq.tipo || "Lavarropas",
               marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
               desperfectoUsuario: eq.desperfectoUsuario || "No especificado",
+              infoLogistica: infoLogisticaFull,
               fotosDrive: eq.fotosDrive || []
             }, profile?.uid || "system", profile?.nombre || "Usuario");
           }
@@ -1023,9 +1029,15 @@ export default function Clientes() {
                           <span className="font-bold text-[10px] text-indigo-650 dark:text-indigo-400 block uppercase tracking-wider">
                             {eq.tipo || "Lavarropas"}
                           </span>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          <span className="text-sm font-bold text-gray-900 dark:text-white block">
                             {eq.marca} - {eq.modelo}
                           </span>
+                          {eq.fechaRetiro && (
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5 font-medium">
+                              <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                              Retiro: {eq.fechaRetiro.replace("T", " ")}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -1045,6 +1057,7 @@ export default function Clientes() {
                               setEquipoModalMarca(eq.marca);
                               setEquipoModalModelo(eq.modelo);
                               setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
+                              setEquipoModalFechaRetiro(eq.fechaRetiro || "");
                               setEquipoModalPhotos(eq.fotosDrive || []);
                               setIsEquipoModalOpen(true);
                             }}
@@ -1097,38 +1110,21 @@ export default function Clientes() {
                     />
                   </div>
                 </div>
-                 {/* Fecha y Horario de retiro con Notas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                      Fecha y horario de retiro acordado
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={formFechaRetiro}
-                      onChange={(e) => setFormFechaRetiro(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
-                    <p className="text-[11px] text-gray-400 mt-1">
-                      Haga clic para abrir el selector de fecha y hora.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                      Info Logística
-                    </label>
-                    <input
-                      type="text"
-                      value={formNotasRetiro}
-                      onChange={(e) => setFormNotasRetiro(e.target.value)}
-                      placeholder='Ej. "llamar antes por las dudas", "tocar timbre 2"'
-                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
-                    <p className="text-[11px] text-gray-400 mt-1">
-                      Anotaciones especiales para el personal de retiro.
-                    </p>
-                  </div>
+                 {/* Info Logística */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                    Info Logística
+                  </label>
+                  <input
+                    type="text"
+                    value={formNotasRetiro}
+                    onChange={(e) => setFormNotasRetiro(e.target.value)}
+                    placeholder='Ej. "llamar antes por las dudas", "tocar timbre 2"'
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Anotaciones especiales para el personal de retiro.
+                  </p>
                 </div>
 
                 {/* Checkboxes NS1 NS2 NS3 */}
@@ -1294,6 +1290,21 @@ export default function Clientes() {
                       className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                      Fecha y horario de retiro acordado
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={equipoModalFechaRetiro}
+                      onChange={(e) => setEquipoModalFechaRetiro(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      Haga clic para abrir el selector de fecha y hora.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Photo Upload inside modal */}
@@ -1393,6 +1404,7 @@ export default function Clientes() {
                       marca: equipoModalMarca.trim(),
                       modelo: equipoModalModelo.trim(),
                       desperfectoUsuario: equipoModalDesperfecto.trim(),
+                      fechaRetiro: equipoModalFechaRetiro,
                       fotosDrive: equipoModalPhotos
                     };
                     
