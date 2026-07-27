@@ -14,7 +14,8 @@ import {
   User, 
   Package, 
   AlertTriangle,
-  Inbox
+  Inbox,
+  Trash2
 } from "lucide-react";
 
 export default function Notificaciones() {
@@ -57,6 +58,24 @@ export default function Notificaciones() {
 
   const handleMarkAllAsRead = async () => {
     await NotificationsService.markAllAsReadForUser(user.uid, notifications);
+  };
+
+  const handleClearAll = async () => {
+    const confirmMessage = filter === "no_leidas" 
+      ? "¿Está seguro que desea eliminar todas las notificaciones no leídas? Esta acción es irreversible." 
+      : "¿Está seguro que desea eliminar todas las notificaciones de la lista? Esta acción es irreversible.";
+      
+    if (window.confirm(confirmMessage)) {
+      try {
+        for (const notif of filteredNotifications) {
+          if (notif.id) {
+            await NotificationsService.delete(notif.id);
+          }
+        }
+      } catch (err) {
+        console.error("Error clearing notifications:", err);
+      }
+    }
   };
 
   const handleNotificationClick = async (notif: AppNotification) => {
@@ -152,10 +171,20 @@ export default function Notificaciones() {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllAsRead}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl text-xs font-extrabold transition-all border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl text-xs font-extrabold transition-all border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs cursor-pointer active:scale-95 animate-fade-in"
             >
               <CheckSquare className="w-4 h-4" />
               <span>Marcar todo como leído</span>
+            </button>
+          )}
+
+          {filteredNotifications.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-600 text-rose-700 dark:text-rose-350 hover:text-white rounded-xl text-xs font-extrabold transition-all border border-rose-200/80 dark:border-rose-900/60 shadow-xs cursor-pointer active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Limpiar</span>
             </button>
           )}
         </div>
@@ -220,10 +249,28 @@ export default function Notificaciones() {
                   {isUnread && notif.id && (
                     <button
                       onClick={(e) => handleMarkAsRead(notif.id!, e)}
-                      className="p-2 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 bg-slate-50 dark:bg-gray-800 rounded-xl transition-colors cursor-pointer border border-slate-200 dark:border-gray-700"
+                      className="p-2 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 bg-slate-50 dark:bg-gray-800 rounded-xl transition-colors cursor-pointer border border-slate-200 dark:border-gray-700 flex items-center justify-center"
                       title="Marcar como leída"
                     >
                       <Check className="w-4 h-4" />
+                    </button>
+                  )}
+                  {notif.id && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (window.confirm("¿Está seguro que desea eliminar esta notificación?")) {
+                          try {
+                            await NotificationsService.delete(notif.id!);
+                          } catch (err) {
+                            console.error("Error deleting notification:", err);
+                          }
+                        }
+                      }}
+                      className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 bg-slate-50 dark:bg-gray-800 rounded-xl transition-colors cursor-pointer border border-slate-200 dark:border-gray-700 flex items-center justify-center"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>

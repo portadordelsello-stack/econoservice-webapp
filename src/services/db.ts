@@ -689,6 +689,11 @@ export const NotificationsService = {
     }
   },
 
+  async delete(id: string): Promise<void> {
+    const docRef = doc(db, "notifications", id);
+    await deleteDoc(docRef);
+  },
+
   listenToNotifications(
     role: string,
     userId: string,
