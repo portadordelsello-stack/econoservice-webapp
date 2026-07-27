@@ -1226,13 +1226,13 @@ export default function DetalleServicio() {
             )}
           </div>
 
-          {/* Fotos del Equipo en Google Drive */}
+          {/* Fotos de Respaldo en Google Drive */}
           {servicio?.fotosDrive && servicio.fotosDrive.length > 0 && (
             <div className="pt-6 border-t border-gray-150 dark:border-gray-800 space-y-4">
               <div>
                 <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                   <HardDrive className="w-4 h-4 text-emerald-600" />
-                  Fotos del Equipo en Google Drive
+                  Fotos de Respaldo en Google Drive
                 </h3>
                 <p className="text-xs text-gray-400">Estas imágenes se subieron automáticamente a la carpeta de Google Drive al ingresar el equipo.</p>
               </div>

@@ -614,12 +614,12 @@ export default function CrearServicio() {
 
           </div>
 
-          {/* Card 4: Fotos del Equipo (Google Drive Integration) */}
+          {/* Card 4: Fotos de Respaldo (Google Drive) */}
           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-50 dark:border-gray-800 pb-3">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Camera className="w-5 h-5 text-indigo-600" />
-                4. Fotos del Equipo (Google Drive)
+                4. Fotos de Respaldo (Google Drive)
               </h2>
               {/* Connection state */}
               <div className="flex items-center gap-1.5">
