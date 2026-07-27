@@ -681,7 +681,7 @@ export default function Clientes() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Panel de Clientes
+            Panel de Servicios
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Seleccione una de las siguientes opciones para continuar.
@@ -691,7 +691,7 @@ export default function Clientes() {
         {/* Option Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto pt-6">
           
-          {/* Card: Nuevo Cliente */}
+          {/* Card: Nuevo Servicio */}
           <button 
             type="button"
             onClick={() => {
@@ -706,10 +706,10 @@ export default function Clientes() {
               </div>
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                  Nuevo Cliente
+                  Nuevo Servicio
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Registra un nuevo cliente junto con los datos de su domicilio, su equipo, la fecha de retiro acordada, desperfecto reportado y observaciones de cobro de forma manual y directa.
+                  Registra un nuevo servicio junto con los datos de su domicilio, su equipo, la fecha de retiro acordada, desperfecto reportado y observaciones de cobro de forma manual y directa.
                 </p>
               </div>
             </div>
@@ -719,7 +719,7 @@ export default function Clientes() {
             </div>
           </button>
 
-          {/* Card: Directorio de Clientes */}
+          {/* Card: Lista de Servicios */}
           <button 
             type="button"
             onClick={() => {
@@ -733,10 +733,10 @@ export default function Clientes() {
               </div>
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                  Directorio de Clientes
+                  Lista de Servicios
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Explora la lista completa de clientes registrados, realiza búsquedas por dirección, nombre o teléfono, y visualiza el historial de equipos y servicios de cada cliente.
+                  Explora la lista completa de servicios registrados, realiza búsquedas por dirección, nombre o teléfono, y visualiza el historial de equipos y servicios de cada registro.
                 </p>
               </div>
             </div>
@@ -764,15 +764,15 @@ export default function Clientes() {
               className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-indigo-700 dark:text-indigo-300 hover:text-white bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95 group"
             >
               <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-              <span>{isEditMode ? "Volver al directorio" : "Volver al panel"}</span>
+              <span>{isEditMode ? "Volver a la lista" : "Volver al panel"}</span>
             </button>
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white pt-2">
-              {isEditMode ? "Editar Cliente" : "Ingresar Nuevo Cliente"}
+              {isEditMode ? "Editar Servicio" : "Ingresar Nuevo Servicio"}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {isEditMode 
-                ? "Modifique los campos correspondientes para actualizar la ficha del cliente, su equipo y los datos del servicio."
-                : "Complete el formulario para registrar el cliente, su equipo y los datos del retiro acordado."
+                ? "Modifique los campos correspondientes para actualizar la ficha del servicio, su equipo y los datos del servicio."
+                : "Complete el formulario para registrar el servicio, su equipo y los datos del retiro acordado."
               }
             </p>
           </div>
@@ -785,12 +785,12 @@ export default function Clientes() {
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {isEditMode ? "¡Cliente Actualizado con Éxito!" : "¡Cliente Registrado con Éxito!"}
+                {isEditMode ? "¡Servicio Actualizado con Éxito!" : "¡Servicio Registrado con Éxito!"}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                 {isEditMode 
-                  ? "La información del cliente, su equipo y los datos del servicio han sido actualizados de forma correcta."
-                  : <>El cliente con teléfono <strong>{formTelCel || "S/N"}</strong> se ha guardado en la base de datos junto con su equipo y orden de servicio inicial.</>
+                  ? "La información del servicio, su equipo y los datos del servicio han sido actualizados de forma correcta."
+                  : <>El servicio con teléfono <strong>{formTelCel || "S/N"}</strong> se ha guardado en la base de datos junto con su equipo y orden de servicio inicial.</>
                 }
               </p>
             </div>
@@ -803,7 +803,7 @@ export default function Clientes() {
                   }}
                   className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md cursor-pointer transition-colors"
                 >
-                  Ingresar Otro Cliente
+                  Ingresar Otro Servicio
                 </button>
               )}
               <button
@@ -813,7 +813,7 @@ export default function Clientes() {
                 }}
                 className={`w-full sm:w-auto px-5 py-2.5 ${isEditMode ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md' : 'bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-855 text-gray-700 dark:text-gray-300'} font-semibold text-sm rounded-xl cursor-pointer transition-colors`}
               >
-                Ir al Directorio de Clientes
+                Ir a la Lista de Servicios
               </button>
             </div>
           </div>
@@ -1166,10 +1166,10 @@ export default function Clientes() {
           </button>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-              Directorio de Clientes
+              Lista de Servicios
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Gestión y hojas de servicio de todos los clientes registrados.
+              Gestión y hojas de servicio de todos los servicios registrados.
             </p>
           </div>
         </div>
@@ -1182,7 +1182,7 @@ export default function Clientes() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
-            Nuevo Cliente
+            Nuevo Servicio
           </button>
         )}
       </div>
@@ -1193,7 +1193,7 @@ export default function Clientes() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar cliente por dirección, ID o teléfono..."
+            placeholder="Buscar servicio por dirección, ID o teléfono..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
@@ -1212,7 +1212,7 @@ export default function Clientes() {
         )}
         {filteredClientes.length === 0 ? (
           <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-8 text-center text-gray-400 dark:text-gray-500 text-sm shadow-xs">
-            No se encontraron clientes.
+            No se encontraron servicios.
           </div>
         ) : (
           filteredClientes.map((c) => (
@@ -1293,7 +1293,7 @@ export default function Clientes() {
             {/* Modal Header */}
             <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                {editingCliente ? "Editar Perfil de Cliente" : "Ingresar Nuevo Cliente"}
+                {editingCliente ? "Editar Perfil de Servicio" : "Ingresar Nuevo Servicio"}
               </h2>
               <button 
                 onClick={() => setIsFormOpen(false)}
@@ -1506,10 +1506,10 @@ export default function Clientes() {
               </div>
               <div className="space-y-1.5 flex-1">
                 <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                  ¿Eliminar cliente?
+                  ¿Eliminar servicio?
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Esta acción eliminará de forma permanente este cliente de la base de datos de forma irreversible.
+                  Esta acción eliminará de forma permanente este servicio de la base de datos de forma irreversible.
                 </p>
               </div>
             </div>
@@ -1527,7 +1527,7 @@ export default function Clientes() {
                 onClick={confirmDeleteCliente}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
               >
-                Sí, Eliminar Cliente
+                Sí, Eliminar Servicio
               </button>
             </div>
           </div>
@@ -1544,10 +1544,10 @@ export default function Clientes() {
               </div>
               <div className="space-y-1.5 flex-1">
                 <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                  ¿Eliminar {selectedIds.length} clientes?
+                  ¿Eliminar {selectedIds.length} servicios?
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Esta acción eliminará de forma permanente los {selectedIds.length} clientes seleccionados de la base de datos de forma irreversible.
+                  Esta acción eliminará de forma permanente los {selectedIds.length} servicios seleccionados de la base de datos de forma irreversible.
                 </p>
               </div>
             </div>
@@ -1567,7 +1567,7 @@ export default function Clientes() {
                 disabled={isBulkDeleting}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all disabled:opacity-50 flex items-center gap-1"
               >
-                {isBulkDeleting ? "Eliminando..." : `Sí, Eliminar ${selectedIds.length} Clientes`}
+                {isBulkDeleting ? "Eliminando..." : `Sí, Eliminar ${selectedIds.length} Servicios`}
               </button>
             </div>
           </div>

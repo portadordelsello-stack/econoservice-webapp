@@ -76,7 +76,7 @@ function MainLayout() {
   const navigationLinks = [
     { view: "logistica", label: "Logística", icon: Truck, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "servicios", label: "Taller", icon: Wrench, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
-    { view: "clientes", label: "Clientes", icon: User, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "clientes", label: "Servicios", icon: User, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "insumos", label: "Insumos", icon: Package, roles: ["superadmin", "administracion", "admin", "recepcion", "consulta"] },
     { view: "notificaciones", label: "Notificaciones", icon: Bell, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
     { view: "usuarios", label: "Ajustes", icon: Settings, roles: ["superadmin", "administracion", "admin"] }
