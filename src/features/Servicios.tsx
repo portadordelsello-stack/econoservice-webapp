@@ -20,6 +20,7 @@ import {
   FolderOpen,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Inbox,
   UserCheck,
   Handshake,
@@ -475,15 +476,11 @@ export default function Servicios() {
             return (
               <div
                 key={srv.id}
-                className={`bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/80 rounded-2xl shadow-3xs overflow-hidden transition-all duration-300 ${
-                  isExpanded ? "ring-2 ring-indigo-500/25" : "hover:border-slate-300 dark:hover:border-gray-700"
-                }`}
+                onClick={() => navigate("detalle-servicio", srv.id)}
+                className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/80 rounded-2xl shadow-3xs overflow-hidden transition-all duration-300 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/10 cursor-pointer"
               >
-                {/* Header Banner - interactive click triggers toggle */}
-                <div 
-                  onClick={() => handleToggleExpand(srv)}
-                  className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none bg-gradient-to-r from-slate-50/50 to-white dark:from-gray-850/40 dark:to-gray-900"
-                >
+                {/* Header Banner */}
+                <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 select-none bg-gradient-to-r from-slate-50/50 to-white dark:from-gray-850/40 dark:to-gray-900 hover:from-slate-100 hover:to-white dark:hover:from-gray-800 dark:hover:to-gray-900 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     {/* Unique Highlight Icon */}
                     <div className={`p-2.5 rounded-xl text-xs font-bold shrink-0 ${getEstadoBadgeClass(srv.estado)}`}>
@@ -508,304 +505,13 @@ export default function Servicios() {
                   {/* Right hand side action indicator */}
                   <div className="flex items-center gap-3 self-end md:self-auto">
                     <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                      {isExpanded ? "Ocultar panel" : "Ver / Procesar"}
+                      Ver detalle
                     </span>
                     <div className="p-1.5 bg-slate-100 dark:bg-gray-800 rounded-lg text-slate-500 dark:text-slate-400">
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <ChevronRight className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
-
-                {/* Expanded Ficha Panel */}
-                {isExpanded && (
-                  <div className="border-t border-slate-100 dark:border-gray-800 p-5 sm:p-6 bg-slate-50/20 dark:bg-gray-900/30 space-y-6">
-                    
-                    {/* Row 1: Datos Cliente, Equipo & Desperfecto */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                      
-                      {/* Domicilio del Cliente */}
-                      <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                          <MapPin className="w-4 h-4 text-indigo-500" />
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Domicilio de Entrega</h4>
-                        </div>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-white leading-relaxed">
-                          {addressStr}
-                        </p>
-                        {client?.barrio && (
-                          <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">
-                            Barrio: <span className="font-medium text-slate-600 dark:text-gray-300">{client.barrio}</span>
-                          </p>
-                        )}
-                        {client?.zona && (
-                          <p className="text-xs text-slate-400 dark:text-gray-500">
-                            Zona de Reparación: <span className="font-medium text-slate-600 dark:text-gray-300">{client.zona}</span>
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Datos del Equipo */}
-                      <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                          <Cpu className="w-4 h-4 text-indigo-500" />
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Datos del Equipo</h4>
-                        </div>
-                        <div className="space-y-1.5 text-xs">
-                          <p className="text-sm font-bold text-slate-800 dark:text-white">
-                            {equipo?.tipo || "Aparato"} - {equipo?.marca || "S/M"}
-                          </p>
-                          <p className="text-slate-500 dark:text-gray-400">
-                            Modelo: <span className="font-semibold text-slate-700 dark:text-gray-200">{equipo?.modelo || "S/D"}</span>
-                          </p>
-                          {equipo?.serie && (
-                            <p className="text-slate-500 dark:text-gray-400">
-                              Nº de Serie: <span className="font-mono text-slate-700 dark:text-gray-200 bg-slate-50 dark:bg-gray-800 px-1 py-0.5 rounded">{equipo.serie}</span>
-                            </p>
-                          )}
-                          {equipo?.observaciones && (
-                            <p className="text-slate-400 dark:text-gray-500 italic mt-1">
-                              Observaciones: "{equipo.observaciones}"
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Desperfecto reportado por el usuario */}
-                      <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                          <AlertTriangle className="w-4 h-4 text-amber-500" />
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Desperfecto Usuario</h4>
-                        </div>
-                        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/10 p-2.5 rounded-lg border border-amber-100/50 dark:border-amber-950/20 italic leading-relaxed">
-                          "{srv.desperfectoUsuario || "No se ha detallado un desperfecto específico."}"
-                        </p>
-                      </div>
-
-                    </div>
-
-                    {/* Row 2: Technician Form Inputs */}
-                    <div className="border-t border-slate-150 dark:border-gray-800/80 pt-5 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Wrench className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300">
-                          Panel de Diagnóstico Técnico
-                        </h4>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Referencias Internas */}
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-                            Referencias Internas <span className="text-red-500">*</span>
-                          </label>
-                          <textarea
-                            value={formNotasInternas}
-                            onChange={(e) => setFormNotasInternas(e.target.value)}
-                            placeholder="Escriba comentarios, códigos internos, estado general o notas confidenciales de taller..."
-                            rows={3}
-                            className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
-                          />
-                        </div>
-
-                        {/* Servicios Requeridos */}
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-                            Servicios Requeridos <span className="text-red-500">*</span>
-                          </label>
-                          <textarea
-                            value={formServiciosRequeridos}
-                            onChange={(e) => setFormServiciosRequeridos(e.target.value)}
-                            placeholder="Describa el trabajo técnico a realizar (ej: Cambio de rulemanes, reparación de placa, etc.)..."
-                            rows={3}
-                            className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Repuestos Necesarios (Opcional) */}
-                      <div className="space-y-1.5">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-                          Repuestos Necesarios <span className="text-slate-400 lowercase font-semibold">(opcional)</span>
-                        </label>
-                        <textarea
-                          value={formRepuestosComprar}
-                          onChange={(e) => setFormRepuestosComprar(e.target.value)}
-                          placeholder="Indique si se necesitan repuestos para concretar la reparación..."
-                          rows={2}
-                          className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
-                        />
-                      </div>
-
-                      {isAdmin && (
-                        <>
-                          <hr className="border-slate-150 dark:border-gray-800/60 my-6" />
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between flex-wrap gap-2">
-                              <div className="flex items-center gap-2">
-                                <Handshake className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300">
-                                  Panel de servicios convenidos
-                                </h4>
-                              </div>
-                              {(() => {
-                                const client = clientMap.get(srv.clienteId);
-                                const rawPhone = client?.telCel || client?.telCelBis || client?.telCelOtro || client?.telFijo || "";
-                                const cleanPhone = rawPhone.replace(/\D/g, "");
-                                if (!cleanPhone) return null;
-                                return (
-                                  <a
-                                    href={`https://wa.me/${cleanPhone}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
-                                  >
-                                    <MessageSquare className="w-3.5 h-3.5" />
-                                    <span>Escribirle al Cliente</span>
-                                  </a>
-                                );
-                              })()}
-                            </div>
-                            <div className="space-y-1.5">
-                              <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-                                Servicios Convenidos <span className="text-red-500">*</span>
-                              </label>
-                              <textarea
-                                value={formServiciosConvenidos}
-                                onChange={(e) => setFormServiciosConvenidos(e.target.value)}
-                                placeholder="Escriba los servicios convenidos con el cliente..."
-                                rows={3}
-                                className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
-                              />
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Action buttons */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100 dark:border-gray-800 pt-4 mt-2">
-                        <div>
-                          {(!formNotasInternas.trim() || !formServiciosRequeridos.trim() || (isAdmin && !formServiciosConvenidos.trim())) && (
-                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500">
-                              * Complete todos los campos obligatorios para guardar.
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedId(null)}
-                            className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer"
-                          >
-                            Cancelar
-                          </button>
-                          
-                          {isAdmin ? (
-                            <>
-                              <button
-                                type="button"
-                                disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim() || !formServiciosConvenidos.trim()}
-                                onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA", false)}
-                                className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
-                              >
-                                {submittingId === srv.id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <Clock className="w-3.5 h-3.5" />
-                                )}
-                                <span>Guardar y pasar a espera</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim() || !formServiciosConvenidos.trim()}
-                                onClick={() => handleSaveTechnicianForm(srv, "ACEPTADO", false)}
-                                className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
-                              >
-                                {submittingId === srv.id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                )}
-                                <span>Guardar y pasar a aceptado</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim() || !formServiciosConvenidos.trim()}
-                                onClick={() => handleSaveTechnicianForm(srv, "RECHAZADO", false)}
-                                className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
-                              >
-                                {submittingId === srv.id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <XCircle className="w-3.5 h-3.5" />
-                                )}
-                                <span>Guardar y pasar a rechazado</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim() || !formServiciosConvenidos.trim()}
-                                onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA", true)}
-                                className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
-                              >
-                                {submittingId === srv.id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                )}
-                                <span>Guardar y pasar a TERMINADO</span>
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim()}
-                                onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA", false)}
-                                className="inline-flex items-center justify-center gap-2 h-10 px-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-150 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer"
-                              >
-                                {submittingId === srv.id ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    <span>Guardando...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Save className="w-3.5 h-3.5" />
-                                    <span>Guardar y pasar a EN ESPERA</span>
-                                  </>
-                                )}
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={submittingId !== null || !formNotasInternas.trim() || !formServiciosRequeridos.trim()}
-                                onClick={() => handleSaveTechnicianForm(srv, "EN_ESPERA", true)}
-                                className="inline-flex items-center justify-center gap-2 h-10 px-5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-150 dark:disabled:bg-gray-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-600/10 active:scale-95 cursor-pointer"
-                              >
-                                {submittingId === srv.id ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    <span>Guardando...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="w-3.5 h-3.5" />
-                                    <span>Guardar y pasar a TERMINADO</span>
-                                  </>
-                                )}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </div>
-                )}
               </div>
             );
           })}
