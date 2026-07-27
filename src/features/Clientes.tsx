@@ -147,6 +147,7 @@ export default function Clientes() {
   // Multiple equipments states
   const [formEquipos, setFormEquipos] = useState<{
     id?: string;
+    tipo: string;
     marca: string;
     modelo: string;
     fotosDrive: { id: string; name: string; url: string }[];
@@ -156,6 +157,7 @@ export default function Clientes() {
   // Sub-modal states for adding/editing equipment
   const [isEquipoModalOpen, setIsEquipoModalOpen] = useState(false);
   const [equipoModalIndex, setEquipoModalIndex] = useState<number | null>(null);
+  const [equipoModalTipo, setEquipoModalTipo] = useState("Lavarropas");
   const [equipoModalMarca, setEquipoModalMarca] = useState("");
   const [equipoModalModelo, setEquipoModalModelo] = useState("");
   const [equipoModalPhotos, setEquipoModalPhotos] = useState<{ id: string; name: string; url: string }[]>([]);
@@ -257,6 +259,7 @@ export default function Clientes() {
     setDeletedEquipoIds([]);
     setIsEquipoModalOpen(false);
     setEquipoModalIndex(null);
+    setEquipoModalTipo("Lavarropas");
     setEquipoModalMarca("");
     setEquipoModalModelo("");
     setEquipoModalPhotos([]);
@@ -272,6 +275,7 @@ export default function Clientes() {
       let finalEquipos = [...formEquipos];
       if (finalEquipos.length === 0 && (formMarca.trim() || formModelo.trim())) {
         finalEquipos.push({
+          tipo: "Lavarropas",
           marca: formMarca.trim() || "Genérico",
           modelo: formModelo.trim() || "Genérico",
           fotosDrive: uploadedPhotos
@@ -314,7 +318,7 @@ export default function Clientes() {
       for (const eq of finalEquipos) {
         const equipoId = await EquiposService.create({
           clienteId,
-          tipo: "Equipo",
+          tipo: eq.tipo || "Lavarropas",
           marca: eq.marca.trim() || "Genérico",
           modelo: eq.modelo.trim() || "Genérico",
           observaciones: ""
@@ -324,7 +328,7 @@ export default function Clientes() {
           clienteId,
           equipoId,
           fechaIngreso: new Date(),
-          aparato: "Equipo",
+          aparato: eq.tipo || "Lavarropas",
           marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
           desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
           infoLogistica: infoLogisticaFull,
@@ -404,6 +408,7 @@ export default function Clientes() {
           const fotosDrive = eqServices.length > 0 ? (eqServices[0].fotosDrive || []) : [];
           return {
             id: eq.id,
+            tipo: eq.tipo || "Lavarropas",
             marca: eq.marca || "",
             modelo: eq.modelo || "",
             fotosDrive
@@ -474,6 +479,7 @@ export default function Clientes() {
       let finalEquipos = [...formEquipos];
       if (finalEquipos.length === 0 && (formMarca.trim() || formModelo.trim())) {
         finalEquipos.push({
+          tipo: "Lavarropas",
           marca: formMarca.trim() || "Genérico",
           modelo: formModelo.trim() || "Genérico",
           fotosDrive: uploadedPhotos
@@ -519,6 +525,7 @@ export default function Clientes() {
         if (eq.id) {
           // Existing equipment: update details
           await EquiposService.update(eq.id, {
+            tipo: eq.tipo || "Lavarropas",
             marca: eq.marca.trim() || "Genérico",
             modelo: eq.modelo.trim() || "Genérico"
           });
@@ -528,6 +535,7 @@ export default function Clientes() {
           if (eqServices.length > 0) {
             const srv = eqServices[0];
             await ServiciosService.update(srv.id!, {
+              aparato: eq.tipo || "Lavarropas",
               marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
               fotosDrive: eq.fotosDrive || []
             }, profile?.uid || "system", profile?.nombre || "Usuario");
@@ -536,7 +544,7 @@ export default function Clientes() {
           // New equipment added in this editing session
           const newEqId = await EquiposService.create({
             clienteId: editingId,
-            tipo: "Equipo",
+            tipo: eq.tipo || "Lavarropas",
             marca: eq.marca.trim() || "Genérico",
             modelo: eq.modelo.trim() || "Genérico",
             observaciones: ""
@@ -546,7 +554,7 @@ export default function Clientes() {
             clienteId: editingId,
             equipoId: newEqId,
             fechaIngreso: new Date(),
-            aparato: "Equipo",
+            aparato: eq.tipo || "Lavarropas",
             marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
             desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
             infoLogistica: infoLogisticaFull,
@@ -974,6 +982,7 @@ export default function Clientes() {
                   type="button"
                   onClick={() => {
                     setEquipoModalIndex(null);
+                    setEquipoModalTipo("Lavarropas");
                     setEquipoModalMarca("");
                     setEquipoModalModelo("");
                     setEquipoModalPhotos([]);
@@ -1002,7 +1011,9 @@ export default function Clientes() {
                           {idx + 1}
                         </div>
                         <div>
-                          <span className="font-bold text-[10px] text-gray-400 dark:text-gray-500 block uppercase tracking-wider">Marca / Modelo</span>
+                          <span className="font-bold text-[10px] text-indigo-650 dark:text-indigo-400 block uppercase tracking-wider">
+                            {eq.tipo || "Lavarropas"}
+                          </span>
                           <span className="text-sm font-bold text-gray-900 dark:text-white">
                             {eq.marca} - {eq.modelo}
                           </span>
@@ -1021,6 +1032,7 @@ export default function Clientes() {
                             type="button"
                             onClick={() => {
                               setEquipoModalIndex(idx);
+                              setEquipoModalTipo(eq.tipo || "Lavarropas");
                               setEquipoModalMarca(eq.marca);
                               setEquipoModalModelo(eq.modelo);
                               setEquipoModalPhotos(eq.fotosDrive || []);
@@ -1230,30 +1242,49 @@ export default function Clientes() {
 
               {/* Modal Content */}
               <div className="p-6 space-y-5 overflow-y-auto flex-1 text-left">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                      Marca *
+                      Tipo de Aparato *
                     </label>
-                    <input
-                      type="text"
-                      value={equipoModalMarca}
-                      onChange={(e) => setEquipoModalMarca(e.target.value)}
-                      placeholder="Ej. Samsung, Whirlpool"
-                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
+                    <select
+                      value={equipoModalTipo}
+                      onChange={(e) => setEquipoModalTipo(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer"
+                    >
+                      <option value="Lavarropas">Lavarropas</option>
+                      <option value="Lavavajillas">Lavavajillas</option>
+                      <option value="Microondas">Microondas</option>
+                      <option value="Lavarropa Centrifugo">Lavarropa Centrifugo</option>
+                      <option value="Lavarropas Calor">Lavarropas Calor</option>
+                      <option value="Ventilador">Ventilador</option>
+                    </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                      Modelo *
-                    </label>
-                    <input
-                      type="text"
-                      value={equipoModalModelo}
-                      onChange={(e) => setEquipoModalModelo(e.target.value)}
-                      placeholder="Ej. Active DualWash"
-                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                        Marca *
+                      </label>
+                      <input
+                        type="text"
+                        value={equipoModalMarca}
+                        onChange={(e) => setEquipoModalMarca(e.target.value)}
+                        placeholder="Ej. Samsung, Whirlpool"
+                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                        Modelo *
+                      </label>
+                      <input
+                        type="text"
+                        value={equipoModalModelo}
+                        onChange={(e) => setEquipoModalModelo(e.target.value)}
+                        placeholder="Ej. Active DualWash"
+                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1350,6 +1381,7 @@ export default function Clientes() {
                       return;
                     }
                     const newEq = {
+                      tipo: equipoModalTipo,
                       marca: equipoModalMarca.trim(),
                       modelo: equipoModalModelo.trim(),
                       fotosDrive: equipoModalPhotos
