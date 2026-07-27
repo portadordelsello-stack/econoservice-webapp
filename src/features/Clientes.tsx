@@ -150,6 +150,7 @@ export default function Clientes() {
     tipo: string;
     marca: string;
     modelo: string;
+    desperfectoUsuario: string;
     fotosDrive: { id: string; name: string; url: string }[];
   }[]>([]);
   const [deletedEquipoIds, setDeletedEquipoIds] = useState<string[]>([]);
@@ -160,6 +161,7 @@ export default function Clientes() {
   const [equipoModalTipo, setEquipoModalTipo] = useState("Lavarropas");
   const [equipoModalMarca, setEquipoModalMarca] = useState("");
   const [equipoModalModelo, setEquipoModalModelo] = useState("");
+  const [equipoModalDesperfecto, setEquipoModalDesperfecto] = useState("");
   const [equipoModalPhotos, setEquipoModalPhotos] = useState<{ id: string; name: string; url: string }[]>([]);
 
   useEffect(() => {
@@ -262,6 +264,7 @@ export default function Clientes() {
     setEquipoModalTipo("Lavarropas");
     setEquipoModalMarca("");
     setEquipoModalModelo("");
+    setEquipoModalDesperfecto("");
     setEquipoModalPhotos([]);
   };
 
@@ -278,6 +281,7 @@ export default function Clientes() {
           tipo: "Lavarropas",
           marca: formMarca.trim() || "Genérico",
           modelo: formModelo.trim() || "Genérico",
+          desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
           fotosDrive: uploadedPhotos
         });
       }
@@ -330,7 +334,7 @@ export default function Clientes() {
           fechaIngreso: new Date(),
           aparato: eq.tipo || "Lavarropas",
           marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
-          desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
+          desperfectoUsuario: eq.desperfectoUsuario || "No especificado",
           infoLogistica: infoLogisticaFull,
           notasInternas: formObservaciones.trim() || "",
           acepta: false,
@@ -406,11 +410,13 @@ export default function Clientes() {
           // Find services for this client and this specific equipment
           const eqServices = allServices.filter(s => s.clienteId === c.id && s.equipoId === eq.id);
           const fotosDrive = eqServices.length > 0 ? (eqServices[0].fotosDrive || []) : [];
+          const desperfectoUsuario = eqServices.length > 0 ? (eqServices[0].desperfectoUsuario || "") : "";
           return {
             id: eq.id,
             tipo: eq.tipo || "Lavarropas",
             marca: eq.marca || "",
             modelo: eq.modelo || "",
+            desperfectoUsuario,
             fotosDrive
           };
         });
@@ -482,6 +488,7 @@ export default function Clientes() {
           tipo: "Lavarropas",
           marca: formMarca.trim() || "Genérico",
           modelo: formModelo.trim() || "Genérico",
+          desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
           fotosDrive: uploadedPhotos
         });
       }
@@ -537,6 +544,7 @@ export default function Clientes() {
             await ServiciosService.update(srv.id!, {
               aparato: eq.tipo || "Lavarropas",
               marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
+              desperfectoUsuario: eq.desperfectoUsuario || "No especificado",
               fotosDrive: eq.fotosDrive || []
             }, profile?.uid || "system", profile?.nombre || "Usuario");
           }
@@ -556,7 +564,7 @@ export default function Clientes() {
             fechaIngreso: new Date(),
             aparato: eq.tipo || "Lavarropas",
             marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
-            desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
+            desperfectoUsuario: eq.desperfectoUsuario || "No especificado",
             infoLogistica: infoLogisticaFull,
             notasInternas: formObservaciones.trim() || "",
             acepta: false,
@@ -985,6 +993,7 @@ export default function Clientes() {
                     setEquipoModalTipo("Lavarropas");
                     setEquipoModalMarca("");
                     setEquipoModalModelo("");
+                    setEquipoModalDesperfecto("");
                     setEquipoModalPhotos([]);
                     setIsEquipoModalOpen(true);
                   }}
@@ -1035,6 +1044,7 @@ export default function Clientes() {
                               setEquipoModalTipo(eq.tipo || "Lavarropas");
                               setEquipoModalMarca(eq.marca);
                               setEquipoModalModelo(eq.modelo);
+                              setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
                               setEquipoModalPhotos(eq.fotosDrive || []);
                               setIsEquipoModalOpen(true);
                             }}
@@ -1119,20 +1129,6 @@ export default function Clientes() {
                       Anotaciones especiales para el personal de retiro.
                     </p>
                   </div>
-                </div>
-
-                {/* Logistics Info / Desperfecto */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                    Desperfecto Usuario (Lo que el cliente dice del problema)
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formDesperfectoUsuario}
-                    onChange={(e) => setFormDesperfectoUsuario(e.target.value)}
-                    placeholder="Ej. El cliente indica que no enciende y hace un pitido extraño al enchufar."
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
                 </div>
 
                 {/* Checkboxes NS1 NS2 NS3 */}
@@ -1286,6 +1282,18 @@ export default function Clientes() {
                       />
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                      Desperfecto Usuario (Lo que el cliente dice del problema)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={equipoModalDesperfecto}
+                      onChange={(e) => setEquipoModalDesperfecto(e.target.value)}
+                      placeholder="Ej. El lavarropas no desagota y hace ruido al centrifugar."
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
                 </div>
 
                 {/* Photo Upload inside modal */}
@@ -1384,6 +1392,7 @@ export default function Clientes() {
                       tipo: equipoModalTipo,
                       marca: equipoModalMarca.trim(),
                       modelo: equipoModalModelo.trim(),
+                      desperfectoUsuario: equipoModalDesperfecto.trim(),
                       fotosDrive: equipoModalPhotos
                     };
                     
