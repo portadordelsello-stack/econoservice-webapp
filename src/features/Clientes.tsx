@@ -295,6 +295,29 @@ export default function Clientes() {
         setFormSaving(false);
         return;
       }
+
+      // Validation for logistics users
+      if (profile?.rol === "logistica") {
+        if (!formNS1 && !formNS2 && !formNS3) {
+          setFormError("Para usuarios de logística, debe seleccionar al menos una de las Opciones Logísticas (NS1, NS2, NS3).");
+          setFormSaving(false);
+          return;
+        }
+
+        for (let i = 0; i < finalEquipos.length; i++) {
+          const eq = finalEquipos[i];
+          if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
+            setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.marca} ${eq.modelo}).`);
+            setFormSaving(false);
+            return;
+          }
+          if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
+            setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.marca} ${eq.modelo}).`);
+            setFormSaving(false);
+            return;
+          }
+        }
+      }
       
       const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
 
@@ -502,6 +525,29 @@ export default function Clientes() {
         setFormError("Debe añadir al menos un equipo en la sección de Equipos.");
         setFormSaving(false);
         return;
+      }
+
+      // Validation for logistics users
+      if (profile?.rol === "logistica") {
+        if (!formNS1 && !formNS2 && !formNS3) {
+          setFormError("Para usuarios de logística, debe seleccionar al menos una de las Opciones Logísticas (NS1, NS2, NS3).");
+          setFormSaving(false);
+          return;
+        }
+
+        for (let i = 0; i < finalEquipos.length; i++) {
+          const eq = finalEquipos[i];
+          if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
+            setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.marca} ${eq.modelo}).`);
+            setFormSaving(false);
+            return;
+          }
+          if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
+            setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.marca} ${eq.modelo}).`);
+            setFormSaving(false);
+            return;
+          }
+        }
       }
 
       const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
@@ -1398,6 +1444,16 @@ export default function Clientes() {
                     if (!equipoModalMarca.trim() || !equipoModalModelo.trim()) {
                       alert("Por favor, complete Marca y Modelo.");
                       return;
+                    }
+                    if (profile?.rol === "logistica") {
+                      if (!equipoModalDesperfecto.trim()) {
+                        alert("Para usuarios de logística, el desperfecto del usuario es obligatorio.");
+                        return;
+                      }
+                      if (!equipoModalPhotos || equipoModalPhotos.length === 0) {
+                        alert("Para usuarios de logística, debe subir al menos una foto de respaldo.");
+                        return;
+                      }
                     }
                     const newEq = {
                       tipo: equipoModalTipo,
