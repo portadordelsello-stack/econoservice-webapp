@@ -24,7 +24,8 @@ import {
   Check,
   Save,
   Eye,
-  X
+  X,
+  Trash2
 } from "lucide-react";
 
 type LogisticaView = "hub" | "tracker" | "retiros" | "agenda-general" | "entregas" | "detalle-entrega";
@@ -565,6 +566,26 @@ export default function Logistica() {
                             }`}>
                               {isRetirado ? "En Taller" : "Pendiente"}
                             </span>
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (window.confirm("¿Está seguro que desea eliminar este servicio/retiro? Esta acción no se puede deshacer.")) {
+                                    try {
+                                      await ServiciosService.delete(srv.id!);
+                                      await loadData();
+                                    } catch (err) {
+                                      console.error("Error deleting service:", err);
+                                      alert("Error al eliminar el servicio.");
+                                    }
+                                  }
+                                }}
+                                className="p-1 text-red-650 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer flex items-center justify-center shrink-0"
+                                title="Eliminar Servicio/Retiro"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -849,9 +870,31 @@ export default function Logistica() {
                                 <span className="text-[11px] font-extrabold text-indigo-750 dark:text-indigo-400 uppercase bg-indigo-100/70 dark:bg-indigo-950/40 px-2 py-0.5 rounded">
                                   {formatSpanishDate(datePart)}
                                 </span>
-                                <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-gray-300">
-                                  <Clock className="w-3.5 h-3.5" />
-                                  <span>{formatTimeStr(srv.withdrawal.fechaRetiroStr)}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-gray-300">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>{formatTimeStr(srv.withdrawal.fechaRetiroStr)}</span>
+                                  </div>
+                                  {isAdmin && (
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        if (window.confirm("¿Está seguro que desea eliminar este servicio/retiro? Esta acción no se puede deshacer.")) {
+                                          try {
+                                            await ServiciosService.delete(srv.id!);
+                                            await loadData();
+                                          } catch (err) {
+                                            console.error("Error deleting service:", err);
+                                            alert("Error al eliminar el servicio.");
+                                          }
+                                        }
+                                      }}
+                                      className="p-1 text-red-650 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                                      title="Eliminar Servicio/Retiro"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
 
@@ -1212,16 +1255,38 @@ export default function Logistica() {
                                   </span>
                                 </td>
                                 <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedDelivery(srv);
-                                      setView("detalle-entrega");
-                                    }}
-                                    className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
-                                    title="Ver detalles y planificar"
-                                  >
-                                    <Eye className="w-4.5 h-4.5" />
-                                  </button>
+                                  <div className="inline-flex items-center gap-1.5 justify-end">
+                                    {isAdmin && (
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          if (window.confirm("¿Está seguro que desea eliminar este servicio/entrega? Esta acción no se puede deshacer.")) {
+                                            try {
+                                              await ServiciosService.delete(srv.id!);
+                                              await loadData();
+                                            } catch (err) {
+                                              console.error("Error deleting service:", err);
+                                              alert("Error al eliminar el servicio.");
+                                            }
+                                          }
+                                        }}
+                                        className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
+                                        title="Eliminar de Taller"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        setSelectedDelivery(srv);
+                                        setView("detalle-entrega");
+                                      }}
+                                      className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
+                                      title="Ver detalles y planificar"
+                                    >
+                                      <Eye className="w-4.5 h-4.5" />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -1321,17 +1386,39 @@ export default function Logistica() {
                                   </span>
                                 </div>
                               </td>
-                              <td className="py-3.5 px-4 text-right">
-                                <button
-                                  onClick={() => {
-                                    setSelectedDelivery(srv);
-                                    setView("detalle-entrega");
-                                  }}
-                                  className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
-                                  title="Ver detalles"
-                                >
-                                  <Eye className="w-4.5 h-4.5" />
-                                </button>
+                              <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
+                                <div className="inline-flex items-center gap-1.5 justify-end">
+                                  {isAdmin && (
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        if (window.confirm("¿Está seguro que desea eliminar este servicio entregado? Esta acción no se puede deshacer.")) {
+                                          try {
+                                            await ServiciosService.delete(srv.id!);
+                                            await loadData();
+                                          } catch (err) {
+                                            console.error("Error deleting service:", err);
+                                            alert("Error al eliminar el servicio.");
+                                          }
+                                        }
+                                      }}
+                                      className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
+                                      title="Eliminar de Historial"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setSelectedDelivery(srv);
+                                      setView("detalle-entrega");
+                                    }}
+                                    className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
+                                    title="Ver detalles"
+                                  >
+                                    <Eye className="w-4.5 h-4.5" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );

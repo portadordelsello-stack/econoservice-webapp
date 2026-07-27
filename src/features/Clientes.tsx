@@ -44,7 +44,7 @@ export default function Clientes() {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
   
-  const isSuperadmin = profile?.rol === "superadmin";
+  const isAdmin = profile?.rol === "superadmin" || profile?.rol === "admin" || profile?.rol === "administracion";
 
   const handleDeleteCliente = (id: string) => {
     if (!id) return;
@@ -1611,7 +1611,7 @@ export default function Clientes() {
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
-                {isSuperadmin && (
+                {isAdmin && (
                   <button
                     onClick={() => handleDeleteCliente(c.id || "")}
                     className="p-1.5 text-red-650 hover:text-red-700 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/80 dark:hover:bg-red-950/40 rounded-lg transition-all cursor-pointer border border-red-100/40 dark:border-red-900/20 flex items-center justify-center hover:scale-105 active:scale-95"

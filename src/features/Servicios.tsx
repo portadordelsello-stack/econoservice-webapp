@@ -25,7 +25,8 @@ import {
   UserCheck,
   Handshake,
   XCircle,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from "lucide-react";
 
 const getEstadoBadgeClass = (estado: string) => {
@@ -504,6 +505,27 @@ export default function Servicios() {
 
                   {/* Right hand side action indicator */}
                   <div className="flex items-center gap-3 self-end md:self-auto">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (window.confirm("¿Está seguro que desea eliminar esta orden de servicio del taller? Esta acción no se puede deshacer.")) {
+                            try {
+                              await ServiciosService.delete(srv.id);
+                              await loadAllData();
+                            } catch (err) {
+                              console.error("Error deleting service:", err);
+                              alert("Error al eliminar el servicio.");
+                            }
+                          }
+                        }}
+                        className="p-1.5 text-red-600 hover:text-red-700 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/80 dark:hover:bg-red-950/40 rounded-lg transition-all cursor-pointer border border-red-100/40 dark:border-red-900/20 flex items-center justify-center hover:scale-105 active:scale-95 mr-1"
+                        title="Eliminar de Taller"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                       Ver detalle
                     </span>
