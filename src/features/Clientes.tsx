@@ -24,7 +24,8 @@ import {
   Trash,
   Calendar,
   Upload,
-  ImageIcon
+  ImageIcon,
+  Plus
 } from "lucide-react";
 
 export default function Clientes() {
@@ -143,6 +144,22 @@ export default function Clientes() {
   const [uploadedPhotos, setUploadedPhotos] = useState<{id: string; name: string; url: string}[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // Multiple equipments states
+  const [formEquipos, setFormEquipos] = useState<{
+    id?: string;
+    marca: string;
+    modelo: string;
+    fotosDrive: { id: string; name: string; url: string }[];
+  }[]>([]);
+  const [deletedEquipoIds, setDeletedEquipoIds] = useState<string[]>([]);
+
+  // Sub-modal states for adding/editing equipment
+  const [isEquipoModalOpen, setIsEquipoModalOpen] = useState(false);
+  const [equipoModalIndex, setEquipoModalIndex] = useState<number | null>(null);
+  const [equipoModalMarca, setEquipoModalMarca] = useState("");
+  const [equipoModalModelo, setEquipoModalModelo] = useState("");
+  const [equipoModalPhotos, setEquipoModalPhotos] = useState<{ id: string; name: string; url: string }[]>([]);
+
   useEffect(() => {
     const token = DriveService.getAccessToken();
     if (token) setDriveToken(token);
@@ -182,17 +199,29 @@ export default function Clientes() {
       const filename = `equipo_${dirClean || "sin_dir"}_${Date.now()}.${ext}`;
       const result = await DriveService.uploadPhoto(file, filename);
       const newPhoto = { id: result.id, name: result.name, url: result.url };
-      setUploadedPhotos(prev => [...prev, newPhoto]);
-      // Save immediately to Firestore if servicio exists
-      if (editingServicioId) {
-        const srv = clienteServicios.find(s => s.id === editingServicioId);
-        const existing = srv?.fotosDrive || [];
-        await ServiciosService.update(
-          editingServicioId,
-          { fotosDrive: [...existing, newPhoto] },
-          profile?.uid || "system",
-          profile?.nombre || "Usuario"
-        );
+      
+      if (isEquipoModalOpen) {
+        setEquipoModalPhotos(prev => [...prev, newPhoto]);
+      } else {
+        setUploadedPhotos(prev => [...prev, newPhoto]);
+      }
+      
+      // Save immediately to Firestore if editing an existing equipment's service order in the modal
+      if (isEquipoModalOpen && equipoModalIndex !== null && editingId) {
+        const eq = formEquipos[equipoModalIndex];
+        if (eq && eq.id) {
+          const services = await ServiciosService.getAll();
+          const srv = services.find(s => s.clienteId === editingId && s.equipoId === eq.id);
+          if (srv && srv.id) {
+            const existing = srv.fotosDrive || [];
+            await ServiciosService.update(
+              srv.id,
+              { fotosDrive: [...existing, newPhoto] },
+              profile?.uid || "system",
+              profile?.nombre || "Usuario"
+            );
+          }
+        }
       }
     } catch (err: any) {
       console.error("Error uploading photo:", err);
@@ -223,6 +252,14 @@ export default function Clientes() {
     setFormError("");
     setUploadedPhotos([]);
     setUploadError(null);
+    // Reset multiple equipment states
+    setFormEquipos([]);
+    setDeletedEquipoIds([]);
+    setIsEquipoModalOpen(false);
+    setEquipoModalIndex(null);
+    setEquipoModalMarca("");
+    setEquipoModalModelo("");
+    setEquipoModalPhotos([]);
   };
 
   const handleCustomFormSubmit = async (e: React.FormEvent) => {
@@ -231,6 +268,21 @@ export default function Clientes() {
     try {
       setFormSaving(true);
       setFormError("");
+
+      let finalEquipos = [...formEquipos];
+      if (finalEquipos.length === 0 && (formMarca.trim() || formModelo.trim())) {
+        finalEquipos.push({
+          marca: formMarca.trim() || "Genérico",
+          modelo: formModelo.trim() || "Genérico",
+          fotosDrive: uploadedPhotos
+        });
+      }
+
+      if (finalEquipos.length === 0) {
+        setFormError("Debe añadir al menos un equipo en la sección de Equipos.");
+        setFormSaving(false);
+        return;
+      }
       
       const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
 
@@ -246,38 +298,34 @@ export default function Clientes() {
         observaciones: formObservaciones.trim() || ""
       });
 
-      // 2. Create equipment (if any marca or modelo is filled)
-      let equipoId = "";
-      if (formMarca.trim() || formModelo.trim()) {
-        equipoId = await EquiposService.create({
+      // 2. Loop over finalEquipos and save them
+      const selectedNS = [
+        formNS1 ? "NS1" : "",
+        formNS2 ? "NS2" : "",
+        formNS3 ? "NS3" : ""
+      ].filter(Boolean).join(", ");
+
+      const infoLogisticaFull = [
+        formFechaRetiro.trim() ? `Retiro acordado: ${formFechaRetiro.trim()}` : "",
+        formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
+        selectedNS ? `Config: ${selectedNS}` : ""
+      ].filter(Boolean).join(" | ");
+
+      for (const eq of finalEquipos) {
+        const equipoId = await EquiposService.create({
           clienteId,
           tipo: "Equipo",
-          marca: formMarca.trim() || "Genérico",
-          modelo: formModelo.trim() || "Genérico",
+          marca: eq.marca.trim() || "Genérico",
+          modelo: eq.modelo.trim() || "Genérico",
           observaciones: ""
         });
-      }
-
-      // 3. Create service order (if we have an equipment, create service order)
-      if (equipoId) {
-        const selectedNS = [
-          formNS1 ? "NS1" : "",
-          formNS2 ? "NS2" : "",
-          formNS3 ? "NS3" : ""
-        ].filter(Boolean).join(", ");
-
-        const infoLogisticaFull = [
-          formFechaRetiro.trim() ? `Retiro acordado: ${formFechaRetiro.trim()}` : "",
-          formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
-          selectedNS ? `Config: ${selectedNS}` : ""
-        ].filter(Boolean).join(" | ");
 
         const newServId = await ServiciosService.create({
           clienteId,
           equipoId,
           fechaIngreso: new Date(),
           aparato: "Equipo",
-          marcaModelo: `${formMarca.trim()} ${formModelo.trim()}`.trim(),
+          marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
           desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
           infoLogistica: infoLogisticaFull,
           notasInternas: formObservaciones.trim() || "",
@@ -291,14 +339,15 @@ export default function Clientes() {
           terminado: false,
           factura: false,
           contado: false,
+          fotosDrive: eq.fotosDrive || [],
           createdBy: profile?.uid || "system"
         }, profile?.uid || "system", profile?.nombre || "Usuario");
 
-        // Notify Logistica
+        // Notify Logistica for each equipment
         await NotificationsService.create({
           targetRole: "logistica",
           title: "Nuevo Retiro Programado",
-          message: `Se registró un nuevo cliente (${clientName}) con retiro/servicio a coordinar.`,
+          message: `Se registró un nuevo servicio (${clientName}) con retiro/servicio a coordinar para ${eq.marca} ${eq.modelo}.`,
           serviceId: newServId
         });
       }
@@ -343,19 +392,35 @@ export default function Clientes() {
       setFormNS3(false);
 
       if (c.id) {
-        // Fetch equipment
+        // Fetch all equipments of the client
         const equipments = await EquiposService.getByCliente(c.id);
+        
+        // Fetch all services to match the fotosDrive of each equipment
+        const allServices = await ServiciosService.getAll();
+        
+        const mappedEquipos = equipments.map(eq => {
+          // Find services for this client and this specific equipment
+          const eqServices = allServices.filter(s => s.clienteId === c.id && s.equipoId === eq.id);
+          const fotosDrive = eqServices.length > 0 ? (eqServices[0].fotosDrive || []) : [];
+          return {
+            id: eq.id,
+            marca: eq.marca || "",
+            modelo: eq.modelo || "",
+            fotosDrive
+          };
+        });
+        
+        setFormEquipos(mappedEquipos);
+        setDeletedEquipoIds([]);
+
         if (equipments.length > 0) {
           const eq = equipments[0];
           setEditingEquipoId(eq.id || null);
           setFormMarca(eq.marca || "");
           setFormModelo(eq.modelo || "");
 
-          // Fetch services (retrieve all and filter client-side to minimize index errors)
-          const services = await ServiciosService.getAll();
-          const clientServices = services.filter(s => s.clienteId === c.id && s.equipoId === eq.id);
+          const clientServices = allServices.filter(s => s.clienteId === c.id && s.equipoId === eq.id);
           if (clientServices.length > 0) {
-            // Get the most recent service
             const srv = clientServices[0];
             setEditingServicioId(srv.id || null);
             setFormDesperfectoUsuario(srv.desperfectoUsuario || "");
@@ -406,6 +471,21 @@ export default function Clientes() {
       setFormSaving(true);
       setFormError("");
 
+      let finalEquipos = [...formEquipos];
+      if (finalEquipos.length === 0 && (formMarca.trim() || formModelo.trim())) {
+        finalEquipos.push({
+          marca: formMarca.trim() || "Genérico",
+          modelo: formModelo.trim() || "Genérico",
+          fotosDrive: uploadedPhotos
+        });
+      }
+
+      if (finalEquipos.length === 0) {
+        setFormError("Debe añadir al menos un equipo en la sección de Equipos.");
+        setFormSaving(false);
+        return;
+      }
+
       const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
 
       // 1. Update client
@@ -419,29 +499,7 @@ export default function Clientes() {
         observaciones: formObservaciones.trim() || ""
       });
 
-      // 2. Handle Equipment
-      let currentEquipoId = editingEquipoId;
-      if (formMarca.trim() || formModelo.trim()) {
-        if (currentEquipoId) {
-          // Update equipment
-          await EquiposService.update(currentEquipoId, {
-            marca: formMarca.trim() || "Genérico",
-            modelo: formModelo.trim() || "Genérico"
-          });
-        } else {
-          // Create equipment
-          currentEquipoId = await EquiposService.create({
-            clienteId: editingId,
-            tipo: "Equipo",
-            marca: formMarca.trim() || "Genérico",
-            modelo: formModelo.trim() || "Genérico",
-            observaciones: ""
-          });
-          setEditingEquipoId(currentEquipoId);
-        }
-      }
-
-      // 3. Handle Service Order
+      // 2. Prepare logistics text
       const selectedNS = [
         formNS1 ? "NS1" : "",
         formNS2 ? "NS2" : "",
@@ -454,23 +512,42 @@ export default function Clientes() {
         selectedNS ? `Config: ${selectedNS}` : ""
       ].filter(Boolean).join(" | ");
 
-      if (currentEquipoId) {
-        if (editingServicioId) {
-          // Update service order
-          await ServiciosService.update(editingServicioId, {
-            marcaModelo: `${formMarca.trim()} ${formModelo.trim()}`.trim(),
-            desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
-            infoLogistica: infoLogisticaFull,
-            notasInternas: formObservaciones.trim() || ""
-          }, profile?.uid || "system", profile?.nombre || "Usuario");
+      // 3. Process equipments
+      const allServices = await ServiciosService.getAll();
+      
+      for (const eq of finalEquipos) {
+        if (eq.id) {
+          // Existing equipment: update details
+          await EquiposService.update(eq.id, {
+            marca: eq.marca.trim() || "Genérico",
+            modelo: eq.modelo.trim() || "Genérico"
+          });
+
+          // Update corresponding service order if it exists
+          const eqServices = allServices.filter(s => s.clienteId === editingId && s.equipoId === eq.id);
+          if (eqServices.length > 0) {
+            const srv = eqServices[0];
+            await ServiciosService.update(srv.id!, {
+              marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
+              fotosDrive: eq.fotosDrive || []
+            }, profile?.uid || "system", profile?.nombre || "Usuario");
+          }
         } else {
-          // Create service order
+          // New equipment added in this editing session
+          const newEqId = await EquiposService.create({
+            clienteId: editingId,
+            tipo: "Equipo",
+            marca: eq.marca.trim() || "Genérico",
+            modelo: eq.modelo.trim() || "Genérico",
+            observaciones: ""
+          });
+
           const newServId = await ServiciosService.create({
             clienteId: editingId,
-            equipoId: currentEquipoId,
+            equipoId: newEqId,
             fechaIngreso: new Date(),
             aparato: "Equipo",
-            marcaModelo: `${formMarca.trim()} ${formModelo.trim()}`.trim(),
+            marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
             desperfectoUsuario: formDesperfectoUsuario.trim() || "No especificado",
             infoLogistica: infoLogisticaFull,
             notasInternas: formObservaciones.trim() || "",
@@ -484,10 +561,23 @@ export default function Clientes() {
             terminado: false,
             factura: false,
             contado: false,
+            fotosDrive: eq.fotosDrive || [],
             createdBy: profile?.uid || "system"
           }, profile?.uid || "system", profile?.nombre || "Usuario");
-          setEditingServicioId(newServId);
+
+          // Notify Logistica for new equipment service order
+          await NotificationsService.create({
+            targetRole: "logistica",
+            title: "Nuevo Retiro Programado",
+            message: `Se registró un nuevo equipo (${eq.marca} ${eq.modelo}) para el servicio de ${clientName}.`,
+            serviceId: newServId
+          });
         }
+      }
+
+      // 4. Delete removed equipments from Firestore
+      for (const delId of deletedEquipoIds) {
+        await EquiposService.delete(delId);
       }
 
       setFormSuccess(true);
@@ -873,121 +963,93 @@ export default function Clientes() {
               </div>
             </div>
 
-            {/* Section 3: Equipo */}
+            {/* Section 3: Equipos */}
             <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-4">
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-2 flex items-center gap-2">
-                <Laptop className="w-4 h-4 text-indigo-500" />
-                2. Datos del Equipo
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                    Marca del Equipo
-                  </label>
-                  <input
-                    type="text"
-                    value={formMarca}
-                    onChange={(e) => setFormMarca(e.target.value)}
-                    placeholder="Ej. Samsung, Whirlpool"
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                    Modelo del Equipo
-                  </label>
-                  <input
-                    type="text"
-                    value={formModelo}
-                    onChange={(e) => setFormModelo(e.target.value)}
-                    placeholder="Ej. Active DualWash"
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                </div>
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <Laptop className="w-4 h-4 text-indigo-500" />
+                  2. Equipos
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEquipoModalIndex(null);
+                    setEquipoModalMarca("");
+                    setEquipoModalModelo("");
+                    setEquipoModalPhotos([]);
+                    setIsEquipoModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Añadir Equipo
+                </button>
               </div>
 
-              {/* Photo Upload */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                  Foto del Equipo
-                </label>
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* Hidden file input */}
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) await uploadFileToDrive(file);
-                      e.target.value = "";
-                    }}
-                  />
-                  {/* Upload button */}
-                  <button
-                    type="button"
-                    onClick={handleConnectAndUpload}
-                    disabled={uploadingPhoto || connectingDrive}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
-                  >
-                    {connectingDrive ? (
-                      <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Conectando Drive...</>
-                    ) : uploadingPhoto ? (
-                      <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Subiendo...</>
-                    ) : (
-                      <><Upload className="w-4 h-4" /> {driveToken ? "Subir Foto" : "Conectar Drive y Subir"}</>
-                    )}
-                  </button>
-
-                  {/* Existing servicio photos */}
-                  {editingServicioId && clienteServicios.find(s => s.id === editingServicioId)?.fotosDrive?.map(photo => (
-                    <a
-                      key={photo.id}
-                      href={photo.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="relative group flex-shrink-0"
-                      title={photo.name}
+              {formEquipos.length === 0 ? (
+                <div className="text-center py-6 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl text-gray-400 dark:text-gray-500 text-xs">
+                  No hay equipos registrados para este servicio. Agregue al menos un equipo.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {formEquipos.map((eq, idx) => (
+                    <div 
+                      key={idx}
+                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-855 rounded-xl border border-gray-150 dark:border-gray-800 hover:border-indigo-500/30 transition-all"
                     >
-                      <div className="w-14 h-14 rounded-xl border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center overflow-hidden group-hover:ring-2 group-hover:ring-indigo-500 transition-all">
-                        <ImageIcon className="w-6 h-6 text-indigo-400" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shrink-0">
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <span className="font-bold text-[10px] text-gray-400 dark:text-gray-500 block uppercase tracking-wider">Marca / Modelo</span>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            {eq.marca} - {eq.modelo}
+                          </span>
+                        </div>
                       </div>
-                      <span className="absolute -bottom-1 -right-1 text-[9px] bg-indigo-600 text-white rounded px-1 py-0.5 font-bold">Drive</span>
-                    </a>
-                  ))}
 
-                  {/* Newly uploaded in this session */}
-                  {uploadedPhotos.map(photo => (
-                    <a
-                      key={photo.id}
-                      href={photo.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="relative group flex-shrink-0"
-                      title={photo.name}
-                    >
-                      <div className="w-14 h-14 rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center overflow-hidden group-hover:ring-2 group-hover:ring-emerald-500 transition-all">
-                        <Check className="w-6 h-6 text-emerald-500" />
+                      <div className="flex items-center gap-3">
+                        {eq.fotosDrive && eq.fotosDrive.length > 0 && (
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/30 px-2 py-0.5 rounded-lg shrink-0">
+                            <ImageIcon className="w-3 h-3" />
+                            <span>{eq.fotosDrive.length} fotos</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEquipoModalIndex(idx);
+                              setEquipoModalMarca(eq.marca);
+                              setEquipoModalModelo(eq.modelo);
+                              setEquipoModalPhotos(eq.fotosDrive || []);
+                              setIsEquipoModalOpen(true);
+                            }}
+                            className="p-1.5 text-indigo-600 hover:text-white hover:bg-indigo-600 rounded-lg transition-colors cursor-pointer border border-indigo-150 dark:border-indigo-900/40"
+                            title="Editar Equipo"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (eq.id) {
+                                setDeletedEquipoIds(prev => [...prev, eq.id!]);
+                              }
+                              setFormEquipos(prev => prev.filter((_, i) => i !== idx));
+                            }}
+                            className="p-1.5 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-colors cursor-pointer border border-red-150 dark:border-red-900/40"
+                            title="Eliminar Equipo"
+                          >
+                            <Trash className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <span className="absolute -bottom-1 -right-1 text-[9px] bg-emerald-600 text-white rounded px-1 py-0.5 font-bold">✓</span>
-                    </a>
+                    </div>
                   ))}
                 </div>
-                {/* Error message */}
-                {uploadError && (
-                  <p className="text-xs text-red-500 dark:text-red-400 mt-2 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                    {uploadError}
-                  </p>
-                )}
-                {!driveFolderId && (
-                  <p className="text-xs text-amber-500 dark:text-amber-400 mt-2 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    Configurá el ID de carpeta de Drive en <strong>Ajustes</strong> para habilitar la subida de fotos.
-                  </p>
-                )}
-              </div>
+              )}
             </div>
 
             {/* Section 4: Logística y Notas */}
@@ -1144,6 +1206,176 @@ export default function Clientes() {
             </div>
 
           </form>
+        )}
+
+        {/* Modal Overlay: Añadir / Editar Equipo */}
+        {isEquipoModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-[70] p-4 animate-fade-in">
+            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-scale-up flex flex-col max-h-[90vh]">
+              
+              {/* Modal Header */}
+              <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Laptop className="w-5 h-5 text-indigo-500" />
+                  {equipoModalIndex !== null ? "Editar Equipo" : "Añadir Nuevo Equipo"}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsEquipoModalOpen(false)}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 space-y-5 overflow-y-auto flex-1 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                      Marca *
+                    </label>
+                    <input
+                      type="text"
+                      value={equipoModalMarca}
+                      onChange={(e) => setEquipoModalMarca(e.target.value)}
+                      placeholder="Ej. Samsung, Whirlpool"
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                      Modelo *
+                    </label>
+                    <input
+                      type="text"
+                      value={equipoModalModelo}
+                      onChange={(e) => setEquipoModalModelo(e.target.value)}
+                      placeholder="Ej. Active DualWash"
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
+                </div>
+
+                {/* Photo Upload inside modal */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Fotos del Equipo
+                  </label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Hidden file input */}
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) await uploadFileToDrive(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    
+                    {/* Upload button */}
+                    <button
+                      type="button"
+                      onClick={handleConnectAndUpload}
+                      disabled={uploadingPhoto || connectingDrive}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      {connectingDrive ? (
+                        <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Conectando Drive...</>
+                      ) : uploadingPhoto ? (
+                        <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Subiendo...</>
+                      ) : (
+                        <><Upload className="w-4 h-4" /> {driveToken ? "Subir Foto" : "Conectar Drive y Subir"}</>
+                      )}
+                    </button>
+
+                    {/* Photos list */}
+                    {equipoModalPhotos.map((photo) => (
+                      <div key={photo.id} className="relative group shrink-0 animate-scale-up">
+                        <a
+                          href={photo.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-14 h-14 rounded-xl border border-indigo-150 dark:border-indigo-900/35 bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center overflow-hidden group-hover:ring-2 group-hover:ring-indigo-500 transition-all block"
+                          title={photo.name}
+                        >
+                          <ImageIcon className="w-6 h-6 text-indigo-400" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEquipoModalPhotos(prev => prev.filter(p => p.id !== photo.id));
+                          }}
+                          className="absolute -top-1 -right-1 bg-red-650 hover:bg-red-700 text-white rounded-full p-0.5 shadow-md hover:scale-110 active:scale-95 transition-all cursor-pointer bg-red-600"
+                          title="Eliminar Foto"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {uploadError && (
+                    <p className="text-xs text-red-500 dark:text-red-400 mt-2 flex items-center gap-1 animate-pulse">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      {uploadError}
+                    </p>
+                  )}
+                  {!driveFolderId && (
+                    <p className="text-xs text-amber-500 dark:text-amber-400 mt-2 flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Configurá el ID de carpeta de Drive en <strong>Ajustes</strong> para habilitar la subida de fotos.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-855 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsEquipoModalOpen(false)}
+                  className="px-4 py-2 border border-gray-250 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!equipoModalMarca.trim() || !equipoModalModelo.trim()) {
+                      alert("Por favor, complete Marca y Modelo.");
+                      return;
+                    }
+                    const newEq = {
+                      marca: equipoModalMarca.trim(),
+                      modelo: equipoModalModelo.trim(),
+                      fotosDrive: equipoModalPhotos
+                    };
+                    
+                    if (equipoModalIndex !== null) {
+                      setFormEquipos(prev => {
+                        const next = [...prev];
+                        next[equipoModalIndex] = {
+                          ...next[equipoModalIndex],
+                          ...newEq
+                        };
+                        return next;
+                      });
+                    } else {
+                      setFormEquipos(prev => [...prev, newEq]);
+                    }
+                    setIsEquipoModalOpen(false);
+                  }}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm cursor-pointer active:scale-95"
+                >
+                  Guardar Equipo
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
       </div>
