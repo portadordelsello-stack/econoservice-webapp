@@ -328,8 +328,38 @@ export default function Usuarios() {
         const rows = results.data as any[];
         setImportTotal(rows.length);
 
-        const mapCsvToCliente = (row: any) => {
-          return {
+        // Fetch current highest client ID & service ID to support auto-increment
+        let nextClientNum = 1;
+        try {
+          const qHighestClient = query(collection(db, "clientes"), orderBy("numeroCliente", "desc"), limit(1));
+          const highestClientSnap = await getDocs(qHighestClient);
+          if (!highestClientSnap.empty) {
+            const highestDoc = highestClientSnap.docs[0].data() as any;
+            if (highestDoc && highestDoc.numeroCliente) {
+              nextClientNum = Number(highestDoc.numeroCliente) + 1;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not find highest numeroCliente, defaulting to 1:", e);
+        }
+
+        let nextSrvNum = 1001;
+        try {
+          const qHighestSrv = query(collection(db, "servicios"), orderBy("numeroServicio", "desc"), limit(1));
+          const highestSrvSnap = await getDocs(qHighestSrv);
+          if (!highestSrvSnap.empty) {
+            const highestDoc = highestSrvSnap.docs[0].data() as any;
+            if (highestDoc && highestDoc.numeroServicio) {
+              nextSrvNum = Number(highestDoc.numeroServicio) + 1;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not find highest numeroServicio, defaulting to 1001:", e);
+        }
+
+        const mapCsvRow = (row: any) => {
+          // Client fields
+          const clientData = {
             nombreApellido: row.nombreApellido || row.nombre || row.cliente || "Sin Nombre",
             telFijo: row.telFijo || row.telefonoFijo || "",
             telCel: row.telCel || row.celular || row.telefono || "",
@@ -345,35 +375,137 @@ export default function Usuarios() {
             clienteProblematico: row.clienteProblematico === "true" || row.clienteProblematico === "SI" || row.clienteProblematico === "1" || false,
             observaciones: row.observaciones || ""
           };
+
+          // Equipment fields
+          const aparato = row.aparato || row.tipo || row.tipoEquipo || "";
+          const marca = row.marca || "";
+          const modelo = row.modelo || "";
+          const observationsEquipo = row.observacionesEquipo || "";
+          const serie = row.serie || row.numeroSerie || "";
+
+          const hasEquipment = !!(aparato || marca || modelo);
+          const equipmentData = hasEquipment ? {
+            tipo: aparato || "Lavarropas",
+            marca: marca || "Genérico",
+            modelo: modelo || "Genérico",
+            observaciones: observationsEquipo || "",
+            serie: serie || ""
+          } : null;
+
+          // Service fields
+          const desperfectoUsuario = row.desperfectoUsuario || row.desperfecto || "";
+          const estado = (row.estado || row.estadoServicio || "RECIBIDO").toUpperCase();
+          const notasInternas = row.notasInternas || row.diagnostico || "";
+          const infoLogistica = row.infoLogistica || "";
+
+          const hasService = hasEquipment || !!(desperfectoUsuario || estado || infoLogistica);
+          const serviceData = hasService ? {
+            aparato: aparato || "Lavarropas",
+            marcaModelo: `${marca} ${modelo}`.trim() || "Genérico",
+            desperfectoUsuario: desperfectoUsuario || "No especificado",
+            estado: ["RECIBIDO", "DIAGNOSTICO", "PENDIENTE_APROBACION", "EN_REPARACION", "LISTO_PARA_ENTREGA", "ENTREGA_EN_PROGRESO", "ENTREGADO", "CANCELADO", "EN_ESPERA", "ACEPTADO", "RECHAZADO"].includes(estado) ? estado : "RECIBIDO",
+            notasInternas: notasInternas || "",
+            infoLogistica: infoLogistica || "",
+            acepta: false,
+            rechazaDevolver: false,
+            garantia: false,
+            esReclamoGarantia: false,
+            ingresoTaller: true,
+            pasaStock: false,
+            entregado: false,
+            terminado: false,
+            factura: false,
+            contado: false,
+            fotosDrive: []
+          } : null;
+
+          return {
+            clientData,
+            equipmentData,
+            serviceData
+          };
         };
 
-        const parsedClientes = rows.map(mapCsvToCliente);
+        const parsedRows = rows.map(mapCsvRow);
         
-        // Dividir en 15 partes (lotes) como solicitó el usuario para su tranquilidad
-        const partes = 15;
-        const chunkSize = Math.ceil(parsedClientes.length / partes);
+        // Calculate safe chunks (max 100 rows per batch to avoid Firestore batch write size limit of 500)
+        let partes = 15;
+        let chunkSize = Math.ceil(parsedRows.length / partes);
+        if (chunkSize > 120) {
+          chunkSize = 120;
+          partes = Math.ceil(parsedRows.length / chunkSize);
+        }
+
         let currentProcessed = 0;
+        let clientIdxOffset = 0;
+        let srvIdxOffset = 0;
 
         try {
           for (let i = 0; i < partes; i++) {
-            const chunk = parsedClientes.slice(i * chunkSize, (i + 1) * chunkSize);
+            const chunk = parsedRows.slice(i * chunkSize, (i + 1) * chunkSize);
             if (chunk.length === 0) continue;
             
-            // Límite real de Firestore batch es 500. chunk.length debería ser menor.
-            // Si el archivo tiene 5000, chunkSize es 334. Perfecto.
-            await ClientesService.batchCreate(chunk);
-            
+            const batch = writeBatch(db);
+
+            for (const row of chunk) {
+              // Generate client doc ID client-side
+              const clientRef = doc(collection(db, "clientes"));
+              
+              batch.set(clientRef, {
+                ...row.clientData,
+                numeroCliente: nextClientNum + clientIdxOffset,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+
+              clientIdxOffset++;
+
+              if (row.equipmentData) {
+                const eqRef = doc(collection(db, "equipos"));
+                batch.set(eqRef, {
+                  ...row.equipmentData,
+                  clienteId: clientRef.id,
+                  createdAt: new Date()
+                });
+
+                if (row.serviceData) {
+                  const srvRef = doc(collection(db, "servicios"));
+                  batch.set(srvRef, {
+                    ...row.serviceData,
+                    clienteId: clientRef.id,
+                    equipoId: eqRef.id,
+                    numeroServicio: nextSrvNum + srvIdxOffset,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                  });
+
+                  // Add an entry to the history subcollection
+                  const logRef = doc(collection(db, "servicios", srvRef.id, "historial"));
+                  batch.set(logRef, {
+                    fecha: new Date(),
+                    usuarioId: profile?.uid || "importador",
+                    usuarioNombre: profile?.nombre || "Importador CSV",
+                    descripcion: "Servicio creado mediante importación masiva de CSV",
+                    detalles: `Estado inicial: ${row.serviceData.estado}`
+                  });
+
+                  srvIdxOffset++;
+                }
+              }
+            }
+
+            await batch.commit();
             currentProcessed += chunk.length;
             setImportProgress(currentProcessed);
             
-            // Pequeña pausa para evitar colapsar la UI
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Pausa corta para evitar bloquear la UI
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
 
-          setImportSuccessMsg(`Se han importado exitosamente ${parsedClientes.length} clientes en ${partes} lotes.`);
+          setImportSuccessMsg(`Se han importado exitosamente ${parsedRows.length} registros (clientes, equipos y servicios) en ${partes} lotes.`);
           setCsvFile(null);
         } catch (error) {
-          console.error("Error importando clientes:", error);
+          console.error("Error importando datos desde CSV:", error);
           setImportErrorMsg("Hubo un error durante la importación. Verifique los campos y la conexión.");
         } finally {
           setIsImporting(false);
@@ -400,37 +532,63 @@ export default function Usuarios() {
     setShowDeleteConfirmModal(false);
 
     try {
-      const colRef = collection(db, "clientes");
+      // 1. Delete all Clientes
+      const clientesCol = collection(db, "clientes");
       let totalDeleted = 0;
-      let batchIndex = 1;
-
       while (true) {
-        // Query 400 docs at a time (Firestore batch limit is 500, so 400 is highly safe)
-        const q = query(colRef, limit(400));
+        const q = query(clientesCol, limit(400));
         const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-          break;
-        }
+        if (snapshot.empty) break;
 
         const batch = writeBatch(db);
         snapshot.docs.forEach(docSnap => {
           batch.delete(doc(db, "clientes", docSnap.id));
         });
-
         await batch.commit();
         totalDeleted += snapshot.size;
         setDeleteProgress(totalDeleted);
-
-        // Pause slightly to let Firestore index
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 150));
       }
 
-      setDeleteSuccessMsg(`Se han eliminado todos los clientes de la base de datos (${totalDeleted} en total).`);
+      // 2. Delete all Equipos
+      const equiposCol = collection(db, "equipos");
+      let totalEquiposDeleted = 0;
+      while (true) {
+        const q = query(equiposCol, limit(400));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) break;
+
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(docSnap => {
+          batch.delete(doc(db, "equipos", docSnap.id));
+        });
+        await batch.commit();
+        totalEquiposDeleted += snapshot.size;
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+
+      // 3. Delete all Servicios
+      const serviciosCol = collection(db, "servicios");
+      let totalServiciosDeleted = 0;
+      while (true) {
+        const q = query(serviciosCol, limit(400));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) break;
+
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(docSnap => {
+          batch.delete(doc(db, "servicios", docSnap.id));
+        });
+        await batch.commit();
+        totalServiciosDeleted += snapshot.size;
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+
+      setDeleteSuccessMsg(`Se ha limpiado la base de datos por completo: se eliminaron ${totalDeleted} clientes, ${totalEquiposDeleted} equipos y ${totalServiciosDeleted} órdenes de servicio.`);
       setDeleteConfirmInput("");
     } catch (error: any) {
-      console.error("Error al eliminar clientes masivamente:", error);
-      setDeleteErrorMsg("Hubo un error al eliminar los clientes. Verifique su rol y conexión.");
+      console.error("Error al eliminar datos masivamente:", error);
+      setDeleteErrorMsg("Hubo un error al eliminar los datos. Verifique su rol y conexión.");
     } finally {
       setIsDeletingAll(false);
     }
@@ -1720,14 +1878,14 @@ export default function Usuarios() {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-gray-800 dark:text-gray-200 block">Formato esperado del CSV:</span>
                   <a 
-                    href={`data:text/csv;charset=utf-8,nombreApellido%2CtelFijo%2CtelCel%2Ccalle%2Cnumero%2Clocalidad%2Cbarrio%2CclienteProblematico%2Cobservaciones%0AJuan%20Perez%2C4221122%2C3424123456%2CSan%20Martin%2C1234%2CSanta%20Fe%2CCentro%2CNO%2CLlamar%20antes%20de%20ir%0AMaria%20Gomez%2C%2C3425987654%2CRivadavia%2C456%2CSanto%20Tome%2CLas%20Vegas%2CSI%2CNo%20atiende%20el%20timbre`}
-                    download="plantilla_clientes.csv"
+                    href={`data:text/csv;charset=utf-8,nombreApellido%2CtelFijo%2CtelCel%2Ccalle%2Cnumero%2Clocalidad%2Cbarrio%2CclienteProblematico%2Cobservaciones%2Caparato%2Cmarca%2Cmodelo%2CobservacionesEquipo%2CdesperfectoUsuario%2Cestado%2CnotasInternas%0AJuan%20Perez%2C4221122%2C3424123456%2CSan%20Martin%2C1234%2CSanta%20Fe%2CCentro%2CNO%2CLlamar%20antes%20de%20ir%2CLavarropas%2CDream%2CNext%208.12%2CTapa%20floja%2CNo%20desagota%2CRECIBIDO%2CFiltro%20obstruido%0AMaria%20Gomez%2C%2C3425987654%2CRivadavia%2C456%2CSanto%20Tome%2CLas%20Vegas%2CSI%2CNo%20atiende%20el%20timbre%2CLavavajillas%2CWhirlpool%2CWLF12%2CBisagra%20rota%2CPuerta%20no%20traba%2CDIAGNOSTICO%2CCambiar%20resorte`}
+                    download="plantilla_clientes_equipos_servicios.csv"
                     className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold underline decoration-indigo-600/30 underline-offset-2 flex items-center gap-1"
                   >
                     Descargar CSV de Ejemplo
                   </a>
                 </div>
-                <p>El archivo debe incluir una primera fila con los encabezados (columnas). Los campos reconocidos son: <code>nombreApellido</code> (o <code>nombre</code> o <code>cliente</code>), <code>telFijo</code>, <code>telCel</code> (o <code>celular</code>), <code>calle</code>, <code>numero</code>, <code>localidad</code>, <code>barrio</code>, <code>clienteProblematico</code> (SI/NO o true/false), <code>observaciones</code>.</p>
+                <p>El archivo CSV permite cargar datos de clientes, sus equipos y sus órdenes de servicio de forma simultánea. Los campos reconocidos son: <code>nombreApellido</code> (o <code>nombre</code>/<code>cliente</code>), <code>telFijo</code>, <code>telCel</code> (o <code>celular</code>), <code>calle</code>, <code>numero</code>, <code>localidad</code>, <code>barrio</code>, <code>clienteProblematico</code> (SI/NO o true/false), <code>observaciones</code>, <code>aparato</code> (o <code>tipoEquipo</code>), <code>marca</code>, <code>modelo</code>, <code>observacionesEquipo</code>, <code>desperfectoUsuario</code>, <code>estado</code> (RECIBIDO, DIAGNOSTICO, etc.) y <code>notasInternas</code>.</p>
               </div>
             </div>
           </div>
