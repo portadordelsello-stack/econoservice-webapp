@@ -28,8 +28,74 @@ import {
   FileImage,
   MapPin,
   Cpu,
-  Phone
+  Phone,
+  MessageSquare,
+  Handshake,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Save,
+  Loader2
 } from "lucide-react";
+
+const getEstadoBadgeClass = (estado: string) => {
+  switch (estado) {
+    case "RECIBIDO":
+      return "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30";
+    case "EN_ESPERA":
+      return "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30";
+    case "ACEPTADO":
+      return "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100/30 dark:border-emerald-900/30";
+    case "LISTO_PARA_ENTREGA":
+      return "bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 border border-teal-100/30 dark:border-teal-900/30";
+    case "ENTREGA_EN_PROGRESO":
+      return "bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-100/30 dark:border-sky-900/30";
+    case "ENTREGADO":
+      return "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/30";
+    case "RECHAZADO":
+    case "CANCELADO":
+      return "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100/30 dark:border-rose-900/30";
+    default:
+      return "bg-slate-50 dark:bg-gray-800 text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-700";
+  }
+};
+
+const getEstadoLabelBadgeClass = (estado: string) => {
+  switch (estado) {
+    case "RECIBIDO":
+      return "bg-amber-100/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400";
+    case "EN_ESPERA":
+      return "bg-indigo-100/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400";
+    case "ACEPTADO":
+      return "bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400";
+    case "LISTO_PARA_ENTREGA":
+      return "bg-teal-100/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400";
+    case "ENTREGA_EN_PROGRESO":
+      return "bg-sky-100/70 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400";
+    case "ENTREGADO":
+      return "bg-emerald-200 dark:bg-emerald-905 text-emerald-850 dark:text-emerald-200";
+    case "RECHAZADO":
+    case "CANCELADO":
+      return "bg-rose-100/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400";
+    default:
+      return "bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300";
+  }
+};
+
+const formatClienteId = (c: Cliente): string => {
+  if (c.numeroCliente) {
+    return String(c.numeroCliente).padStart(6, "0");
+  }
+  if (c.id) {
+    let hash = 0;
+    for (let i = 0; i < c.id.length; i++) {
+      hash = c.id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const num = Math.abs(hash) % 1000000;
+    return String(num).padStart(6, "0");
+  }
+  return "000000";
+};
 
 export default function DetalleServicio() {
   const { profile } = useAuth();
@@ -42,6 +108,7 @@ export default function DetalleServicio() {
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [historial, setHistorial] = useState<Historial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // Form field edit states
   const [editEstado, setEditEstado] = useState<EstadoServicio>("RECIBIDO");
@@ -87,11 +154,11 @@ export default function DetalleServicio() {
       // Sync form fields with DB immediately
       setEditEstado(serv.estado);
       setEditTecnicoId(serv.tecnicoId || "");
-      setEditDiagnostico(serv.diagnostico || "");
+      setEditDiagnostico(serv.diagnostico || serv.serviciosRequeridos || "");
       setEditRepuestosComprar(serv.repuestosComprar || "");
       setEditRepuestosComprados(serv.repuestosComprados || "");
       setEditPresupuesto(serv.presupuesto || 0);
-      setEditPresupuestoTexto(serv.presupuestoTexto || "");
+      setEditPresupuestoTexto(serv.presupuestoTexto || serv.serviciosConvenidos || "");
       setEditAcepta(serv.acepta || false);
       setEditRechazaDevolver(serv.rechazaDevolver || false);
       setEditGarantia(serv.garantia || false);
@@ -170,7 +237,7 @@ export default function DetalleServicio() {
   }, [selectedId]);
 
   // Auth permissions
-  const isAdmin = profile?.rol === "superadmin";
+  const isAdmin = profile?.rol === "superadmin" || profile?.rol === "admin" || profile?.rol === "administracion";
   const isRecepcion = profile?.rol === "superadmin" || profile?.rol === "logistica";
   const isTecnico = profile?.rol === "tecnico" || profile?.rol === "superadmin";
   const isConsulta = profile?.rol === "administracion" || profile?.rol === "consulta" || (!isAdmin && !isRecepcion && !isTecnico);
@@ -223,6 +290,7 @@ export default function DetalleServicio() {
   // Action Save changes
   const handleSave = async (targetState?: EstadoServicio, isFinished?: boolean, customAuditText?: string) => {
     if (!selectedId || !profile || !servicio) return;
+    setSubmitting(true);
     try {
       const userUid = profile.uid;
       const userNombre = profile.nombre || "Usuario";
@@ -288,9 +356,12 @@ export default function DetalleServicio() {
 
       await loadServiceDetails();
       alert("¡Cambios guardados con éxito!");
+      navigate("servicios");
     } catch (err) {
       console.error("Error saving changes:", err);
       alert("Error al guardar cambios.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -321,31 +392,6 @@ export default function DetalleServicio() {
     }
   };
 
-  const getStatusBadgeColor = (status: EstadoServicio) => {
-    switch (status) {
-      case "RECIBIDO":
-        return "bg-blue-500 text-white";
-      case "DIAGNOSTICO":
-        return "bg-purple-500 text-white";
-      case "PENDIENTE_APROBACION":
-        return "bg-indigo-600 text-white";
-      case "EN_REPARACION":
-        return "bg-orange-500 text-white";
-      case "LISTO_PARA_ENTREGA":
-        return "bg-indigo-500 text-white";
-      case "ENTREGA_EN_PROGRESO":
-        return "bg-amber-500 text-white";
-      case "ENTREGADO":
-        return "bg-emerald-500 text-white";
-      case "CANCELADO":
-        return "bg-red-500 text-white";
-      case "EN_ESPERA":
-        return "bg-slate-500 text-white";
-      default:
-        return "bg-gray-500 text-white";
-    }
-  };
-
   if (loading || !servicio) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -354,12 +400,16 @@ export default function DetalleServicio() {
     );
   }
 
-  // Address construct helper
-  const addressStr = cliente
-    ? `${cliente.calle || ""} ${cliente.numero || ""}`.trim() +
-      (cliente.piso || cliente.depto ? `, Piso ${cliente.piso || "-"} Depto ${cliente.depto || "-"}` : "") +
-      `, ${cliente.localidad || "Santo Tomé"}`
-    : "Sin Domicilio Registrado";
+  // Address formatting
+  const addressStr = cliente ? [
+    cliente.calle ? `${cliente.calle} ${cliente.numero || ""}`.trim() : "",
+    cliente.piso ? `Piso ${cliente.piso}` : "",
+    cliente.depto ? `Depto ${cliente.depto}` : "",
+    cliente.barrio ? `Barrio ${cliente.barrio}` : "",
+    cliente.localidad || "Santo Tomé"
+  ].filter(Boolean).join(", ") : "Sin Domicilio";
+
+  const isSaveDisabled = !editNotasInternas.trim() || !editDiagnostico.trim() || (isAdmin && !editPresupuestoTexto.trim());
 
   return (
     <div className="space-y-6 animate-fade-in font-sans pb-10">
@@ -370,23 +420,27 @@ export default function DetalleServicio() {
           <button
             onClick={() => navigate("servicios")}
             className="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer shrink-0 active:scale-95 group"
-            title="Volver a la lista de taller"
           >
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
             <span>Volver</span>
           </button>
+          
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-                Ficha de Servicio #{servicio.numeroServicio}
-              </h1>
-              <span className={`px-3 py-0.5 text-xs font-bold rounded-full uppercase ${getStatusBadgeColor(servicio.estado)}`}>
-                {getEstadoLabel(servicio.estado)}
-              </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className={`p-2.5 rounded-xl text-xs font-bold shrink-0 ${getEstadoBadgeClass(servicio.estado)}`}>
+                Orden #{servicio.numeroServicio}
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm sm:text-base font-extrabold text-indigo-600 dark:text-indigo-400">
+                    ID del Cliente: {cliente ? formatClienteId(cliente) : "S/D"}
+                  </span>
+                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(servicio.estado)}`}>
+                    {getEstadoLabel(servicio.estado)}
+                  </span>
+                </div>
+              </div>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              Cliente: <span className="font-bold text-gray-700 dark:text-gray-300">{cliente?.nombreApellido || "Sin nombre"}</span>
-            </p>
           </div>
         </div>
 
@@ -399,328 +453,304 @@ export default function DetalleServicio() {
         )}
       </div>
 
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main Accordion-styled Page Container */}
+      <div className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/80 rounded-2xl shadow-3xs p-5 sm:p-6 space-y-6">
         
-        {/* Left column - Service info: Domicilio & Equipo details */}
-        <div className="lg:col-span-1 space-y-6">
+        {/* Row 1: Datos Cliente, Equipo & Desperfecto */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           
-          {/* Card: Domicilio de Entrega */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 border-b border-gray-50 dark:border-gray-800 pb-2">
-              <MapPin className="w-4 h-4 shrink-0" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">Domicilio de Entrega</h3>
+          {/* Domicilio del Cliente */}
+          <div className="bg-slate-50/50 dark:bg-gray-850 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
+            <div className="flex items-center gap-2 text-slate-400 mb-2">
+              <MapPin className="w-4 h-4 text-indigo-500" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Domicilio de Entrega</h4>
             </div>
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-gray-800 dark:text-white leading-relaxed">
-                {addressStr}
+            <p className="text-sm font-semibold text-slate-800 dark:text-white leading-relaxed">
+              {addressStr}
+            </p>
+            {cliente?.barrio && (
+              <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">
+                Barrio: <span className="font-medium text-slate-600 dark:text-gray-300">{cliente.barrio}</span>
               </p>
-              {cliente?.barrio && (
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  Barrio: <span className="font-medium text-gray-700 dark:text-gray-300">{cliente.barrio}</span>
+            )}
+            {cliente?.zona && (
+              <p className="text-xs text-slate-400 dark:text-gray-500">
+                Zona de Reparación: <span className="font-medium text-slate-600 dark:text-gray-300">{cliente.zona}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Datos del Equipo */}
+          <div className="bg-slate-50/50 dark:bg-gray-850 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
+            <div className="flex items-center gap-2 text-slate-400 mb-2">
+              <Cpu className="w-4 h-4 text-indigo-500" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Datos del Equipo</h4>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <p className="text-sm font-bold text-slate-800 dark:text-white">
+                {servicio.aparato} - {servicio.marcaModelo}
+              </p>
+              {equipo?.serie && (
+                <p className="text-slate-500 dark:text-gray-400">
+                  Nº de Serie: <span className="font-mono text-slate-700 dark:text-gray-200 bg-slate-100 dark:bg-gray-800 px-1 py-0.5 rounded">{equipo.serie}</span>
                 </p>
               )}
-              {cliente?.zona && (
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  Zona: <span className="font-medium text-gray-700 dark:text-gray-300">{cliente.zona}</span>
+              {equipo?.observaciones && (
+                <p className="text-slate-400 dark:text-gray-500 italic mt-1">
+                  Observaciones: "{equipo.observaciones}"
                 </p>
               )}
-              {cliente?.telCel && (
-                <div className="pt-2 border-t border-gray-50 dark:border-gray-800/60">
-                  <a
-                    href={`https://wa.me/${cliente.telCel.replace(/[^0-9]/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-750 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold transition-colors"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>WhatsApp: {cliente.telCel}</span>
-                  </a>
-                </div>
+              {servicio.infoLogistica && (
+                <p className="text-slate-500 dark:text-gray-400 font-semibold mt-1 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-slate-450" />
+                  <span>Retiro: {servicio.infoLogistica}</span>
+                </p>
               )}
             </div>
           </div>
 
-          {/* Card: Datos del Equipo */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 border-b border-gray-50 dark:border-gray-800 pb-2">
-              <Cpu className="w-4 h-4 shrink-0" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">Datos del Equipo</h3>
+          {/* Desperfecto reportado por el usuario */}
+          <div className="bg-slate-50/50 dark:bg-gray-850 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
+            <div className="flex items-center gap-2 text-slate-400 mb-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Desperfecto Usuario</h4>
             </div>
-            <div className="space-y-3 text-xs">
-              <div>
-                <p className="text-sm font-bold text-gray-800 dark:text-white">
-                  {servicio.aparato} - {servicio.marcaModelo}
-                </p>
-                {equipo?.serie && (
-                  <p className="text-gray-500 dark:text-gray-400 mt-1">
-                    Nº de Serie: <span className="font-mono text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-850 px-1 py-0.5 rounded">{equipo.serie}</span>
-                  </p>
-                )}
-                {equipo?.observaciones && (
-                  <p className="text-gray-400 dark:text-gray-500 italic mt-1.5">
-                    Observaciones: "{equipo.observaciones}"
-                  </p>
-                )}
-              </div>
-
-              {/* User defect description */}
-              <div className="pt-3 border-t border-gray-50 dark:border-gray-800/60 space-y-1">
-                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wide">Desperfecto Usuario</span>
-                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/10 p-2.5 rounded-lg border border-amber-100/50 dark:border-amber-950/20 italic leading-relaxed">
-                  "{servicio.desperfectoUsuario || "No se detalló desperfecto."}"
-                </p>
-              </div>
-
-              {/* Agreed retrieval date */}
-              {servicio.infoLogistica && (
-                <div className="pt-3 border-t border-gray-50 dark:border-gray-800/60 space-y-1">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Retiro Acordado</span>
-                  <p className="text-xs text-gray-700 dark:text-gray-300 font-semibold flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                    <span>{servicio.infoLogistica}</span>
-                  </p>
-                </div>
-              )}
-            </div>
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/10 p-2.5 rounded-lg border border-amber-100/50 dark:border-amber-950/20 italic leading-relaxed">
+              "{servicio.desperfectoUsuario || "No se ha detallado un desperfecto específico."}"
+            </p>
           </div>
 
         </div>
 
-        {/* Right column - Forms: Diagnóstico & Administración */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Card: Diagnóstico Técnico */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 border-b border-gray-50 dark:border-gray-800 pb-2">
-              <Wrench className="w-4 h-4 shrink-0" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">Panel de Diagnóstico Técnico</h3>
+        {/* Row 2: Technician Form Inputs */}
+        <div className="border-t border-slate-150 dark:border-gray-800/80 pt-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Wrench className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300">
+              Panel de Diagnóstico Técnico
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Referencias Internas */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                Referencias Internas <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={editNotasInternas}
+                onChange={(e) => setEditNotasInternas(e.target.value)}
+                placeholder="Escriba comentarios, códigos internos, estado general o notas confidenciales de taller..."
+                rows={3}
+                disabled={isConsulta}
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
+              />
             </div>
-            
-            <div className="space-y-4">
-              {/* Technician selection */}
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Técnico Asignado
-                </label>
-                <select
-                  disabled={isConsulta || !isRecepcion}
-                  value={editTecnicoId}
-                  onChange={(e) => setEditTecnicoId(e.target.value)}
-                  className="w-full max-w-xs px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750 rounded-xl text-xs focus:outline-none"
-                >
-                  <option value="">-- Sin asignar --</option>
-                  {tecnicos.map(t => (
-                    <option key={t.id} value={t.id}>{t.nombre}</option>
-                  ))}
-                </select>
-              </div>
 
-              {/* Diagnosis inputs */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Trabajos a realizar / Diagnóstico *
-                  </label>
-                  <textarea
-                    rows={3}
-                    disabled={isConsulta || (!isRecepcion && !isTecnico)}
-                    value={editDiagnostico}
-                    onChange={(e) => setEditDiagnostico(e.target.value)}
-                    placeholder="Escriba los trabajos técnicos a realizar o el diagnóstico..."
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-xs focus:outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Notas Internas del Taller
-                  </label>
-                  <textarea
-                    rows={3}
-                    disabled={isConsulta || (!isRecepcion && !isTecnico)}
-                    value={editNotasInternas}
-                    onChange={(e) => setEditNotasInternas(e.target.value)}
-                    placeholder="Notas exclusivas para uso interno..."
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-xs focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Needed parts input */}
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Repuestos Necesarios (Opcional)
-                </label>
-                <textarea
-                  rows={2}
-                  disabled={isConsulta || (!isRecepcion && !isTecnico)}
-                  value={editRepuestosComprar}
-                  onChange={(e) => setEditRepuestosComprar(e.target.value)}
-                  placeholder="Repuestos requeridos para completar la orden..."
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-xs focus:outline-none"
-                />
-              </div>
+            {/* Servicios Requeridos */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                Servicios Requeridos / Diagnóstico Técnico <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={editDiagnostico}
+                onChange={(e) => setEditDiagnostico(e.target.value)}
+                placeholder="Describa el trabajo técnico a realizar (ej: Cambio de rulemanes, reparación de placa, etc.)..."
+                rows={3}
+                disabled={isConsulta}
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
+              />
             </div>
           </div>
 
-          {/* Card: Fotos de Respaldo y Documentos */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-50 dark:border-gray-800 pb-2">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                <HardDrive className="w-4 h-4 shrink-0" />
-                <h3 className="text-xs font-bold uppercase tracking-wider">Fotos de Respaldo y Documentación</h3>
+          {/* Repuestos Necesarios (Opcional) */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+              Repuestos Necesarios <span className="text-slate-400 lowercase font-semibold">(opcional)</span>
+            </label>
+            <textarea
+              value={editRepuestosComprar}
+              onChange={(e) => setEditRepuestosComprar(e.target.value)}
+              placeholder="Indique si se necesitan repuestos para concretar la reparación..."
+              rows={2}
+              disabled={isConsulta}
+              className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
+            />
+          </div>
+        </div>
+
+        {/* Row 3: Fotos de Respaldo & Documentos */}
+        <div className="border-t border-slate-150 dark:border-gray-800/80 pt-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <HardDrive className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+              <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300">
+                Fotos de Respaldo y Documentación
+              </h4>
+            </div>
+
+            {!isConsulta && (
+              <div className="relative">
+                <input
+                  type="file"
+                  id="file-attachment"
+                  disabled={uploading}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-attachment"
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 font-semibold text-[10px] rounded-lg shadow-2xs border border-gray-200 dark:border-gray-700 cursor-pointer ${uploading ? "opacity-50" : ""}`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{uploading ? "Subiendo..." : "Adjuntar Archivo"}</span>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Drive photos rendering */}
+          {servicio.fotosDrive && servicio.fotosDrive.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-2">
+              {servicio.fotosDrive.map((photo, i) => (
+                <div key={photo.id || i} className="group relative aspect-square bg-white dark:bg-gray-850 border border-slate-150 dark:border-gray-800 rounded-xl overflow-hidden shadow-3xs flex flex-col items-center justify-center p-3">
+                  <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center mb-1">
+                    <FileImage className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+                  </div>
+                  <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 text-center truncate w-full px-1">
+                    {photo.name || `Foto_${i + 1}.jpg`}
+                  </span>
+                  <span className="text-[9px] text-gray-400 mt-0.5">#{i + 1}</span>
+
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center gap-1">
+                    <span className="text-[9px] font-medium text-white truncate w-full px-1">{photo.name}</span>
+                    <a
+                      href={photo.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] rounded transition-colors cursor-pointer"
+                    >
+                      <ExternalLink className="w-2.5 h-2.5" />
+                      Ver en Drive
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400 italic">No hay fotos de respaldo cargadas en Google Drive.</p>
+          )}
+
+          {/* Firebase Storage files rendering */}
+          {filesList.length > 0 && (
+            <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              {filesList.map((file, i) => (
+                <div key={i} className="p-2.5 bg-slate-55/40 dark:bg-gray-850 border border-slate-150 dark:border-gray-800 rounded-xl flex items-center justify-between gap-3 shadow-3xs">
+                  <div className="min-w-0 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span className="text-xs font-bold text-gray-750 dark:text-gray-300 truncate" title={file.name}>
+                      {file.name}
+                    </span>
+                  </div>
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-1 hover:bg-indigo-500/10 text-indigo-600 rounded transition-colors shrink-0"
+                  >
+                    <FileDown className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Row 4: Admin Panel (Presupuesto & Convenios) */}
+        {isAdmin && (
+          <div className="border-t border-slate-150 dark:border-gray-800/80 pt-5 space-y-4">
+            
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Handshake className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300">
+                  Panel de servicios convenidos
+                </h4>
               </div>
               
-              {!isConsulta && (
-                <div className="relative">
-                  <input
-                    type="file"
-                    id="file-attachment"
-                    disabled={uploading}
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="file-attachment"
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-750 text-slate-700 dark:text-gray-300 font-semibold text-[10px] rounded-lg shadow-2xs border border-gray-200 dark:border-gray-700 cursor-pointer ${uploading ? "opacity-50" : ""}`}
+              {(() => {
+                const rawPhone = cliente?.telCel || cliente?.telCelBis || cliente?.telCelOtro || cliente?.telFijo || "";
+                const cleanPhone = rawPhone.replace(/\D/g, "");
+                if (!cleanPhone) return null;
+                return (
+                  <a
+                    href={`https://wa.me/${cleanPhone}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-550 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
                   >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{uploading ? "Subiendo..." : "Adjuntar PDF"}</span>
-                  </label>
-                </div>
-              )}
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Escribirle al Cliente</span>
+                  </a>
+                );
+              })()}
             </div>
 
-            {/* Google Drive Photos Gallery */}
-            {servicio.fotosDrive && servicio.fotosDrive.length > 0 ? (
-              <div className="space-y-3">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Fotos en Google Drive</span>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {servicio.fotosDrive.map((photo, i) => (
-                    <div key={photo.id || i} className="group relative aspect-square bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-850 rounded-xl overflow-hidden shadow-2xs hover:border-emerald-500/50 transition-all flex flex-col items-center justify-center p-3">
-                      <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center mb-1">
-                        <FileImage className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
-                      </div>
-                      <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center truncate w-full px-1">
-                        {photo.name || `Foto_${i + 1}.jpg`}
-                      </span>
-                      <span className="text-[9px] text-gray-400 mt-0.5">#{i + 1}</span>
+            {/* Detailed Convenios description */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                Servicios Convenidos <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={editPresupuestoTexto}
+                onChange={(e) => setEditPresupuestoTexto(e.target.value)}
+                placeholder="Escriba los servicios convenidos con el cliente..."
+                rows={3}
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
+              />
+            </div>
 
-                      {/* Hover overlay with Drive Link */}
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center gap-1.5">
-                        <span className="text-[9px] font-medium text-white line-clamp-1 truncate w-full px-1">{photo.name}</span>
-                        <a
-                          href={photo.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] rounded shadow-sm transition-colors cursor-pointer"
-                        >
-                          <ExternalLink className="w-2.5 h-2.5" />
-                          Ver en Drive
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-gray-450 dark:text-gray-500 italic">No hay fotos de respaldo registradas para este equipo.</p>
-            )}
-
-            {/* Document attachments from Firebase Storage */}
-            {filesList.length > 0 && (
-              <div className="pt-3 border-t border-gray-50 dark:border-gray-800/50 space-y-2">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Documentación y Archivos Adjuntos</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {filesList.map((file, i) => (
-                    <div key={i} className="p-2.5 bg-gray-50 dark:bg-gray-850 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between gap-3 shadow-2xs">
-                      <div className="min-w-0 flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate" title={file.name}>
-                          {file.name}
-                        </span>
-                      </div>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 hover:bg-indigo-500/10 text-indigo-600 rounded transition-colors shrink-0"
-                      >
-                        <FileDown className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Card: Administración y Presupuesto (Hidden for technicians) */}
-          {!isConsulta && profile?.rol !== "tecnico" && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 shadow-xs space-y-4">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 border-b border-gray-50 dark:border-gray-800 pb-2">
-                <DollarSign className="w-4 h-4 shrink-0" />
-                <h3 className="text-xs font-bold uppercase tracking-wider">Aprobación de Presupuesto y Administración</h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                
-                {/* Admin Select status */}
-                <div className="space-y-4 md:col-span-1">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                      Estado del Servicio
-                    </label>
-                    <select
-                      value={editEstado}
-                      onChange={(e) => setEditEstado(e.target.value as EstadoServicio)}
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750 rounded-xl text-xs focus:outline-none"
-                    >
-                      <option value="RECIBIDO">Recibido</option>
-                      <option value="DIAGNOSTICO">En Diagnóstico</option>
-                      <option value="PENDIENTE_APROBACION">Pendiente Aprobación</option>
-                      <option value="EN_REPARACION">En Reparación</option>
-                      <option value="LISTO_PARA_ENTREGA">Listo para Entrega</option>
-                      <option value="ENTREGA_EN_PROGRESO">Entrega en Progreso</option>
-                      <option value="ENTREGADO">Entregado</option>
-                      <option value="CANCELADO">Cancelado</option>
-                      <option value="EN_ESPERA">En Espera</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                      Monto Presupuesto ($)
-                    </label>
-                    <input
-                      type="number"
-                      value={editPresupuesto}
-                      onChange={(e) => setEditPresupuesto(Number(e.target.value))}
-                      placeholder="Monto total..."
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-xs font-bold focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Textarea for detailed budget */}
-                <div className="md:col-span-2 space-y-1">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Servicios Convenidos / Detalle para Cliente
+            {/* Sub-grid with budget, status, checkboxes */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-3">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                    Estado de Reparación
                   </label>
-                  <textarea
-                    rows={4}
-                    value={editPresupuestoTexto}
-                    onChange={(e) => setEditPresupuestoTexto(e.target.value)}
-                    placeholder="Detalles sobre lo que se presupuestó para informar al cliente..."
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-xs focus:outline-none"
+                  <select
+                    value={editEstado}
+                    onChange={(e) => setEditEstado(e.target.value as EstadoServicio)}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-850 focus:outline-none"
+                  >
+                    <option value="RECIBIDO">Recibido</option>
+                    <option value="DIAGNOSTICO">En Diagnóstico</option>
+                    <option value="PENDIENTE_APROBACION">Pendiente Aprobación</option>
+                    <option value="EN_REPARACION">En Reparación</option>
+                    <option value="LISTO_PARA_ENTREGA">Listo para Entrega</option>
+                    <option value="ENTREGA_EN_PROGRESO">Entrega en Progreso</option>
+                    <option value="ENTREGADO">Entregado</option>
+                    <option value="CANCELADO">Cancelado</option>
+                    <option value="EN_ESPERA">En Espera</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                    Monto Presupuesto ($)
+                  </label>
+                  <input
+                    type="number"
+                    value={editPresupuesto}
+                    onChange={(e) => setEditPresupuesto(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Toggles grid */}
-              <div className="pt-3 border-t border-gray-50 dark:border-gray-800/60 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-gray-600 dark:text-gray-300">
+              {/* Checkboxes parameters */}
+              <div className="md:col-span-2 grid grid-cols-2 gap-3 text-xs pt-3 font-medium">
+                <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     checked={editAcepta}
@@ -730,10 +760,10 @@ export default function DetalleServicio() {
                     }}
                     className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300"
                   />
-                  <span>¿Aprobó Presupuesto?</span>
+                  <span>¿Acepta Presupuesto?</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-gray-600 dark:text-gray-300">
+                <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     checked={editRechazaDevolver}
@@ -743,10 +773,10 @@ export default function DetalleServicio() {
                     }}
                     className="rounded text-red-500 focus:ring-red-500 border-gray-300"
                   />
-                  <span>¿Rechazó Presupuesto?</span>
+                  <span>¿Rechaza Presupuesto?</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-gray-600 dark:text-gray-300">
+                <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     checked={editGarantia}
@@ -756,17 +786,17 @@ export default function DetalleServicio() {
                   <span>Garantía Local</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-red-500">
+                <label className="flex items-center gap-2 cursor-pointer text-red-500">
                   <input
                     type="checkbox"
                     checked={editEsReclamoGarantia}
                     onChange={(e) => setEditEsReclamoGarantia(e.target.checked)}
                     className="rounded text-red-500 focus:ring-red-500 border-gray-300"
                   />
-                  <span>Reclamo de Garantía</span>
+                  <span>Reclamo por Garantía</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-gray-600 dark:text-gray-300">
+                <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     checked={editIngresoTaller}
@@ -776,7 +806,7 @@ export default function DetalleServicio() {
                   <span>Ingreso Físico Taller</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-indigo-500 font-semibold">
+                <label className="flex items-center gap-2 cursor-pointer text-indigo-600 font-semibold">
                   <input
                     type="checkbox"
                     checked={editTerminado}
@@ -786,18 +816,18 @@ export default function DetalleServicio() {
                   <span>¿Reparación Terminada?</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-emerald-500 font-semibold">
+                <label className="flex items-center gap-2 cursor-pointer text-emerald-600 font-semibold">
                   <input
                     type="checkbox"
                     checked={editEntregado}
                     onChange={(e) => setEditEntregado(e.target.checked)}
-                    className="rounded text-emerald-550 focus:ring-emerald-550 border-gray-300"
+                    className="rounded text-emerald-600 focus:ring-emerald-500 border-gray-300"
                   />
                   <span>¿Entregado a Cliente?</span>
                 </label>
 
                 <div className="flex gap-4 items-center">
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium text-gray-600 dark:text-gray-300">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-gray-700 dark:text-gray-300">
                     <input
                       type="checkbox"
                       checked={editFactura}
@@ -807,7 +837,7 @@ export default function DetalleServicio() {
                     <span>Factura</span>
                   </label>
 
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium text-gray-600 dark:text-gray-300">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-gray-700 dark:text-gray-300">
                     <input
                       type="checkbox"
                       checked={editContado}
@@ -819,89 +849,136 @@ export default function DetalleServicio() {
                 </div>
               </div>
             </div>
-          )}
 
-        </div>
-      </div>
+          </div>
+        )}
 
-      {/* Audit timeline at the bottom */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 shadow-xs space-y-4">
-        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 border-b border-gray-50 dark:border-gray-800 pb-2">
-          <History className="w-4 h-4 shrink-0" />
-          <h3 className="text-xs font-bold uppercase tracking-wider">Historial de Cambios y Bitácora</h3>
-        </div>
-        
-        <div className="relative border-l-2 border-gray-100 dark:border-gray-800 ml-4 pl-6 space-y-5 py-2 text-xs">
-          {historial.length === 0 ? (
-            <p className="text-xs italic text-gray-400">Sin registros históricos.</p>
-          ) : (
-            historial.map((log) => (
-              <div key={log.id} className="relative space-y-1">
-                <div className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-indigo-600 bg-white dark:bg-gray-900" />
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[9px] font-bold text-indigo-600 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">
-                    {log.accion}
-                  </span>
-                  <span className="text-gray-400 font-semibold">
-                    {toDate(log.fecha)?.toLocaleString() || "Hace un momento"}
-                  </span>
-                  <span className="text-gray-500">
-                    por <strong className="text-gray-700 dark:text-gray-300">{log.usuarioNombre}</strong>
-                  </span>
+        {/* Timeline audit feed */}
+        <div className="border-t border-slate-150 dark:border-gray-800/80 pt-5 space-y-4">
+          <div className="flex items-center gap-2 text-slate-450 dark:text-slate-400">
+            <History className="w-4 h-4 shrink-0" />
+            <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300">
+              Historial de Cambios y Bitácora
+            </h4>
+          </div>
+
+          <div className="relative border-l-2 border-slate-100 dark:border-gray-800 ml-4 pl-6 space-y-5 py-2 text-xs">
+            {historial.length === 0 ? (
+              <p className="text-xs italic text-gray-400">Cargando bitácora de auditoría...</p>
+            ) : (
+              historial.map((log) => (
+                <div key={log.id} className="relative space-y-1">
+                  <div className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-indigo-600 bg-white dark:bg-gray-900" />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[9px] font-bold text-indigo-600 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">
+                      {log.accion}
+                    </span>
+                    <span className="text-slate-400 font-semibold">
+                      {toDate(log.fecha)?.toLocaleString() || "Hace un momento"}
+                    </span>
+                    <span className="text-slate-500">
+                      por <strong className="text-slate-700 dark:text-gray-300">{log.usuarioNombre}</strong>
+                    </span>
+                  </div>
+                  <p className="text-slate-600 dark:text-gray-300 leading-relaxed pt-0.5">
+                    {log.detalle}
+                  </p>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 leading-relaxed pt-0.5">
-                  {log.detalle}
-                </p>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Bottom Sticky Action Bar */}
-      {!isConsulta && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-t border-gray-150 dark:border-gray-850 p-4 flex items-center justify-end gap-3 z-30 shadow-lg md:pl-72">
-          <div className="max-w-7xl w-full mx-auto flex items-center justify-end gap-3 px-4">
+        {/* Row 6: Action buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100 dark:border-gray-800 pt-4 mt-2">
+          <div>
+            {isSaveDisabled && (
+              <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500">
+                * Complete todos los campos obligatorios para guardar.
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("servicios")}
+              className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer"
+            >
+              Cancelar
+            </button>
+            
             {profile?.rol === "tecnico" ? (
               <>
                 <button
                   type="button"
+                  disabled={submitting || isSaveDisabled}
                   onClick={async () => {
                     setEditEstado("EN_ESPERA");
                     setTimeout(() => handleSave("EN_ESPERA", false, "Técnico guardó el diagnóstico y marcó como DIAGNOSTICADO"), 100);
                   }}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                  className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                 >
-                  <Check className="w-4 h-4" />
-                  DIAGNOSTICADO
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>DIAGNOSTICADO</span>
+                    </>
+                  )}
                 </button>
 
                 <button
                   type="button"
+                  disabled={submitting || isSaveDisabled}
                   onClick={async () => {
                     setEditEstado("LISTO_PARA_ENTREGA");
                     setEditTerminado(true);
                     setTimeout(() => handleSave("LISTO_PARA_ENTREGA", true, "Técnico completó la reparación y marcó como TERMINADO"), 100);
                   }}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-750 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                  className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                 >
-                  <Check className="w-4 h-4" />
-                  TERMINADO
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>TERMINADO</span>
+                    </>
+                  )}
                 </button>
               </>
             ) : (
               <button
                 type="button"
+                disabled={submitting || isSaveDisabled}
                 onClick={() => handleSave()}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                className="inline-flex items-center justify-center gap-2 h-10 px-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
               >
-                <Check className="w-4 h-4" />
-                Guardar Modificaciones
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Guardando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Guardar Modificaciones</span>
+                  </>
+                )}
               </button>
             )}
           </div>
         </div>
-      )}
+
+      </div>
 
     </div>
   );
