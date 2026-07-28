@@ -81,6 +81,38 @@ export default function Logistica() {
     }
   };
 
+  const handleToggleRetiradoGroup = async (group: any) => {
+    try {
+      const userUid = profile?.uid || user?.uid || "logistica";
+      const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Logística";
+      
+      const newVal = !group.isRetirado;
+      
+      for (const srv of group.services) {
+        await ServiciosService.update(
+          srv.id!,
+          { ingresoTaller: newVal },
+          userUid,
+          userNombre,
+          `Retiro pactado: marcado como ${newVal ? "RETIRADO" : "PENDIENTE"}`
+        );
+
+        if (newVal) {
+          await NotificationsService.create({
+            targetRole: "taller",
+            title: "Nuevo Equipo Ingresado",
+            message: `Logística retiró e ingresó el equipo ${srv.aparato || ""} #${srv.numeroServicio || ""} para diagnóstico.`,
+            serviceId: srv.id!
+          });
+        }
+      }
+      
+      await loadData();
+    } catch (error) {
+      console.error("Error updating retirado status for group:", error);
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -203,6 +235,67 @@ export default function Logistica() {
 
   todayWithdrawals.sort(sortByTime);
   filteredOtherWithdrawals.sort(sortByTime);
+
+  // Grouping helper type
+  interface GroupedWithdrawal {
+    id: string;
+    clienteId: string;
+    isRetirado: boolean;
+    withdrawal: {
+      fechaRetiroStr: string;
+      notasRetiro: string;
+    };
+    services: (Servicio & { withdrawal: { fechaRetiroStr: string; notasRetiro: string } })[];
+  }
+
+  const groupWithdrawals = (list: typeof servicesWithWithdrawals) => {
+    const groupsMap = new Map<string, typeof servicesWithWithdrawals>();
+    list.forEach(item => {
+      // Group by client ID and exact date/time string of withdrawal
+      const key = `${item.clienteId}_${item.withdrawal.fechaRetiroStr.split("T")[0]}_${formatTimeStr(item.withdrawal.fechaRetiroStr)}`;
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, []);
+      }
+      groupsMap.get(key)!.push(item);
+    });
+
+    const grouped: GroupedWithdrawal[] = [];
+    groupsMap.forEach((items, key) => {
+      const first = items[0];
+      const allRetirado = items.every(s => s.ingresoTaller === true);
+      const combinedNotes = items
+        .map(s => s.withdrawal.notasRetiro)
+        .filter(Boolean)
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .join(" | ");
+
+      grouped.push({
+        id: key,
+        clienteId: first.clienteId,
+        isRetirado: allRetirado,
+        withdrawal: {
+          fechaRetiroStr: first.withdrawal.fechaRetiroStr,
+          notasRetiro: combinedNotes
+        },
+        services: items
+      });
+    });
+
+    return grouped;
+  };
+
+  const sortGroupedByTime = (
+    a: GroupedWithdrawal,
+    b: GroupedWithdrawal
+  ) => {
+    return a.withdrawal.fechaRetiroStr.localeCompare(b.withdrawal.fechaRetiroStr);
+  };
+
+  const groupedTodayWithdrawals = groupWithdrawals(todayWithdrawals);
+  const groupedOtherWithdrawals = groupWithdrawals(filteredOtherWithdrawals);
+
+  groupedTodayWithdrawals.sort(sortGroupedByTime);
+  groupedOtherWithdrawals.sort(sortGroupedByTime);
 
   // Extract all services that are ready for delivery or in progress
   const readyDeliveries = servicios.filter(s => 
@@ -471,7 +564,7 @@ export default function Logistica() {
                 </span>
               </div>
 
-              {todayWithdrawals.length === 0 ? (
+              {groupedTodayWithdrawals.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 bg-amber-50/20 dark:bg-amber-950/5 border border-dashed border-amber-200/50 dark:border-amber-900/20 rounded-2xl text-center space-y-4 max-w-2xl mx-auto">
                   <Info className="w-12 h-12 text-amber-500/70" />
                   <div>
@@ -492,11 +585,11 @@ export default function Logistica() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {todayWithdrawals.map(srv => {
-                    const client = clientMap.get(srv.clienteId);
+                  {groupedTodayWithdrawals.map(group => {
+                    const client = clientMap.get(group.clienteId);
                     if (!client) return null;
 
-                    const isRetirado = srv.ingresoTaller === true;
+                    const isRetirado = group.isRetirado;
 
                     const addressStr = [
                       client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
@@ -513,7 +606,7 @@ export default function Logistica() {
 
                     return (
                       <div 
-                        key={srv.id}
+                        key={group.id}
                         className={`bg-gradient-to-br border-2 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 relative overflow-hidden transition-all duration-300 ${
                           isRetirado
                             ? "from-emerald-50/40 via-white to-white dark:from-emerald-950/10 dark:via-gray-900 dark:to-gray-900 border-emerald-200/80 dark:border-emerald-900/40"
@@ -531,7 +624,7 @@ export default function Logistica() {
                               : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400"
                           }`}>
                             <Clock className="w-4 h-4 shrink-0" />
-                            <span>{formatTimeStr(srv.withdrawal.fechaRetiroStr)}</span>
+                            <span>{formatTimeStr(group.withdrawal.fechaRetiroStr)}</span>
                           </div>
 
                           {/* Switch de Retirado */}
@@ -541,7 +634,7 @@ export default function Logistica() {
                             </span>
                             <button
                               type="button"
-                              onClick={() => handleToggleRetirado(srv.id!, srv.ingresoTaller)}
+                              onClick={() => handleToggleRetiradoGroup(group)}
                               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                                 isRetirado ? "bg-emerald-500" : "bg-slate-300 dark:bg-gray-700"
                               }`}
@@ -570,18 +663,20 @@ export default function Logistica() {
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  if (window.confirm("¿Está seguro que desea eliminar este servicio/retiro? Esta acción no se puede deshacer.")) {
+                                  if (window.confirm(`¿Está seguro que desea eliminar las ${group.services.length} órdenes/retiros de este cliente? Esta acción no se puede deshacer.`)) {
                                     try {
-                                      await ServiciosService.delete(srv.id!);
+                                      for (const srv of group.services) {
+                                        await ServiciosService.delete(srv.id!);
+                                      }
                                       await loadData();
                                     } catch (err) {
-                                      console.error("Error deleting service:", err);
-                                      alert("Error al eliminar el servicio.");
+                                      console.error("Error deleting services:", err);
+                                      alert("Error al eliminar los servicios.");
                                     }
                                   }
                                 }}
                                 className="p-1 text-red-650 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer flex items-center justify-center shrink-0"
-                                title="Eliminar Servicio/Retiro"
+                                title="Eliminar Retiros del Cliente"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -626,25 +721,40 @@ export default function Logistica() {
                             <p className="text-xs text-red-500 italic">No se registró dirección para este cliente.</p>
                           )}
 
-                          {/* Equipment info */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50 dark:bg-gray-855/40 p-3 rounded-xl border border-slate-100 dark:border-gray-800 text-xs text-slate-600 dark:text-gray-300">
-                            <div>
-                              <span className="font-semibold text-slate-400 mr-1 block uppercase text-[10px] tracking-wider mb-0.5">Equipo / Aparato</span>
-                              <span className="font-medium text-slate-800 dark:text-slate-200 text-sm">{srv.aparato} ({srv.marcaModelo})</span>
-                            </div>
-                            <div>
-                              <span className="font-semibold text-slate-400 mr-1 block uppercase text-[10px] tracking-wider mb-0.5">Falla / Desperfecto</span>
-                              <span className="font-medium text-slate-800 dark:text-slate-200 text-sm">{srv.desperfectoUsuario}</span>
-                            </div>
+                          {/* Equipments list inside the card */}
+                          <div className="space-y-2.5">
+                            {group.services.map((srv, idx) => (
+                              <div 
+                                key={srv.id} 
+                                className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50 dark:bg-gray-855/40 p-3.5 rounded-xl border border-slate-100 dark:border-gray-800 text-xs text-slate-650 dark:text-gray-300"
+                              >
+                                <div>
+                                  <span className="font-semibold text-slate-400 mr-1 block uppercase text-[9px] tracking-wider mb-0.5">
+                                    Equipo / Aparato {group.services.length > 1 ? `#${idx + 1}` : ""}
+                                  </span>
+                                  <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                                    {srv.aparato} ({srv.marcaModelo})
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-semibold text-slate-400 mr-1 block uppercase text-[9px] tracking-wider mb-0.5">
+                                    Falla / Desperfecto
+                                  </span>
+                                  <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                                    {srv.desperfectoUsuario}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
 
                           {/* Special instructions / Notes retiro */}
-                          {srv.withdrawal.notasRetiro && (
+                          {group.withdrawal.notasRetiro && (
                             <div className="p-3 bg-amber-500/10 border border-amber-300/30 text-amber-850 dark:text-amber-300 text-xs rounded-xl flex items-start gap-2.5">
                               <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
                               <div>
                                 <span className="font-extrabold uppercase text-[9px] tracking-wider text-amber-600 dark:text-amber-400 block">Indicaciones especiales</span>
-                                <p className="mt-0.5 font-medium leading-relaxed">{srv.withdrawal.notasRetiro}</p>
+                                <p className="mt-0.5 font-medium leading-relaxed">{group.withdrawal.notasRetiro}</p>
                               </div>
                             </div>
                           )}
@@ -831,12 +941,12 @@ export default function Logistica() {
                 <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 p-4 sm:p-5 rounded-2xl shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800 pb-2">
                     <h3 className="font-bold text-xs text-slate-800 dark:text-white uppercase tracking-wider">
-                      Resultados de la Agenda ({filteredOtherWithdrawals.length})
+                      Resultados de la Agenda ({groupedOtherWithdrawals.length})
                     </h3>
                   </div>
 
                   <div className="space-y-4">
-                    {filteredOtherWithdrawals.length === 0 ? (
+                    {groupedOtherWithdrawals.length === 0 ? (
                       <div className="text-center py-16 bg-slate-50/50 dark:bg-gray-950/20 border border-dashed border-slate-200 dark:border-gray-800 rounded-2xl">
                         <p className="text-sm font-semibold text-slate-500 dark:text-gray-400">No se encontraron retiros agendados para los filtros seleccionados.</p>
                         <p className="text-xs text-slate-400 mt-1">Intenta cambiar la fecha o borrar la búsqueda de clientes.</p>
@@ -854,15 +964,15 @@ export default function Logistica() {
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {filteredOtherWithdrawals.map(srv => {
-                          const client = clientMap.get(srv.clienteId);
+                        {groupedOtherWithdrawals.map(group => {
+                          const client = clientMap.get(group.clienteId);
                           if (!client) return null;
 
-                          const datePart = srv.withdrawal.fechaRetiroStr.split("T")[0];
+                          const datePart = group.withdrawal.fechaRetiroStr.split("T")[0];
 
                           return (
                             <div 
-                              key={srv.id}
+                              key={group.id}
                               className="bg-slate-50/50 dark:bg-gray-855 border border-slate-150 dark:border-gray-800/80 rounded-xl p-4 shadow-xs hover:border-indigo-400 dark:hover:border-indigo-900 transition-all flex flex-col gap-3 relative"
                             >
                               {/* Top date and time line */}
@@ -873,24 +983,26 @@ export default function Logistica() {
                                 <div className="flex items-center gap-1.5">
                                   <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-gray-300">
                                     <Clock className="w-3.5 h-3.5" />
-                                    <span>{formatTimeStr(srv.withdrawal.fechaRetiroStr)}</span>
+                                    <span>{formatTimeStr(group.withdrawal.fechaRetiroStr)}</span>
                                   </div>
                                   {isAdmin && (
                                     <button
                                       type="button"
                                       onClick={async () => {
-                                        if (window.confirm("¿Está seguro que desea eliminar este servicio/retiro? Esta acción no se puede deshacer.")) {
+                                        if (window.confirm(`¿Está seguro que desea eliminar las ${group.services.length} órdenes/retiros de este cliente? Esta acción no se puede deshacer.`)) {
                                           try {
-                                            await ServiciosService.delete(srv.id!);
+                                            for (const srv of group.services) {
+                                              await ServiciosService.delete(srv.id!);
+                                            }
                                             await loadData();
                                           } catch (err) {
-                                            console.error("Error deleting service:", err);
-                                            alert("Error al eliminar el servicio.");
+                                            console.error("Error deleting services:", err);
+                                            alert("Error al eliminar los servicios.");
                                           }
                                         }
                                       }}
                                       className="p-1 text-red-650 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
-                                      title="Eliminar Servicio/Retiro"
+                                      title="Eliminar Retiros del Cliente"
                                     >
                                       <Trash2 className="w-3 h-3" />
                                     </button>
@@ -910,17 +1022,37 @@ export default function Logistica() {
                                 </p>
                               </div>
 
+                              {/* Equipments list */}
+                              <div className="space-y-1.5 py-1">
+                                {group.services.map((srv, idx) => (
+                                  <div key={srv.id} className="text-[11px] text-slate-650 dark:text-gray-350 bg-slate-100/50 dark:bg-gray-800/40 px-2 py-1 rounded border border-slate-100 dark:border-gray-800/80">
+                                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                                      {srv.aparato} ({srv.marcaModelo})
+                                    </span>
+                                    <span className="text-slate-400 mx-1.5">|</span>
+                                    <span className="text-slate-500 dark:text-gray-455 italic">
+                                      {srv.desperfectoUsuario}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
                               {/* Notes summary badge */}
-                              {srv.withdrawal.notasRetiro && (
-                                <div className="bg-white dark:bg-gray-900 px-3 py-2 rounded-xl border border-slate-150 dark:border-gray-800 text-[11px] text-slate-600 dark:text-gray-300 italic leading-relaxed shadow-3xs">
+                              {group.withdrawal.notasRetiro && (
+                                <div className="bg-white dark:bg-gray-900 px-3 py-2 rounded-xl border border-slate-150 dark:border-gray-800 text-[11px] text-slate-650 dark:text-gray-300 italic leading-relaxed shadow-3xs">
                                   <span className="font-bold not-italic text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Nota:</span>
-                                  "{srv.withdrawal.notasRetiro}"
+                                  "{group.withdrawal.notasRetiro}"
                                 </div>
                               )}
 
                               {/* Quick access footer */}
                               <div className="flex items-center justify-between border-t border-slate-150/60 dark:border-gray-800 pt-2.5 mt-auto">
-                                <span className="text-[10px] text-slate-400 font-bold">Orden #{srv.numeroServicio}</span>
+                                <span className="text-[10px] text-slate-400 font-bold">
+                                  {group.services.length === 1 
+                                    ? `Orden #${group.services[0].numeroServicio}`
+                                    : `${group.services.length} Órdenes`
+                                  }
+                                </span>
                                 <button
                                   onClick={() => navigate("clientes", client.id)}
                                   className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-extrabold rounded-xl transition-all cursor-pointer shadow-3xs active:scale-95"
