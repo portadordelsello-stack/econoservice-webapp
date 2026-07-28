@@ -30,6 +30,45 @@ import {
 
 type LogisticaView = "hub" | "tracker" | "retiros" | "agenda-general" | "entregas" | "detalle-entrega";
 
+// Helper for WhatsApp URLs
+const getWhatsAppUrl = (phone?: string) => {
+  if (!phone) return "";
+  let clean = phone.replace(/\D/g, "");
+  if (clean.length === 10 && !clean.startsWith("54")) {
+    clean = "54" + clean;
+  }
+  return `https://wa.me/${clean}`;
+};
+
+// Helper to format Spanish Date nicely
+const formatSpanishDate = (dateStr: string) => {
+  try {
+    const [year, month, day] = dateStr.split("-");
+    const d = new Date(Number(year), Number(month) - 1, Number(day));
+    return d.toLocaleDateString("es-AR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
+  } catch (e) {
+    return dateStr;
+  }
+};
+
+// Helper to format Time cleanly
+const formatTimeStr = (dateTimeStr: string) => {
+  try {
+    const parts = dateTimeStr.split("T");
+    if (parts.length > 1) {
+      return parts[1] + " hs";
+    }
+    return "Todo el día";
+  } catch (e) {
+    return "Hora acordada";
+  }
+};
+
 export default function Logistica() {
   const { navigate } = useNavigation();
   const { profile, user } = useAuth();
@@ -333,44 +372,7 @@ export default function Logistica() {
     }
   };
 
-  // Helper for WhatsApp URLs
-  const getWhatsAppUrl = (phone?: string) => {
-    if (!phone) return "";
-    let clean = phone.replace(/\D/g, "");
-    if (clean.length === 10 && !clean.startsWith("54")) {
-      clean = "54" + clean;
-    }
-    return `https://wa.me/${clean}`;
-  };
 
-  // Helper to format Spanish Date nicely
-  const formatSpanishDate = (dateStr: string) => {
-    try {
-      const [year, month, day] = dateStr.split("-");
-      const d = new Date(Number(year), Number(month) - 1, Number(day));
-      return d.toLocaleDateString("es-AR", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-      });
-    } catch (e) {
-      return dateStr;
-    }
-  };
-
-  // Helper to format Time cleanly
-  const formatTimeStr = (dateTimeStr: string) => {
-    try {
-      const parts = dateTimeStr.split("T");
-      if (parts.length > 1) {
-        return parts[1] + " hs";
-      }
-      return "Todo el día";
-    } catch (e) {
-      return "Hora acordada";
-    }
-  };
 
   const isAdmin = profile?.rol === "superadmin" || profile?.rol === "admin" || profile?.rol === "administracion";
 
