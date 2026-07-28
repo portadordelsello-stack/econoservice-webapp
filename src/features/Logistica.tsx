@@ -662,17 +662,13 @@ export default function Logistica() {
 
                         {/* Client & Device info */}
                         <div className="pl-2 space-y-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs sm:text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded">
-                              ID del Cliente: {formatClienteId(client)}
-                            </span>
-
-                            {client.clienteProblematico && (
+                          {client.clienteProblematico && (
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-bold border border-red-100 dark:border-red-900/30">
                                 ⚠️ Conflictivo
                               </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
 
                           {/* Address details */}
                           {addressStr ? (
@@ -979,11 +975,6 @@ export default function Logistica() {
 
                               {/* Client name, ID, and address */}
                               <div className="space-y-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-slate-150 dark:border-gray-750">
-                                    ID: {formatClienteId(client)}
-                                  </span>
-                                </div>
                                 <p className="text-xs text-slate-700 dark:text-gray-350 font-medium leading-relaxed">
                                   {client.calle ? `${client.calle} ${client.numero || ""}` : "S/D"}, {client.localidad || "Santo Tomé"}
                                 </p>
