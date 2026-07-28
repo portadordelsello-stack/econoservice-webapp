@@ -758,43 +758,7 @@ export default function DetalleServicio() {
           </div>
         )}
 
-        {/* Timeline audit feed */}
-        {profile?.rol !== "tecnico" && (
-          <div className="border-t border-slate-150 dark:border-gray-800/80 pt-5 space-y-4">
-            <div className="flex items-center gap-2 text-slate-450 dark:text-slate-400">
-              <History className="w-4 h-4 shrink-0" />
-              <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300">
-                Historial de Cambios y Bitácora
-              </h4>
-            </div>
 
-            <div className="relative border-l-2 border-slate-100 dark:border-gray-800 ml-4 pl-6 space-y-5 py-2 text-xs">
-              {historial.length === 0 ? (
-                <p className="text-xs italic text-gray-400">Cargando bitácora de auditoría...</p>
-              ) : (
-                historial.map((log) => (
-                  <div key={log.id} className="relative space-y-1">
-                    <div className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-indigo-600 bg-white dark:bg-gray-900" />
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[9px] font-bold text-indigo-600 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">
-                        {log.accion}
-                      </span>
-                      <span className="text-slate-400 font-semibold">
-                        {toDate(log.fecha)?.toLocaleString() || "Hace un momento"}
-                      </span>
-                      <span className="text-slate-500">
-                        por <strong className="text-slate-700 dark:text-gray-300">{log.usuarioNombre}</strong>
-                      </span>
-                    </div>
-                    <p className="text-slate-600 dark:text-gray-300 leading-relaxed pt-0.5">
-                      {log.detalle}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Row 6: Action buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100 dark:border-gray-800 pt-4 mt-2">
