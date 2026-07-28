@@ -630,40 +630,11 @@ export default function Logistica() {
                           }`}>
                             <Clock className="w-4 h-4 shrink-0" />
                             <span>{formatTimeStr(group.withdrawal.fechaRetiroStr)}</span>
-                          </div>
-
-                          {/* Switch de Retirado */}
-                          <div className="flex items-center gap-2 bg-white dark:bg-gray-855 border border-slate-200/60 dark:border-gray-800 px-3 py-1.5 rounded-xl shadow-3xs">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">
-                              {isRetirado ? "Retirado" : "Pendiente"}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleRetiradoGroup(group)}
-                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                isRetirado ? "bg-emerald-500" : "bg-slate-300 dark:bg-gray-700"
-                              }`}
-                              role="switch"
-                              aria-checked={isRetirado}
-                              title={isRetirado ? "Marcar como pendiente" : "Marcar como retirado"}
-                            >
-                              <span
-                                aria-hidden="true"
-                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                                  isRetirado ? "translate-x-4" : "translate-x-0"
-                                }`}
-                              />
-                            </button>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
-                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${
-                              isRetirado
-                                ? "bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/40"
-                                : "bg-amber-100/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/40"
-                            }`}>
-                              {isRetirado ? "En Taller" : "Pendiente"}
-                            </span>
+                            {isRetirado && (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/40">
+                                En Taller
+                              </span>
+                            )}
                             {isAdmin && (
                               <button
                                 type="button"
