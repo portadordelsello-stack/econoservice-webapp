@@ -1919,7 +1919,7 @@ export default function Logistica() {
                   </h3>
                   {client && (
                     <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                      Cliente: {client.nombreApellido} (ID: {formatClienteId(client)})
+                      Cliente: {client.nombreApellido}
                     </p>
                   )}
                 </div>
