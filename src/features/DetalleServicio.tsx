@@ -375,13 +375,24 @@ export default function DetalleServicio() {
         }
       }
 
-      await ServiciosService.update(
-        selectedId,
-        fieldsToUpdate,
-        userUid,
-        userNombre,
-        customAuditText || "Actualización de Orden de Servicio"
-      );
+      if (profile?.rol === "tecnico") {
+        // Use the dedicated tecnico update function that only sends whitelisted fields
+        await ServiciosService.updateTecnico(
+          selectedId,
+          fieldsToUpdate,
+          userUid,
+          userNombre,
+          customAuditText || "Actualización de Orden de Servicio"
+        );
+      } else {
+        await ServiciosService.update(
+          selectedId,
+          fieldsToUpdate,
+          userUid,
+          userNombre,
+          customAuditText || "Actualización de Orden de Servicio"
+        );
+      }
 
       // Workflow triggers
       if (profile?.rol === "tecnico") {

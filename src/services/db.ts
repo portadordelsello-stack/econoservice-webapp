@@ -429,13 +429,20 @@ export const ServiciosService = {
     const docRef = doc(db, "servicios", id);
 
     // Build a payload that only contains fields allowed for the 'tecnico' role in Firestore rules.
+    // Allowed: diagnostico, notasInternas, serviciosRequeridos, serviciosConvenidos,
+    //          estado, repuestosComprar, repuestosComprados, pasaStock, tecnicoId,
+    //          terminado, presupuesto, presupuestoTexto, fotosDrive, updatedAt
     const allowedPayload: Record<string, any> = {
       updatedAt: serverTimestamp()
     };
     if (fields.diagnostico !== undefined) allowedPayload.diagnostico = fields.diagnostico;
+    if (fields.notasInternas !== undefined) allowedPayload.notasInternas = fields.notasInternas;
+    if (fields.serviciosRequeridos !== undefined) allowedPayload.serviciosRequeridos = fields.serviciosRequeridos;
     if (fields.estado !== undefined) allowedPayload.estado = fields.estado;
     if (fields.repuestosComprar !== undefined) allowedPayload.repuestosComprar = fields.repuestosComprar;
     if (fields.repuestosComprados !== undefined) allowedPayload.repuestosComprados = fields.repuestosComprados;
+    if (fields.pasaStock !== undefined) allowedPayload.pasaStock = fields.pasaStock;
+    if (fields.terminado !== undefined) allowedPayload.terminado = fields.terminado;
 
     await updateDoc(docRef, allowedPayload);
 
