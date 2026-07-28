@@ -762,7 +762,7 @@ export default function Logistica() {
                                 onClick={() => navigate("clientes", client.id)}
                                 className="inline-flex items-center justify-center gap-1.5 h-11 px-4.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer w-full sm:w-auto"
                               >
-                                <span>Ver Cliente</span>
+                                <span>Ver Orden de Servicio</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
@@ -1015,7 +1015,7 @@ export default function Logistica() {
                                   onClick={() => navigate("clientes", client.id)}
                                   className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-extrabold rounded-xl transition-all cursor-pointer shadow-3xs active:scale-95"
                                 >
-                                  <span>Ver Cliente</span>
+                                  <span>Ver Orden de Servicio</span>
                                   <ChevronRight className="w-3.5 h-3.5" />
                                 </button>
                               </div>
