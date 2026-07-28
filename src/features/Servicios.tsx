@@ -87,7 +87,7 @@ export default function Servicios() {
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   // UI state
-  const [activeTab, setActiveTab] = useState<"recibidos" | "espera" | "aceptados" | "rechazados" | "todos">("recibidos");
+  const [activeTab, setActiveTab] = useState<"recibidos" | "espera" | "aceptados" | "rechazados" | "terminados" | "todos">("recibidos");
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -143,6 +143,7 @@ export default function Servicios() {
   const esperaList = workshopServicios.filter(s => s.estado === "EN_ESPERA");
   const aceptadosList = workshopServicios.filter(s => s.estado === "ACEPTADO");
   const rechazadosList = workshopServicios.filter(s => s.estado === "RECHAZADO");
+  const terminadosList = workshopServicios.filter(s => s.estado === "LISTO_PARA_ENTREGA");
 
   // Filter based on search and selected tab
   const getFilteredList = () => {
@@ -155,6 +156,8 @@ export default function Servicios() {
       list = aceptadosList;
     } else if (activeTab === "rechazados") {
       list = rechazadosList;
+    } else if (activeTab === "terminados") {
+      list = terminadosList;
     } else {
       list = workshopServicios;
     }
@@ -409,6 +412,19 @@ export default function Servicios() {
             </button>
             <button
               onClick={() => {
+                setActiveTab("terminados");
+                setExpandedId(null);
+              }}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                activeTab === "terminados"
+                  ? "bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-3xs"
+                  : "text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200"
+              }`}
+            >
+              Terminados ({terminadosList.length})
+            </button>
+            <button
+              onClick={() => {
                 setActiveTab("todos");
                 setExpandedId(null);
               }}
@@ -455,7 +471,9 @@ export default function Servicios() {
                 ? "No hay nuevos equipos recibidos de logística pendientes de diagnóstico." 
                 : activeTab === "espera"
                   ? "Aún no se han guardado órdenes en estado 'Diagnosticados'."
-                  : "No hay ningún equipo registrado en el taller."}
+                  : activeTab === "terminados"
+                    ? "No hay órdenes de servicio en estado 'Terminados'."
+                    : "No hay ningún equipo registrado en el taller."}
           </p>
         </div>
       ) : (
