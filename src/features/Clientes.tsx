@@ -1460,10 +1460,10 @@ export default function Clientes() {
                       }
                     }
                   }}
-                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-red-600/10 cursor-pointer active:scale-95 flex items-center gap-1.5"
                 >
                   <Trash className="w-3.5 h-3.5" />
-                  <span>Eliminar Equipo</span>
+                  <span>ELIMINAR EQUIPO</span>
                 </button>
               )}
             </div>
@@ -1477,9 +1477,9 @@ export default function Clientes() {
                     setCurrentSubView("menu");
                   }
                 }}
-                className="px-5 py-2.5 border border-gray-250 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all text-xs cursor-pointer active:scale-95"
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-blue-600/10 cursor-pointer active:scale-95"
               >
-                Cancelar
+                CANCELAR
               </button>
             <button
               type="button"
@@ -1526,9 +1526,9 @@ export default function Clientes() {
                   setCurrentSubView("menu");
                 }
               }}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-indigo-600/10 cursor-pointer active:scale-95"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-emerald-600/10 cursor-pointer active:scale-95"
             >
-              Guardar Equipo
+              GUARDAR EQUIPO
             </button>
           </div>
           </div>
