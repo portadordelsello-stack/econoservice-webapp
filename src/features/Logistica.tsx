@@ -1917,11 +1917,7 @@ export default function Logistica() {
                     <Laptop className="w-5 h-5 text-indigo-500" />
                     <span>Equipos a Retirar ({selectedGroupForModal.services.length})</span>
                   </h3>
-                  {client && (
-                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                      Cliente: {client.nombreApellido}
-                    </p>
-                  )}
+
                 </div>
                 <button
                   type="button"
