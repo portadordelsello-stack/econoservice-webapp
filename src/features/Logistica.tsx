@@ -25,7 +25,9 @@ import {
   Save,
   Eye,
   X,
-  Trash2
+  Trash2,
+  Wrench,
+  Laptop
 } from "lucide-react";
 
 type LogisticaView = "hub" | "tracker" | "retiros" | "agenda-general" | "entregas" | "detalle-entrega";
@@ -89,6 +91,7 @@ export default function Logistica() {
   const [deliveryInfo, setDeliveryInfo] = useState("");
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
   const [activeEntregaTab, setActiveEntregaTab] = useState<"pendientes" | "entregados">("pendientes");
+  const [selectedGroupForModal, setSelectedGroupForModal] = useState<GroupedWithdrawal | null>(null);
 
   const handleToggleRetirado = async (srvId: string, currentVal: boolean) => {
     try {
@@ -723,31 +726,22 @@ export default function Logistica() {
                             <p className="text-xs text-red-500 italic">No se registró dirección para este cliente.</p>
                           )}
 
-                          {/* Equipments list inside the card */}
-                          <div className="space-y-2.5">
-                            {group.services.map((srv, idx) => (
-                              <div 
-                                key={srv.id} 
-                                className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50 dark:bg-gray-855/40 p-3.5 rounded-xl border border-slate-100 dark:border-gray-800 text-xs text-slate-650 dark:text-gray-300"
-                              >
-                                <div>
-                                  <span className="font-semibold text-slate-400 mr-1 block uppercase text-[9px] tracking-wider mb-0.5">
-                                    Equipo / Aparato {group.services.length > 1 ? `#${idx + 1}` : ""}
-                                  </span>
-                                  <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                                    {srv.aparato} ({srv.marcaModelo})
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="font-semibold text-slate-400 mr-1 block uppercase text-[9px] tracking-wider mb-0.5">
-                                    Falla / Desperfecto
-                                  </span>
-                                  <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                                    {srv.desperfectoUsuario}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
+                          {/* Equipments button instead of full list */}
+                          <div className="bg-slate-50 dark:bg-gray-855 p-3.5 rounded-xl border border-slate-150 dark:border-gray-800 flex items-center justify-between gap-3 shadow-xs">
+                            <div className="space-y-1">
+                              <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block">Equipos / Aparatos</span>
+                              <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                {group.services.length} {group.services.length === 1 ? "equipo registrado" : "equipos registrados"}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedGroupForModal(group)}
+                              className="inline-flex items-center gap-1.5 h-10 px-4 bg-indigo-50 hover:bg-indigo-150 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-650 dark:text-indigo-400 text-xs font-bold rounded-xl border border-indigo-200/50 dark:border-indigo-800/40 transition-all active:scale-95 cursor-pointer shrink-0"
+                            >
+                              <Wrench className="w-4 h-4" />
+                              <span>Ver Equipos</span>
+                            </button>
                           </div>
 
                           {/* Special instructions / Notes retiro */}
@@ -1728,6 +1722,96 @@ export default function Logistica() {
                 </div>
               </div>
 
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* MODAL: EQUIPOS PARA RETIRAR */}
+      {selectedGroupForModal && (() => {
+        const client = clientMap.get(selectedGroupForModal.clienteId);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
+              {/* Header */}
+              <div className="p-5 border-b border-slate-150 dark:border-gray-800 flex items-center justify-between bg-slate-50/50 dark:bg-gray-950/20">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Laptop className="w-5 h-5 text-indigo-500" />
+                    <span>Equipos a Retirar ({selectedGroupForModal.services.length})</span>
+                  </h3>
+                  {client && (
+                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                      Cliente: {client.nombreApellido} (ID: {formatClienteId(client)})
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedGroupForModal(null)}
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                {selectedGroupForModal.services.map((srv, idx) => (
+                  <div 
+                    key={srv.id} 
+                    className="p-4 bg-slate-50/80 dark:bg-gray-855/40 rounded-xl border border-slate-150 dark:border-gray-800 space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded uppercase tracking-wider">
+                        Equipo #{idx + 1}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400 font-bold">
+                        Orden #{srv.numeroServicio}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="font-semibold text-slate-400 mr-1 block uppercase text-[9px] tracking-wider mb-0.5">
+                          Aparato / Tipo
+                        </span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                          {srv.aparato}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-slate-400 mr-1 block uppercase text-[9px] tracking-wider mb-0.5">
+                          Marca / Modelo
+                        </span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                          {srv.marcaModelo || "S/D"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/50 dark:border-gray-800 text-xs">
+                      <span className="font-semibold text-slate-400 mr-1 block uppercase text-[9px] tracking-wider mb-0.5">
+                        Falla / Desperfecto
+                      </span>
+                      <span className="text-slate-700 dark:text-gray-300 font-medium">
+                        {srv.desperfectoUsuario}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-slate-50 dark:bg-gray-950/20 border-t border-slate-150 dark:border-gray-800 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelectedGroupForModal(null)}
+                  className="h-10 px-5 bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         );
