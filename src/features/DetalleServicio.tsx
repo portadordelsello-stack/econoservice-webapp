@@ -440,7 +440,7 @@ export default function DetalleServicio() {
     cliente.localidad || "Santo Tomé"
   ].filter(Boolean).join(", ") : "Sin Domicilio";
 
-  const isSaveDisabled = !editNotasInternas.trim() || !editDiagnostico.trim() || (isAdmin && !editPresupuestoTexto.trim());
+  const isSaveDisabled = profile?.rol === "tecnico" ? (!editNotasInternas.trim() || !editDiagnostico.trim()) : false;
 
   return (
     <div className="space-y-6 animate-fade-in font-sans pb-10">
