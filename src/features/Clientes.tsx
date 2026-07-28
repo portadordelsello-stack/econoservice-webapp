@@ -1062,25 +1062,36 @@ export default function Clientes() {
                   No hay equipos registrados para este servicio. Agregue al menos un equipo.
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-3">
                   {formEquipos.map((eq, idx) => (
                     <div 
                       key={idx}
-                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-855 rounded-xl border border-gray-150 dark:border-gray-800 hover:border-indigo-500/30 transition-all"
+                      onClick={() => {
+                        setEquipmentSourceSubView(currentSubView as "nuevo" | "editar");
+                        setEquipoModalIndex(idx);
+                        setEquipoModalTipo(eq.tipo || "Lavarropas");
+                        setEquipoModalMarca(eq.marca);
+                        setEquipoModalModelo(eq.modelo);
+                        setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
+                        setEquipoModalFechaRetiro(eq.fechaRetiro || "");
+                        setEquipoModalPhotos(eq.fotosDrive || []);
+                        setCurrentSubView("equipo-form");
+                      }}
+                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-855 rounded-2xl border border-gray-150 dark:border-gray-800/80 hover:border-indigo-500/50 dark:hover:border-indigo-900/60 hover:bg-white dark:hover:bg-gray-900/40 hover:shadow-xs transition-all cursor-pointer group"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shrink-0">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform">
                           {idx + 1}
                         </div>
                         <div>
-                          <span className="font-bold text-[10px] text-indigo-650 dark:text-indigo-400 block uppercase tracking-wider">
+                          <span className="font-extrabold text-[10px] text-indigo-650 dark:text-indigo-400 block uppercase tracking-wider mb-0.5">
                             {eq.tipo || "Lavarropas"}
                           </span>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white block">
+                          <span className="text-sm font-bold text-gray-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                             {eq.marca} - {eq.modelo}
                           </span>
                           {eq.fechaRetiro && (
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5 font-medium">
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-1 font-medium">
                               <Calendar className="w-3.5 h-3.5 text-indigo-500" />
                               Retiro: {eq.fechaRetiro.replace("T", " ")}
                             </span>
@@ -1095,39 +1106,7 @@ export default function Clientes() {
                             <span>{eq.fotosDrive.length} fotos</span>
                           </div>
                         )}
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEquipmentSourceSubView(currentSubView as "nuevo" | "editar");
-                              setEquipoModalIndex(idx);
-                              setEquipoModalTipo(eq.tipo || "Lavarropas");
-                              setEquipoModalMarca(eq.marca);
-                              setEquipoModalModelo(eq.modelo);
-                              setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
-                              setEquipoModalFechaRetiro(eq.fechaRetiro || "");
-                              setEquipoModalPhotos(eq.fotosDrive || []);
-                              setCurrentSubView("equipo-form");
-                            }}
-                            className="p-1.5 text-indigo-600 hover:text-white hover:bg-indigo-600 rounded-lg transition-colors cursor-pointer border border-indigo-150 dark:border-indigo-900/40"
-                            title="Editar Equipo"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (eq.id) {
-                                setDeletedEquipoIds(prev => [...prev, eq.id!]);
-                              }
-                              setFormEquipos(prev => prev.filter((_, i) => i !== idx));
-                            }}
-                            className="p-1.5 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-colors cursor-pointer border border-red-150 dark:border-red-900/40"
-                            title="Eliminar Equipo"
-                          >
-                            <Trash className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
                       </div>
                     </div>
                   ))}
@@ -1451,20 +1430,46 @@ export default function Clientes() {
           </div>
 
           {/* Form Actions */}
-          <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (equipmentSourceSubView) {
-                  setCurrentSubView(equipmentSourceSubView);
-                } else {
-                  setCurrentSubView("menu");
-                }
-              }}
-              className="px-5 py-2.5 border border-gray-250 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all text-xs cursor-pointer active:scale-95"
-            >
-              Cancelar
-            </button>
+          <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
+            <div>
+              {isEditMode && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("¿Está seguro que desea eliminar este equipo?")) {
+                      const eq = formEquipos[equipoModalIndex!];
+                      if (eq && eq.id) {
+                        setDeletedEquipoIds(prev => [...prev, eq.id!]);
+                      }
+                      setFormEquipos(prev => prev.filter((_, i) => i !== equipoModalIndex));
+                      if (equipmentSourceSubView) {
+                        setCurrentSubView(equipmentSourceSubView);
+                      } else {
+                        setCurrentSubView("menu");
+                      }
+                    }
+                  }}
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5"
+                >
+                  <Trash className="w-3.5 h-3.5" />
+                  <span>Eliminar Equipo</span>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (equipmentSourceSubView) {
+                    setCurrentSubView(equipmentSourceSubView);
+                  } else {
+                    setCurrentSubView("menu");
+                  }
+                }}
+                className="px-5 py-2.5 border border-gray-250 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all text-xs cursor-pointer active:scale-95"
+              >
+                Cancelar
+              </button>
             <button
               type="button"
               onClick={() => {
@@ -1514,6 +1519,7 @@ export default function Clientes() {
             >
               Guardar Equipo
             </button>
+          </div>
           </div>
         </div>
       </div>
