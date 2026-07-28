@@ -331,7 +331,7 @@ export default function DetalleServicio() {
 
       const fieldsToUpdate: Partial<Servicio> = {
         estado: finalState,
-        tecnicoId: editTecnicoId || undefined,
+        tecnicoId: editTecnicoId || "",
         diagnostico: editDiagnostico,
         serviciosRequeridos: editDiagnostico,
         notasInternas: editNotasInternas,

@@ -343,9 +343,24 @@ export const ServiciosService = {
       };
       if (fields.estado !== undefined) fallbackFields.estado = fields.estado;
       if (fields.diagnostico !== undefined) fallbackFields.diagnostico = fields.diagnostico;
+      if (fields.serviciosRequeridos !== undefined) fallbackFields.serviciosRequeridos = fields.serviciosRequeridos;
+      if (fields.notasInternas !== undefined) fallbackFields.notasInternas = fields.notasInternas;
       if (fields.repuestosComprar !== undefined) fallbackFields.repuestosComprar = fields.repuestosComprar;
       if (fields.repuestosComprados !== undefined) fallbackFields.repuestosComprados = fields.repuestosComprados;
       if (fields.pasaStock !== undefined) fallbackFields.pasaStock = fields.pasaStock;
+      if (fields.tecnicoId !== undefined) fallbackFields.tecnicoId = fields.tecnicoId;
+      if (fields.presupuesto !== undefined) fallbackFields.presupuesto = fields.presupuesto;
+      if (fields.presupuestoTexto !== undefined) fallbackFields.presupuestoTexto = fields.presupuestoTexto;
+      if (fields.serviciosConvenidos !== undefined) fallbackFields.serviciosConvenidos = fields.serviciosConvenidos;
+      if (fields.acepta !== undefined) fallbackFields.acepta = fields.acepta;
+      if (fields.rechazaDevolver !== undefined) fallbackFields.rechazaDevolver = fields.rechazaDevolver;
+      if (fields.garantia !== undefined) fallbackFields.garantia = fields.garantia;
+      if (fields.esReclamoGarantia !== undefined) fallbackFields.esReclamoGarantia = fields.esReclamoGarantia;
+      if (fields.ingresoTaller !== undefined) fallbackFields.ingresoTaller = fields.ingresoTaller;
+      if (fields.terminado !== undefined) fallbackFields.terminado = fields.terminado;
+      if (fields.entregado !== undefined) fallbackFields.entregado = fields.entregado;
+      if (fields.factura !== undefined) fallbackFields.factura = fields.factura;
+      if (fields.contado !== undefined) fallbackFields.contado = fields.contado;
 
       if (!fallbackFields.diagnostico) {
         const parts = [];
