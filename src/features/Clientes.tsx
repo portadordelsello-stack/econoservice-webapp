@@ -1204,18 +1204,20 @@ export default function Clientes() {
                 </div>
 
                 {/* Internal Notes / Billing */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                    Observaciones Internas o de Cobro
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formObservaciones}
-                    onChange={(e) => setFormObservaciones(e.target.value)}
-                    placeholder="Instrucciones para llegar, advertencias de cobros, etc."
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                </div>
+                {isAdmin && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                      Observaciones Internas o de Cobro
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formObservaciones}
+                      onChange={(e) => setFormObservaciones(e.target.value)}
+                      placeholder="Instrucciones para llegar, advertencias de cobros, etc."
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
