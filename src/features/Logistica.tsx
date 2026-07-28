@@ -680,7 +680,7 @@ export default function Logistica() {
                                     }
                                   }
                                 }}
-                                className="p-1 text-red-650 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer flex items-center justify-center shrink-0"
+                                className="p-1 text-red-600 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer flex items-center justify-center shrink-0"
                                 title="Eliminar Retiros del Cliente"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -737,7 +737,7 @@ export default function Logistica() {
                             <button
                               type="button"
                               onClick={() => setSelectedGroupForModal(group)}
-                              className="inline-flex items-center gap-1.5 h-10 px-4 bg-indigo-50 hover:bg-indigo-150 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-650 dark:text-indigo-400 text-xs font-bold rounded-xl border border-indigo-200/50 dark:border-indigo-800/40 transition-all active:scale-95 cursor-pointer shrink-0"
+                              className="inline-flex items-center gap-1.5 h-10 px-4 bg-indigo-50 hover:bg-indigo-150 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-xl border border-indigo-200/50 dark:border-indigo-800/40 transition-all active:scale-95 cursor-pointer shrink-0"
                             >
                               <Wrench className="w-4 h-4" />
                               <span>Ver Equipos</span>
@@ -997,7 +997,7 @@ export default function Logistica() {
                                           }
                                         }
                                       }}
-                                      className="p-1 text-red-650 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                                      className="p-1 text-red-600 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
                                       title="Eliminar Retiros del Cliente"
                                     >
                                       <Trash2 className="w-3 h-3" />
@@ -1021,7 +1021,7 @@ export default function Logistica() {
                               {/* Equipments list */}
                               <div className="space-y-1.5 py-1">
                                 {group.services.map((srv, idx) => (
-                                  <div key={srv.id} className="text-[11px] text-slate-650 dark:text-gray-350 bg-slate-100/50 dark:bg-gray-800/40 px-2 py-1 rounded border border-slate-100 dark:border-gray-800/80">
+                                  <div key={srv.id} className="text-[11px] text-slate-600 dark:text-gray-350 bg-slate-100/50 dark:bg-gray-800/40 px-2 py-1 rounded border border-slate-100 dark:border-gray-800/80">
                                     <span className="font-bold text-slate-800 dark:text-slate-200">
                                       {srv.aparato} ({srv.marcaModelo})
                                     </span>
@@ -1035,7 +1035,7 @@ export default function Logistica() {
 
                               {/* Notes summary badge */}
                               {group.withdrawal.notasRetiro && (
-                                <div className="bg-white dark:bg-gray-900 px-3 py-2 rounded-xl border border-slate-150 dark:border-gray-800 text-[11px] text-slate-650 dark:text-gray-300 italic leading-relaxed shadow-3xs">
+                                <div className="bg-white dark:bg-gray-900 px-3 py-2 rounded-xl border border-slate-150 dark:border-gray-800 text-[11px] text-slate-600 dark:text-gray-300 italic leading-relaxed shadow-3xs">
                                   <span className="font-bold not-italic text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Nota:</span>
                                   "{group.withdrawal.notasRetiro}"
                                 </div>
@@ -1256,8 +1256,8 @@ export default function Logistica() {
               onClick={() => setActiveEntregaTab("pendientes")}
               className={`pb-3 text-xs sm:text-sm font-extrabold border-b-2 px-6 transition-all duration-200 cursor-pointer ${
                 activeEntregaTab === "pendientes"
-                  ? "border-indigo-600 text-indigo-650 dark:text-indigo-400 text-indigo-600 border-b-2"
-                  : "border-transparent text-slate-400 dark:text-gray-500 hover:text-slate-650 dark:hover:text-gray-300"
+                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 text-indigo-600 border-b-2"
+                  : "border-transparent text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300"
               }`}
             >
               Pendientes ({readyDeliveries.length})
@@ -1268,7 +1268,7 @@ export default function Logistica() {
               className={`pb-3 text-xs sm:text-sm font-extrabold border-b-2 px-6 transition-all duration-200 cursor-pointer ${
                 activeEntregaTab === "entregados"
                   ? "border-indigo-600 text-indigo-655 dark:text-indigo-400 text-indigo-600 border-b-2"
-                  : "border-transparent text-slate-400 dark:text-gray-500 hover:text-slate-650 dark:hover:text-gray-300"
+                  : "border-transparent text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300"
               }`}
             >
               Entregados ({deliveredDeliveries.length})
@@ -1370,7 +1370,7 @@ export default function Logistica() {
                                     </div>
                                   )}
                                 </td>
-                                <td className="py-3.5 px-4 text-xs text-slate-650 dark:text-gray-300 font-medium">
+                                <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-gray-300 font-medium">
                                   {srv.aparato} {srv.marcaModelo ? `- ${srv.marcaModelo}` : ""}
                                 </td>
                                 <td className="py-3.5 px-4 text-xs">
@@ -1501,7 +1501,7 @@ export default function Logistica() {
                                   </div>
                                 )}
                               </td>
-                              <td className="py-3.5 px-4 text-xs text-slate-650 dark:text-gray-300 font-medium">
+                              <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-gray-300 font-medium">
                                 {srv.aparato} {srv.marcaModelo ? `- ${srv.marcaModelo}` : ""}
                               </td>
                               <td className="py-3.5 px-4 text-xs">
@@ -1749,7 +1749,7 @@ export default function Logistica() {
                 <button
                   type="button"
                   onClick={() => setSelectedGroupForModal(null)}
-                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1807,7 +1807,7 @@ export default function Logistica() {
                 <button
                   type="button"
                   onClick={() => setSelectedGroupForModal(null)}
-                  className="h-10 px-5 bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer"
+                  className="h-10 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer"
                 >
                   Cerrar
                 </button>

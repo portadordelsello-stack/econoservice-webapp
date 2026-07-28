@@ -1084,7 +1084,7 @@ export default function Clientes() {
                           {idx + 1}
                         </div>
                         <div>
-                          <span className="font-extrabold text-[10px] text-indigo-650 dark:text-indigo-400 block uppercase tracking-wider mb-0.5">
+                          <span className="font-extrabold text-[10px] text-indigo-600 dark:text-indigo-400 block uppercase tracking-wider mb-0.5">
                             {eq.tipo || "Lavarropas"}
                           </span>
                           <span className="text-sm font-bold text-gray-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
@@ -1509,7 +1509,7 @@ export default function Clientes() {
                   setCurrentSubView("menu");
                 }
               }}
-              className="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-indigo-600/10 cursor-pointer active:scale-95"
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-indigo-600/10 cursor-pointer active:scale-95"
             >
               Guardar Equipo
             </button>
@@ -1635,7 +1635,7 @@ export default function Clientes() {
               <div className="sm:col-span-2 flex items-center justify-end gap-1.5 shrink-0 self-end sm:self-center">
                 <button
                   onClick={() => handleStartEdit(c)}
-                  className="p-1.5 text-indigo-650 hover:text-indigo-700 bg-indigo-50/60 dark:bg-indigo-950/20 hover:bg-indigo-100/80 dark:hover:bg-indigo-950/40 rounded-lg transition-all cursor-pointer border border-indigo-100/40 dark:border-indigo-900/20 flex items-center justify-center hover:scale-105 active:scale-95"
+                  className="p-1.5 text-indigo-600 hover:text-indigo-700 bg-indigo-50/60 dark:bg-indigo-950/20 hover:bg-indigo-100/80 dark:hover:bg-indigo-950/40 rounded-lg transition-all cursor-pointer border border-indigo-100/40 dark:border-indigo-900/20 flex items-center justify-center hover:scale-105 active:scale-95"
                   title="Editar Cliente"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
@@ -1643,7 +1643,7 @@ export default function Clientes() {
                 {isAdmin && (
                   <button
                     onClick={() => handleDeleteCliente(c.id || "")}
-                    className="p-1.5 text-red-650 hover:text-red-700 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/80 dark:hover:bg-red-950/40 rounded-lg transition-all cursor-pointer border border-red-100/40 dark:border-red-900/20 flex items-center justify-center hover:scale-105 active:scale-95"
+                    className="p-1.5 text-red-600 hover:text-red-700 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/80 dark:hover:bg-red-950/40 rounded-lg transition-all cursor-pointer border border-red-100/40 dark:border-red-900/20 flex items-center justify-center hover:scale-105 active:scale-95"
                     title="Eliminar Cliente"
                   >
                     <Trash className="w-3.5 h-3.5" />

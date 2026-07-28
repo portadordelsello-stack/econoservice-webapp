@@ -1034,7 +1034,7 @@ export default function DetalleServicio() {
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-gray-800 flex justify-between items-center bg-slate-50/50 dark:bg-gray-850">
               <div className="flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-indigo-650 animate-pulse" />
+                <Wrench className="w-5 h-5 text-indigo-600 animate-pulse" />
                 <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">
                   Historial de Reparaciones del Cliente
                 </h3>
@@ -1052,7 +1052,7 @@ export default function DetalleServicio() {
             <div className="p-5 overflow-y-auto space-y-4 flex-1">
               {loadingHistory ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-650" />
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
                 </div>
               ) : historyServices.length === 0 ? (
                 <p className="text-xs text-slate-500 dark:text-gray-400 italic text-center py-6">
@@ -1086,13 +1086,13 @@ export default function DetalleServicio() {
                         
                         <div className="mt-2 space-y-1 bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-slate-100 dark:border-gray-850">
                           <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Desperfecto Reportado:</p>
-                          <p className="text-slate-650 dark:text-gray-300 italic">"{histSrv.desperfectoUsuario || "No detallado"}"</p>
+                          <p className="text-slate-600 dark:text-gray-300 italic">"{histSrv.desperfectoUsuario || "No detallado"}"</p>
                         </div>
 
                         {(histSrv.diagnostico || histSrv.serviciosRequeridos) && (
                           <div className="mt-2 space-y-1 bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-slate-100 dark:border-gray-850">
                             <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Trabajo Técnico Realizado:</p>
-                            <p className="text-slate-650 dark:text-gray-350">{histSrv.diagnostico || histSrv.serviciosRequeridos}</p>
+                            <p className="text-slate-600 dark:text-gray-350">{histSrv.diagnostico || histSrv.serviciosRequeridos}</p>
                           </div>
                         )}
 
