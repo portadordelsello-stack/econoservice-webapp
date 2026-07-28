@@ -877,7 +877,7 @@ export default function Logistica() {
                         placeholder="Buscar por nombre, ID, calle..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full h-11 pl-10 pr-3.5 bg-slate-50 dark:bg-gray-855 border border-slate-200 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white"
+                        className="w-full h-11 pl-10 pr-3.5 bg-slate-50 dark:bg-gray-855 border border-slate-200 dark:border-gray-800 rounded-xl text-base md:text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white"
                       />
                     </div>
                   </div>
@@ -890,7 +890,7 @@ export default function Logistica() {
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="flex-1 h-11 px-3 bg-slate-50 dark:bg-gray-855 border border-slate-200 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white font-medium font-sans"
+                        className="flex-1 h-11 px-3 bg-slate-50 dark:bg-gray-855 border border-slate-200 dark:border-gray-800 rounded-xl text-base md:text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white font-medium font-sans"
                       />
                       {selectedDate && (
                         <button
@@ -1250,11 +1250,11 @@ export default function Logistica() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 border-b border-slate-100 dark:border-gray-800/60 pb-px">
+          <div className="flex gap-1 sm:gap-2 border-b border-slate-100 dark:border-gray-800/60 pb-px overflow-x-auto scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveEntregaTab("pendientes")}
-              className={`pb-3 text-xs sm:text-sm font-extrabold border-b-2 px-6 transition-all duration-200 cursor-pointer ${
+              className={`pb-3 text-xs sm:text-sm font-extrabold border-b-2 px-4 sm:px-6 transition-all duration-200 cursor-pointer whitespace-nowrap ${
                 activeEntregaTab === "pendientes"
                   ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 text-indigo-600 border-b-2"
                   : "border-transparent text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300"
@@ -1265,9 +1265,9 @@ export default function Logistica() {
             <button
               type="button"
               onClick={() => setActiveEntregaTab("entregados")}
-              className={`pb-3 text-xs sm:text-sm font-extrabold border-b-2 px-6 transition-all duration-200 cursor-pointer ${
+              className={`pb-3 text-xs sm:text-sm font-extrabold border-b-2 px-4 sm:px-6 transition-all duration-200 cursor-pointer whitespace-nowrap ${
                 activeEntregaTab === "entregados"
-                  ? "border-indigo-600 text-indigo-655 dark:text-indigo-400 text-indigo-600 border-b-2"
+                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 text-indigo-600 border-b-2"
                   : "border-transparent text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300"
               }`}
             >
@@ -1297,7 +1297,118 @@ export default function Logistica() {
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-x-auto bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
+                    {/* Mobile Card Layout for iPhone / Mobile screens */}
+                    <div className="block lg:hidden space-y-4">
+                      {readyDeliveries.map(srv => {
+                        const client = clientMap.get(srv.clienteId);
+                        if (!client) return null;
+
+                        const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
+                        const clientAddress = [
+                          client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+                          client.piso ? `Piso ${client.piso}` : "",
+                          client.depto ? `Depto ${client.depto}` : "",
+                          client.localidad ? `${client.localidad}` : ""
+                        ].filter(Boolean).join(", ");
+
+                        const isChecked = selectedReceipts.includes(srv.id);
+                        const maxReached = selectedReceipts.length >= 5 && !isChecked;
+
+                        return (
+                          <div
+                            key={srv.id}
+                            onClick={() => {
+                              if (isChecked) {
+                                setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
+                              } else {
+                                if (!maxReached) {
+                                  setSelectedReceipts(prev => [...prev, srv.id]);
+                                }
+                              }
+                            }}
+                            className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden space-y-3 ${
+                              isChecked
+                                ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500/80 dark:border-indigo-500"
+                                : "bg-white dark:bg-gray-900 border-slate-150 dark:border-gray-800 hover:border-slate-300 dark:hover:border-gray-700"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  disabled={maxReached}
+                                  onChange={() => {}} // Handled by outer div onClick
+                                  className="w-4.5 h-4.5 text-indigo-600 border-slate-300 dark:border-gray-700 rounded focus:ring-indigo-500 cursor-pointer"
+                                />
+                                <span className="text-xs font-mono font-bold text-slate-700 dark:text-gray-300 bg-slate-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                                  Orden #{srv.numeroServicio}
+                                </span>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider ${
+                                isDespachado
+                                  ? "bg-indigo-100/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200/40"
+                                  : "bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/40"
+                              }`}>
+                                {isDespachado ? "En Camino" : "Listo"}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1">
+                              <span className="text-sm font-bold text-slate-900 dark:text-white block">
+                                {client.nombreApellido}
+                              </span>
+                              <span className="text-xs text-slate-500 dark:text-gray-400 block leading-relaxed">
+                                {clientAddress || "Sin dirección cargada"}
+                              </span>
+                            </div>
+
+                            <div className="bg-slate-50 dark:bg-gray-850 p-2.5 rounded-xl text-xs text-slate-700 dark:text-gray-300 font-medium">
+                              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-0.5">Equipo</span>
+                              {srv.aparato} {srv.marcaModelo ? `(${srv.marcaModelo})` : ""}
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-gray-800">
+                              {isAdmin && (
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm("¿Está seguro que desea eliminar este servicio/entrega? Esta acción no se puede deshacer.")) {
+                                      try {
+                                        await ServiciosService.delete(srv.id!);
+                                        await loadData();
+                                      } catch (err) {
+                                        console.error("Error deleting service:", err);
+                                        alert("Error al eliminar el servicio.");
+                                      }
+                                    }
+                                  }}
+                                  className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
+                                  title="Eliminar de Taller"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDelivery(srv);
+                                  setView("detalle-entrega");
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold transition-all cursor-pointer border border-indigo-200/60 dark:border-indigo-900/40"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>VER DETALLE</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="hidden lg:block overflow-x-auto bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
                       <table className="w-full text-left border-collapse min-w-[700px]">
                         <thead>
                           <tr className="border-b border-slate-150 dark:border-gray-850 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider bg-slate-50/50 dark:bg-gray-850/20">
@@ -1446,8 +1557,111 @@ export default function Logistica() {
                     </div>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
-                    <table className="w-full text-left border-collapse min-w-[700px]">
+                  <>
+                    {/* Mobile Card Layout for iPhone / Mobile screens */}
+                    <div className="block lg:hidden space-y-4">
+                      {deliveredDeliveries.map(srv => {
+                        const client = clientMap.get(srv.clienteId);
+                        if (!client) return null;
+
+                        const clientAddress = [
+                          client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+                          client.piso ? `Piso ${client.piso}` : "",
+                          client.depto ? `Depto ${client.depto}` : "",
+                          client.localidad ? `${client.localidad}` : ""
+                        ].filter(Boolean).join(", ");
+
+                        let fechaEntregaFormatted = "Entregado";
+                        if (srv.citaEntrega) {
+                          try {
+                            const dateVal = new Date(srv.citaEntrega);
+                            fechaEntregaFormatted = dateVal.toLocaleDateString("es-AR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            }) + " hs";
+                          } catch (e) {
+                            fechaEntregaFormatted = String(srv.citaEntrega);
+                          }
+                        }
+
+                        return (
+                          <div
+                            key={srv.id}
+                            className="p-4 bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800 rounded-2xl shadow-xs space-y-3 relative overflow-hidden"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="text-xs font-mono font-bold text-slate-700 dark:text-gray-300 bg-slate-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                                Orden #{srv.numeroServicio}
+                              </span>
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/40">
+                                Entregado
+                              </span>
+                            </div>
+
+                            <div className="space-y-1">
+                              <span className="text-sm font-bold text-slate-900 dark:text-white block">
+                                {client.nombreApellido}
+                              </span>
+                              <span className="text-xs text-slate-500 dark:text-gray-400 block leading-relaxed">
+                                {clientAddress || "Sin dirección cargada"}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 pt-1">
+                              <div className="bg-slate-50 dark:bg-gray-855 p-2.5 rounded-xl text-xs text-slate-700 dark:text-gray-300 font-medium">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-0.5">Equipo</span>
+                                {srv.aparato} {srv.marcaModelo ? `(${srv.marcaModelo})` : ""}
+                              </div>
+                              <div className="bg-slate-50 dark:bg-gray-855 p-2.5 rounded-xl text-xs text-slate-700 dark:text-gray-300 font-medium">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-0.5">Fecha Entrega</span>
+                                {fechaEntregaFormatted}
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-gray-800">
+                              {isAdmin && (
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm("¿Está seguro que desea eliminar este servicio entregado? Esta acción no se puede deshacer.")) {
+                                      try {
+                                        await ServiciosService.delete(srv.id!);
+                                        await loadData();
+                                      } catch (err) {
+                                        console.error("Error deleting service:", err);
+                                        alert("Error al eliminar el servicio.");
+                                      }
+                                    }
+                                  }}
+                                  className="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-3xs"
+                                  title="Eliminar de Historial"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDelivery(srv);
+                                  setView("detalle-entrega");
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/60 text-indigo-650 dark:text-indigo-400 rounded-xl text-xs font-bold transition-all cursor-pointer border border-indigo-200/60 dark:border-indigo-900/40"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>VER DETALLE</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="hidden lg:block overflow-x-auto bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 shadow-xs">
+                      <table className="w-full text-left border-collapse min-w-[700px]">
                       <thead>
                         <tr className="border-b border-slate-150 dark:border-gray-850 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider bg-slate-50/50 dark:bg-gray-850/20">
                           <th className="py-3.5 px-4 font-extrabold">Orden</th>
@@ -1554,7 +1768,8 @@ export default function Logistica() {
                       </tbody>
                     </table>
                   </div>
-                )
+                </>
+              )
               )}
             </div>
           )}
