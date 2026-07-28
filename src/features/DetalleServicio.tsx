@@ -329,35 +329,54 @@ export default function DetalleServicio() {
       const finalState = isFinished ? "LISTO_PARA_ENTREGA" : (targetState || editEstado);
       const isReparacionTerminada = isFinished !== undefined ? isFinished : editTerminado;
 
-      const fieldsToUpdate: Partial<Servicio> = {
-        estado: finalState,
-        tecnicoId: editTecnicoId || "",
-        diagnostico: editDiagnostico,
-        serviciosRequeridos: editDiagnostico,
-        notasInternas: editNotasInternas,
-        repuestosComprar: editRepuestosComprar,
-        repuestosComprados: editRepuestosComprados,
-        presupuesto: Number(editPresupuesto) || 0,
-        presupuestoTexto: editPresupuestoTexto,
-        serviciosConvenidos: editPresupuestoTexto,
-        acepta: editAcepta,
-        rechazaDevolver: editRechazaDevolver,
-        garantia: editGarantia,
-        esReclamoGarantia: editEsReclamoGarantia,
-        ingresoTaller: editIngresoTaller,
-        pasaStock: editPasaStock,
-        terminado: isReparacionTerminada,
-        entregado: editEntregado,
-        factura: editFactura,
-        contado: editContado
-      };
+      let fieldsToUpdate: Partial<Servicio>;
 
-      if (finalState === "ACEPTADO" || finalState === "LISTO_PARA_ENTREGA" || editAcepta) {
-        fieldsToUpdate.acepta = true;
-        fieldsToUpdate.rechazaDevolver = false;
-      } else if (finalState === "RECHAZADO" || editRechazaDevolver) {
-        fieldsToUpdate.acepta = false;
-        fieldsToUpdate.rechazaDevolver = true;
+      if (profile?.rol === "tecnico") {
+        fieldsToUpdate = {
+          estado: finalState,
+          tecnicoId: editTecnicoId || "",
+          diagnostico: editDiagnostico,
+          serviciosRequeridos: editDiagnostico,
+          notasInternas: editNotasInternas,
+          repuestosComprar: editRepuestosComprar,
+          repuestosComprados: editRepuestosComprados,
+          pasaStock: editPasaStock,
+          terminado: isReparacionTerminada,
+          presupuesto: Number(editPresupuesto) || 0,
+          presupuestoTexto: editPresupuestoTexto,
+          serviciosConvenidos: editPresupuestoTexto,
+        };
+      } else {
+        fieldsToUpdate = {
+          estado: finalState,
+          tecnicoId: editTecnicoId || "",
+          diagnostico: editDiagnostico,
+          serviciosRequeridos: editDiagnostico,
+          notasInternas: editNotasInternas,
+          repuestosComprar: editRepuestosComprar,
+          repuestosComprados: editRepuestosComprados,
+          presupuesto: Number(editPresupuesto) || 0,
+          presupuestoTexto: editPresupuestoTexto,
+          serviciosConvenidos: editPresupuestoTexto,
+          acepta: editAcepta,
+          rechazaDevolver: editRechazaDevolver,
+          garantia: editGarantia,
+          esReclamoGarantia: editEsReclamoGarantia,
+          ingresoTaller: editIngresoTaller,
+          pasaStock: editPasaStock,
+          terminado: isReparacionTerminada,
+          entregado: editEntregado,
+          factura: editFactura,
+          contado: editContado
+        };
+
+        if (finalState === "ACEPTADO" || finalState === "LISTO_PARA_ENTREGA" || editAcepta) {
+          fieldsToUpdate.acepta = true;
+          fieldsToUpdate.rechazaDevolver = false;
+        } else if (finalState === "RECHAZADO" || editRechazaDevolver) {
+          fieldsToUpdate.acepta = false;
+          fieldsToUpdate.rechazaDevolver = true;
+        }
       }
 
       await ServiciosService.update(
