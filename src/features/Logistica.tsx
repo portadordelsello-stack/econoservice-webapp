@@ -675,7 +675,7 @@ export default function Logistica() {
                             <div className="bg-slate-50 dark:bg-gray-855 p-3.5 rounded-xl border border-slate-150 dark:border-gray-800 flex items-center justify-between gap-3 shadow-xs">
                               <div className="space-y-1 flex-1">
                                 <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block">Dirección de Retiro</span>
-                                <span className="text-sm text-slate-800 dark:text-gray-200 font-medium leading-relaxed block">
+                                <span className="text-base text-slate-900 dark:text-white font-extrabold leading-relaxed block">
                                   {addressStr}
                                 </span>
                               </div>
