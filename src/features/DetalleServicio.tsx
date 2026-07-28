@@ -440,7 +440,7 @@ export default function DetalleServicio() {
     cliente.localidad || "Santo Tomé"
   ].filter(Boolean).join(", ") : "Sin Domicilio";
 
-  const isSaveDisabled = profile?.rol === "tecnico" ? (!editNotasInternas.trim() || !editDiagnostico.trim()) : false;
+  const isSaveDisabled = profile?.rol === "tecnico" ? (!editDiagnostico.trim()) : false;
 
   return (
     <div className="space-y-6 animate-fade-in font-sans pb-10">
@@ -578,7 +578,7 @@ export default function DetalleServicio() {
             {/* Referencias Internas */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-                Referencias Internas <span className="text-red-500">*</span>
+                Referencias Internas <span className="text-slate-400 lowercase font-semibold">(opcional)</span>
               </label>
               <textarea
                 value={editNotasInternas}
