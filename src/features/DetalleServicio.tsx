@@ -827,24 +827,50 @@ export default function DetalleServicio() {
                 </button>
               </>
             ) : (
-              <button
-                type="button"
-                disabled={submitting || isSaveDisabled}
-                onClick={() => handleSave()}
-                className="inline-flex items-center justify-center gap-2 h-10 px-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Guardando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-3.5 h-3.5" />
-                    <span>Guardar Modificaciones</span>
-                  </>
+              <>
+                {isAdmin && editEstado !== "ACEPTADO" && editEstado !== "EN_REPARACION" && editEstado !== "LISTO_PARA_ENTREGA" && editEstado !== "ENTREGADO" && (
+                  <button
+                    type="button"
+                    disabled={submitting || isSaveDisabled}
+                    onClick={async () => {
+                      setEditEstado("ACEPTADO");
+                      setTimeout(() => handleSave("ACEPTADO", false, "Administrador confirmó la reparación"), 100);
+                    }}
+                    className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer uppercase"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Guardando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>Confirmar Reparación</span>
+                      </>
+                    )}
+                  </button>
                 )}
-              </button>
+
+                <button
+                  type="button"
+                  disabled={submitting || isSaveDisabled}
+                  onClick={() => handleSave()}
+                  className="inline-flex items-center justify-center gap-2 h-10 px-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      <span>Guardar Modificaciones</span>
+                    </>
+                  )}
+                </button>
+              </>
             )}
           </div>
         </div>
