@@ -526,12 +526,6 @@ export default function Servicios() {
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                      Ver detalle
-                    </span>
-                    <div className="p-1.5 bg-slate-100 dark:bg-gray-800 rounded-lg text-slate-500 dark:text-slate-400">
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
                   </div>
                 </div>
               </div>
