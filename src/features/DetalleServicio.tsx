@@ -3,8 +3,9 @@ import { ServiciosService, ClientesService, EquiposService, TecnicosService, toD
 import { Servicio, Cliente, Equipo, Tecnico, Historial, EstadoServicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
-import { storage } from "../lib/firebase";
+import { storage, db as firestoreDb } from "../lib/firebase";
 import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
+import { doc, updateDoc, serverTimestamp, addDoc, collection } from "firebase/firestore";
 import { 
   ArrowLeft, 
   Check, 
@@ -422,6 +423,50 @@ export default function DetalleServicio() {
     }
   };
 
+  // =====================================================================
+  // TERMINADO — standalone function, bypasses all service layers.
+  // Writes directly to Firestore with ONLY whitelisted technician fields.
+  // =====================================================================
+  const handleTerminado = async () => {
+    if (!selectedId || !profile || !servicio) return;
+    setSubmitting(true);
+    try {
+      const docRef = doc(firestoreDb, "servicios", selectedId);
+
+      // Only send fields allowed by Firestore rules for 'tecnico' role:
+      // diagnostico, notasInternas, serviciosRequeridos, serviciosConvenidos,
+      // estado, repuestosComprar, repuestosComprados, pasaStock, tecnicoId,
+      // terminado, presupuesto, presupuestoTexto, fotosDrive, updatedAt
+      await updateDoc(docRef, {
+        estado: "LISTO_PARA_ENTREGA",
+        terminado: true,
+        updatedAt: serverTimestamp()
+      });
+
+      // Try to log to historial (non-blocking)
+      try {
+        const histRef = collection(firestoreDb, "servicios", selectedId, "historial");
+        await addDoc(histRef, {
+          fecha: serverTimestamp(),
+          usuarioId: profile.uid,
+          usuarioNombre: profile.nombre || "Técnico",
+          accion: "CAMBIO_ESTADO",
+          detalle: "Técnico completó la reparación y marcó como TERMINADO"
+        });
+      } catch (histErr) {
+        console.warn("No se pudo registrar historial:", histErr);
+      }
+
+      alert("¡Reparación marcada como TERMINADA!");
+      navigate("servicios");
+    } catch (err) {
+      console.error("Error al marcar como terminado:", err);
+      alert("Error al marcar como terminado: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !selectedId) return;
@@ -831,12 +876,8 @@ export default function DetalleServicio() {
 
                 <button
                   type="button"
-                  disabled={submitting || isSaveDisabled}
-                  onClick={async () => {
-                    setEditEstado("LISTO_PARA_ENTREGA");
-                    setEditTerminado(true);
-                    setTimeout(() => handleSave("LISTO_PARA_ENTREGA", true, "Técnico completó la reparación y marcó como TERMINADO"), 100);
-                  }}
+                  disabled={submitting}
+                  onClick={() => handleTerminado()}
                   className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   {submitting ? (
