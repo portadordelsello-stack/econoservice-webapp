@@ -333,10 +333,20 @@ export default function Logistica() {
     return a.withdrawal.fechaRetiroStr.localeCompare(b.withdrawal.fechaRetiroStr);
   };
 
+  const sortGroupedByRetiradoAndTime = (
+    a: GroupedWithdrawal,
+    b: GroupedWithdrawal
+  ) => {
+    if (a.isRetirado !== b.isRetirado) {
+      return a.isRetirado ? 1 : -1;
+    }
+    return a.withdrawal.fechaRetiroStr.localeCompare(b.withdrawal.fechaRetiroStr);
+  };
+
   const groupedTodayWithdrawals = groupWithdrawals(todayWithdrawals);
   const groupedOtherWithdrawals = groupWithdrawals(filteredOtherWithdrawals);
 
-  groupedTodayWithdrawals.sort(sortGroupedByTime);
+  groupedTodayWithdrawals.sort(sortGroupedByRetiradoAndTime);
   groupedOtherWithdrawals.sort(sortGroupedByTime);
 
   // Extract all services that are ready for delivery or in progress
@@ -758,6 +768,16 @@ export default function Logistica() {
                                 </a>
                               )}
                               
+                              {!isRetirado && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleRetiradoGroup(group)}
+                                  className="inline-flex items-center justify-center gap-1.5 h-11 px-4.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-extrabold rounded-xl transition-all shadow-md shadow-orange-500/15 active:scale-95 cursor-pointer w-full sm:w-auto uppercase"
+                                >
+                                  <span>RETIRADO</span>
+                                </button>
+                              )}
+
                               <button
                                 onClick={() => navigate("clientes", client.id)}
                                 className="inline-flex items-center justify-center gap-1.5 h-11 px-4.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer w-full sm:w-auto"
