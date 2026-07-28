@@ -833,8 +833,7 @@ export default function DetalleServicio() {
                     type="button"
                     disabled={submitting || isSaveDisabled}
                     onClick={async () => {
-                      setEditEstado("ACEPTADO");
-                      setTimeout(() => handleSave("ACEPTADO", false, "Administrador confirmó la reparación"), 100);
+                      await handleSave("ACEPTADO", false, "Administrador confirmó la reparación");
                     }}
                     className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer uppercase"
                   >
