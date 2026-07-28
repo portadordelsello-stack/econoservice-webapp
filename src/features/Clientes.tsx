@@ -1100,12 +1100,6 @@ export default function Clientes() {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        {eq.fotosDrive && eq.fotosDrive.length > 0 && (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/30 px-2 py-0.5 rounded-lg shrink-0">
-                            <ImageIcon className="w-3 h-3" />
-                            <span>{eq.fotosDrive.length} fotos</span>
-                          </div>
-                        )}
                         <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
                       </div>
                     </div>
