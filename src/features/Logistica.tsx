@@ -343,7 +343,7 @@ export default function Logistica() {
     return a.withdrawal.fechaRetiroStr.localeCompare(b.withdrawal.fechaRetiroStr);
   };
 
-  const groupedTodayWithdrawals = groupWithdrawals(todayWithdrawals);
+  const groupedTodayWithdrawals = groupWithdrawals(todayWithdrawals).filter(g => !g.isRetirado);
   const groupedOtherWithdrawals = groupWithdrawals(filteredOtherWithdrawals);
 
   groupedTodayWithdrawals.sort(sortGroupedByRetiradoAndTime);
