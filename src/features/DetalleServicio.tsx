@@ -334,7 +334,6 @@ export default function DetalleServicio() {
       if (profile?.rol === "tecnico") {
         fieldsToUpdate = {
           estado: finalState,
-          tecnicoId: editTecnicoId || "",
           diagnostico: editDiagnostico,
           serviciosRequeridos: editDiagnostico,
           notasInternas: editNotasInternas,
@@ -342,9 +341,6 @@ export default function DetalleServicio() {
           repuestosComprados: editRepuestosComprados,
           pasaStock: editPasaStock,
           terminado: isReparacionTerminada,
-          presupuesto: Number(editPresupuesto) || 0,
-          presupuestoTexto: editPresupuestoTexto,
-          serviciosConvenidos: editPresupuestoTexto,
         };
       } else {
         fieldsToUpdate = {
