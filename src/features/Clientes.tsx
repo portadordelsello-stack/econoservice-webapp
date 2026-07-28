@@ -438,13 +438,30 @@ export default function Clientes() {
           const eqServices = allServices.filter(s => s.clienteId === c.id && s.equipoId === eq.id);
           const fotosDrive = eqServices.length > 0 ? (eqServices[0].fotosDrive || []) : [];
           const desperfectoUsuario = eqServices.length > 0 ? (eqServices[0].desperfectoUsuario || "") : "";
+          
+          let fechaRetiro = "";
+          if (eqServices.length > 0) {
+            const logistica = eqServices[0].infoLogistica || "";
+            const parts = logistica.split(" | ");
+            parts.forEach(part => {
+              if (part.startsWith("Retiro acordado: ")) {
+                const val = part.replace("Retiro acordado: ", "");
+                const isDatetimeLocal = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val);
+                if (isDatetimeLocal) {
+                  fechaRetiro = val;
+                }
+              }
+            });
+          }
+
           return {
             id: eq.id,
             tipo: eq.tipo || "Lavarropas",
             marca: eq.marca || "",
             modelo: eq.modelo || "",
             desperfectoUsuario,
-            fotosDrive
+            fotosDrive,
+            fechaRetiro
           };
         });
         
