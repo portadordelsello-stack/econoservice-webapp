@@ -695,8 +695,14 @@ export default function Clientes() {
         }
       }
 
-      // 4. Delete removed equipments from Firestore
+      // 4. Delete removed equipments and their associated services from Firestore
       for (const delId of deletedEquipoIds) {
+        const eqServices = allServices.filter(s => s.clienteId === editingId && s.equipoId === delId);
+        for (const srv of eqServices) {
+          if (srv.id) {
+            await ServiciosService.delete(srv.id);
+          }
+        }
         await EquiposService.delete(delId);
       }
 
