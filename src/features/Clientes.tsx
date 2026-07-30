@@ -1312,7 +1312,7 @@ export default function Clientes() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                  Marca *
+                  Marca {isAdmin ? "(opcional)" : "*"}
                 </label>
                 <input
                   type="text"
@@ -1324,7 +1324,7 @@ export default function Clientes() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                  Modelo *
+                  Modelo {isAdmin ? "(opcional)" : "*"}
                 </label>
                 <input
                   type="text"
@@ -1485,7 +1485,7 @@ export default function Clientes() {
             <button
               type="button"
               onClick={() => {
-                if (!equipoModalMarca.trim() || !equipoModalModelo.trim()) {
+                if (!isAdmin && (!equipoModalMarca.trim() || !equipoModalModelo.trim())) {
                   alert("Por favor, complete Marca y Modelo.");
                   return;
                 }
@@ -1501,8 +1501,8 @@ export default function Clientes() {
                 }
                 const newEq = {
                   tipo: equipoModalTipo,
-                  marca: equipoModalMarca.trim(),
-                  modelo: equipoModalModelo.trim(),
+                  marca: equipoModalMarca.trim() || "Genérico",
+                  modelo: equipoModalModelo.trim() || "Genérico",
                   desperfectoUsuario: equipoModalDesperfecto.trim(),
                   fechaRetiro: equipoModalFechaRetiro,
                   fotosDrive: equipoModalPhotos
