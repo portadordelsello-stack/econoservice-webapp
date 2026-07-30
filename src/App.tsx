@@ -92,11 +92,23 @@ function MainLayout() {
         const isSubViewAllowed = (currentView === "crear-servicio" || currentView === "detalle-servicio") && 
                                  navigationLinks.find(link => link.view === "servicios")?.roles.includes(profile.rol);
         if (!isAllowed && !isSubViewAllowed) {
-          navigate(allowedLinks[0].view as any);
+          // Role-based default landing page
+          const defaultViewByRole: Record<string, string> = {
+            superadmin:    "clientes",
+            administracion:"clientes",
+            admin:         "clientes",
+            recepcion:     "clientes",
+            consulta:      "clientes",
+            logistica:     "logistica",
+            tecnico:       "servicios",
+          };
+          const defaultView = defaultViewByRole[profile.rol] ?? allowedLinks[0].view;
+          navigate(defaultView as any);
         }
       }
     }
   }, [profile, currentView, user]);
+
 
   // If public tracking route is requested via URL hash, completely bypass the login screen for clients!
   const isPublicTracking = window.location.hash.startsWith("#tracking/");
