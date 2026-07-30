@@ -163,8 +163,42 @@ export default function Clientes() {
   const [equipoModalMarca, setEquipoModalMarca] = useState("");
   const [equipoModalModelo, setEquipoModalModelo] = useState("");
   const [equipoModalDesperfecto, setEquipoModalDesperfecto] = useState("");
-  const [equipoModalFechaRetiro, setEquipoModalFechaRetiro] = useState("");
+  const [equipoModalFecha, setEquipoModalFecha] = useState("");
+  const [equipoModalHoraDesde, setEquipoModalHoraDesde] = useState("");
+  const [equipoModalHoraHasta, setEquipoModalHoraHasta] = useState("");
   const [equipoModalPhotos, setEquipoModalPhotos] = useState<{ id: string; name: string; url: string }[]>([]);
+
+  const parseFechaRetiro = (fechaRetiroStr: string) => {
+    if (!fechaRetiroStr) {
+      return { date: "", desde: "", hasta: "" };
+    }
+    const parts = fechaRetiroStr.split("T");
+    const date = parts[0] || "";
+    const timePart = parts[1] || "";
+    
+    const rangeMatch = timePart.match(/de\s+(\d{2}:\d{2})\s+hasta\s+(\d{2}:\d{2})/);
+    if (rangeMatch) {
+      return { date, desde: rangeMatch[1], hasta: rangeMatch[2] };
+    }
+    
+    const simpleMatch = timePart.match(/^(\d{2}:\d{2})/);
+    if (simpleMatch) {
+      return { date, desde: simpleMatch[1], hasta: "" };
+    }
+    
+    return { date, desde: "", hasta: "" };
+  };
+
+  const formatFechaRetiro = (date: string, desde: string, hasta: string) => {
+    if (!date) return "";
+    if (desde && hasta) {
+      return `${date}Tde ${desde} hasta ${hasta}`;
+    }
+    if (desde) {
+      return `${date}T${desde}`;
+    }
+    return date;
+  };
 
   useEffect(() => {
     const token = DriveService.getAccessToken();
@@ -266,7 +300,9 @@ export default function Clientes() {
     setEquipoModalMarca("");
     setEquipoModalModelo("");
     setEquipoModalDesperfecto("");
-    setEquipoModalFechaRetiro("");
+    setEquipoModalFecha("");
+    setEquipoModalHoraDesde("");
+    setEquipoModalHoraHasta("");
     setEquipoModalPhotos([]);
   };
 
@@ -1089,7 +1125,10 @@ export default function Clientes() {
                         setEquipoModalMarca(eq.marca);
                         setEquipoModalModelo(eq.modelo);
                         setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
-                        setEquipoModalFechaRetiro(eq.fechaRetiro || "");
+                        const parsed = parseFechaRetiro(eq.fechaRetiro || "");
+                        setEquipoModalFecha(parsed.date);
+                        setEquipoModalHoraDesde(parsed.desde);
+                        setEquipoModalHoraHasta(parsed.hasta);
                         setEquipoModalPhotos(eq.fotosDrive || []);
                         setCurrentSubView("equipo-form");
                       }}
@@ -1109,7 +1148,7 @@ export default function Clientes() {
                           {eq.fechaRetiro && (
                             <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-1 font-medium">
                               <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                              Retiro: {eq.fechaRetiro.replace("T", " ")}
+                              Retiro: {eq.fechaRetiro.includes("Tde") ? eq.fechaRetiro.replace("Tde", " de") : eq.fechaRetiro.replace("T", " ")}
                             </span>
                           )}
                         </div>
@@ -1349,20 +1388,40 @@ export default function Clientes() {
               />
             </div>
             
-            <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                Fecha y horario de retiro acordado
-              </label>
-              <input
-                type="datetime-local"
-                value={equipoModalFechaRetiro}
-                onChange={(e) => setEquipoModalFechaRetiro(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer"
-              />
-              <p className="text-[11px] text-gray-400 mt-1">
-                Haga clic para abrir el selector de fecha y hora.
-              </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                  Fecha de Retiro
+                </label>
+                <input
+                  type="date"
+                  value={equipoModalFecha}
+                  onChange={(e) => setEquipoModalFecha(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                  Horario de Retiro
+                </label>
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span>de</span>
+                  <input
+                    type="time"
+                    value={equipoModalHoraDesde}
+                    onChange={(e) => setEquipoModalHoraDesde(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                  <span>hasta</span>
+                  <input
+                    type="time"
+                    value={equipoModalHoraHasta}
+                    onChange={(e) => setEquipoModalHoraHasta(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1504,7 +1563,7 @@ export default function Clientes() {
                   marca: equipoModalMarca.trim() || "Genérico",
                   modelo: equipoModalModelo.trim() || "Genérico",
                   desperfectoUsuario: equipoModalDesperfecto.trim(),
-                  fechaRetiro: equipoModalFechaRetiro,
+                  fechaRetiro: formatFechaRetiro(equipoModalFecha, equipoModalHoraDesde, equipoModalHoraHasta),
                   fotosDrive: equipoModalPhotos
                 };
                 
