@@ -31,7 +31,8 @@ import {
   Palette,
   UploadCloud,
   Database,
-  Download
+  Download,
+  Pencil
 } from "lucide-react";
 
 export default function Usuarios() {
@@ -53,6 +54,9 @@ export default function Usuarios() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const isSuperadmin = profile?.rol === "superadmin";
   const canManageConfig = profile?.rol === "superadmin" || profile?.rol === "admin" || profile?.rol === "administracion";
@@ -717,6 +721,29 @@ export default function Usuarios() {
       setErrorMessage("Error al eliminar el usuario del sistema.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleEditUser = async () => {
+    if (!editingUser || !editNombre.trim()) return;
+    setSavingEdit(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      const userRef = doc(db, "users", editingUser.uid);
+      await updateDoc(userRef, { nombre: editNombre.trim() });
+      setUsuarios((prev) =>
+        prev.map((u) =>
+          u.uid === editingUser.uid ? { ...u, nombre: editNombre.trim() } : u
+        )
+      );
+      setSuccessMessage(`Nombre actualizado a "${editNombre.trim()}" correctamente.`);
+      setEditingUser(null);
+    } catch (err: any) {
+      console.error("Error updating user name:", err);
+      setErrorMessage("Error al actualizar el nombre del usuario.");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -2215,6 +2242,21 @@ export default function Usuarios() {
                       {/* Actions */}
                       <td className="p-4 pr-6 text-right">
                         <div className="flex justify-end items-center gap-2">
+                          {/* Edit button - available to admin and superadmin */}
+                          {canManageConfig && (
+                            <button
+                              onClick={() => {
+                                setEditingUser(user);
+                                setEditNombre(user.nombre || "");
+                              }}
+                              disabled={updatingId === user.uid}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-indigo-100 dark:border-indigo-950/30 bg-indigo-50 dark:bg-indigo-950/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 disabled:opacity-40 cursor-pointer transition-all"
+                              title="Editar nombre del usuario"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                              Editar
+                            </button>
+                          )}
                           <button
                             onClick={() => handleToggleActivo(user)}
                             disabled={!isSuperadmin || isPrimaryAdmin || isSelf || updatingId === user.uid}
@@ -2256,6 +2298,84 @@ export default function Usuarios() {
           </div>
         )}
       </div>
+
+      {/* Modal de edición de nombre de usuario */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4 mb-5">
+              <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center shrink-0">
+                <Pencil className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">Editar Usuario</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Modificá el nombre visible de <strong className="text-gray-700 dark:text-gray-300">{editingUser.email}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Nombre que se muestra
+                </label>
+                <input
+                  type="text"
+                  value={editNombre}
+                  onChange={(e) => setEditNombre(e.target.value)}
+                  placeholder="Nombre completo del usuario"
+                  className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-850 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && editNombre.trim()) {
+                      e.preventDefault();
+                      handleEditUser();
+                    }
+                    if (e.key === "Escape") setEditingUser(null);
+                  }}
+                />
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-850/60 rounded-xl p-3 space-y-1">
+                <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Datos actuales</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">
+                    {editingUser.nombre?.[0]?.toUpperCase() || "?"}
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 block">{editingUser.nombre}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">{editingUser.email}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                disabled={savingEdit}
+                className="px-4 py-2 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-750 dark:text-gray-250 cursor-pointer transition-all disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleEditUser}
+                disabled={savingEdit || !editNombre.trim() || editNombre.trim() === editingUser.nombre}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer transition-all"
+              >
+                {savingEdit ? (
+                  <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Guardando...</>
+                ) : (
+                  <><Check className="w-3.5 h-3.5" /> Guardar Cambios</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de confirmación de eliminación */}
       {userToDelete && (
