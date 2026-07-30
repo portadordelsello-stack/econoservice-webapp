@@ -91,7 +91,8 @@ function MainLayout() {
         const isAllowed = navigationLinks.find(link => link.view === currentView)?.roles.includes(profile.rol);
         const isSubViewAllowed = (currentView === "crear-servicio" || currentView === "detalle-servicio") && 
                                  navigationLinks.find(link => link.view === "servicios")?.roles.includes(profile.rol);
-        if (!isAllowed && !isSubViewAllowed) {
+        const hasNoHash = !window.location.hash || window.location.hash === "#";
+        if (hasNoHash || (!isAllowed && !isSubViewAllowed)) {
           // Role-based default landing page
           const defaultViewByRole: Record<string, string> = {
             superadmin:    "clientes",
