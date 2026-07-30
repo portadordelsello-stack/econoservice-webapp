@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /$
+Allow: /logo.png
+Allow: /favicon.png
+Allow: /assets/
+Disallow: /econo
+Disallow: /tracking/
+Disallow: /#econo
+Disallow: /#tracking/
+Disallow: /#servicios
+Disallow: /#clientes
+Disallow: /#logistica
+Disallow: /#usuarios
+Disallow: /#insumos
+
+Sitemap: https://project-65e76674-5f87-4022-b14.web.app/sitemap.xml

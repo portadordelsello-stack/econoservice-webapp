@@ -82,6 +82,10 @@ export default function LandingPage() {
               src="/logo.png" 
               alt="Logo EconoService" 
               className="w-10 h-10 object-contain rounded-xl shadow-md"
+              width="40"
+              height="40"
+              fetchpriority="high"
+              decoding="async"
             />
             <div>
               <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white block">
