@@ -665,8 +665,8 @@ export default function Usuarios() {
   }, []);
 
   const handleToggleActivo = async (user: UserProfile) => {
-    if (user.email.toLowerCase() === "juanpacheco@playcode.com.ar") {
-      setErrorMessage("No se puede desactivar al administrador global primario.");
+    if (user.rol === "superadmin") {
+      setErrorMessage("No se puede desactivar a un Superadministrador.");
       return;
     }
     if (user.uid === profile?.uid) {
@@ -696,8 +696,8 @@ export default function Usuarios() {
   };
 
   const handleDeleteUser = async (user: UserProfile) => {
-    if (user.email.toLowerCase() === "juanpacheco@playcode.com.ar") {
-      setErrorMessage("No se puede eliminar al administrador global primario.");
+    if (user.rol === "superadmin") {
+      setErrorMessage("No se puede eliminar a un Superadministrador.");
       return;
     }
     if (user.uid === profile?.uid) {
@@ -748,7 +748,7 @@ export default function Usuarios() {
   };
 
   const handleChangeRol = async (user: UserProfile, nuevoRol: Role) => {
-    if (user.email.toLowerCase() === "juanpacheco@playcode.com.ar") {
+    if (user.email.toLowerCase() === "juanpacheco@playcode.com.ar" && nuevoRol !== "superadmin") {
       setErrorMessage("No se puede cambiar el rol del administrador global primario.");
       return;
     }
@@ -2170,7 +2170,7 @@ export default function Usuarios() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 text-sm">
                 {usuarios.map((user) => {
-                  const isPrimaryAdmin = user.email.toLowerCase() === "juanpacheco@playcode.com.ar";
+                  const isPrimaryAdmin = user.rol === "superadmin";
                   const isSelf = user.uid === profile?.uid;
                   
                   return (

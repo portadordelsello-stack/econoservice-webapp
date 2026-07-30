@@ -34,9 +34,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(firebaseUser);
         try {
           const userDocRef = doc(db, "users", firebaseUser.uid);
-          const isGlobalAdmin = firebaseUser.email?.toLowerCase() === "juanpacheco@playcode.com.ar";
+          const isPrimaryGlobalAdmin = firebaseUser.email?.toLowerCase() === "juanpacheco@playcode.com.ar";
 
-          if (isGlobalAdmin) {
+          if (isPrimaryGlobalAdmin) {
+            // Primary admin: always seed/overwrite with superadmin + active
             const adminProfile: UserProfile = {
               uid: firebaseUser.uid,
               nombre: firebaseUser.displayName || "Administrador Global",
@@ -56,7 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
               const existing = userDoc.data() as UserProfile;
-              if (!existing.activo) {
+              // ANY superadmin always bypasses the active check
+              if (existing.rol === "superadmin") {
+                // Ensure superadmin is always active in Firestore too
+                if (!existing.activo) {
+                  await setDoc(userDocRef, { activo: true }, { merge: true });
+                  existing.activo = true;
+                }
+                setProfile(existing);
+              } else if (!existing.activo) {
                 setAuthError("espera que el administrador del sistema active tu cuenta, intenta mas tarde");
                 setUser(null);
                 setProfile(null);
