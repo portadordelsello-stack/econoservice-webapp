@@ -414,6 +414,21 @@ export const ServiciosService = {
 
   async delete(id: string): Promise<void> {
     const docRef = doc(db, "servicios", id);
+    try {
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data() as Servicio;
+        if (data.equipoId) {
+          try {
+            await deleteDoc(doc(db, "equipos", data.equipoId));
+          } catch (eqErr) {
+            console.warn("Could not delete associated equipment document:", eqErr);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch service before deletion:", e);
+    }
     await deleteDoc(docRef);
   },
 

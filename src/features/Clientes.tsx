@@ -561,6 +561,19 @@ export default function Clientes() {
       setFormSaving(true);
       setFormError("");
 
+      // 1. Process deletions FIRST so deleted equipments & services are removed regardless of remaining count
+      const allServices = await ServiciosService.getAll();
+      for (const delId of deletedEquipoIds) {
+        const eqServices = allServices.filter(s => s.clienteId === editingId && s.equipoId === delId);
+        for (const srv of eqServices) {
+          if (srv.id) {
+            await ServiciosService.delete(srv.id);
+          }
+        }
+        await EquiposService.delete(delId);
+      }
+      setDeletedEquipoIds([]);
+
       let finalEquipos = [...formEquipos];
       if (finalEquipos.length === 0 && (formMarca.trim() || formModelo.trim())) {
         finalEquipos.push({
@@ -573,8 +586,22 @@ export default function Clientes() {
         });
       }
 
+      const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
+
+      // 2. Update client details
+      await ClientesService.update(editingId, {
+        nombreApellido: clientName,
+        telCel: formTelCel.trim() || "",
+        calle: formCalle.trim() || "",
+        numero: formNumero.trim() || "",
+        localidad: formCiudad.trim() || "",
+        depto: formDepto.trim() || "",
+        observaciones: formObservaciones.trim() || ""
+      });
+
       if (finalEquipos.length === 0) {
-        setFormError("Debe añadir al menos un equipo en la sección de Equipos.");
+        setFormSuccess(true);
+        loadClientes();
         setFormSaving(false);
         return;
       }
@@ -602,29 +629,14 @@ export default function Clientes() {
         }
       }
 
-      const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
-
-      // 1. Update client
-      await ClientesService.update(editingId, {
-        nombreApellido: clientName,
-        telCel: formTelCel.trim() || "",
-        calle: formCalle.trim() || "",
-        numero: formNumero.trim() || "",
-        localidad: formCiudad.trim() || "",
-        depto: formDepto.trim() || "",
-        observaciones: formObservaciones.trim() || ""
-      });
-
-      // 2. Prepare logistics text
+      // 3. Prepare logistics text
       const selectedNS = [
         formNS1 ? "NS1" : "",
         formNS2 ? "NS2" : "",
         formNS3 ? "NS3" : ""
       ].filter(Boolean).join(", ");
 
-      // 3. Process equipments
-      const allServices = await ServiciosService.getAll();
-      
+      // 4. Process remaining equipments
       for (const eq of finalEquipos) {
         const infoLogisticaFull = [
           eq.fechaRetiro && eq.fechaRetiro.trim() ? `Retiro acordado: ${eq.fechaRetiro.trim()}` : "",
@@ -661,6 +673,7 @@ export default function Clientes() {
             modelo: eq.modelo.trim() || "Genérico",
             observaciones: ""
           });
+          eq.id = newEqId;
 
           const newServId = await ServiciosService.create({
             clienteId: editingId,
@@ -693,17 +706,6 @@ export default function Clientes() {
             serviceId: newServId
           });
         }
-      }
-
-      // 4. Delete removed equipments and their associated services from Firestore
-      for (const delId of deletedEquipoIds) {
-        const eqServices = allServices.filter(s => s.clienteId === editingId && s.equipoId === delId);
-        for (const srv of eqServices) {
-          if (srv.id) {
-            await ServiciosService.delete(srv.id);
-          }
-        }
-        await EquiposService.delete(delId);
       }
 
       setFormSuccess(true);
