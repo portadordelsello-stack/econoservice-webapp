@@ -195,7 +195,8 @@ function MainLayout() {
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="p-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl shadow-md shadow-emerald-500/30 transition-all cursor-pointer active:scale-95"
+            aria-label="Abrir menú"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
