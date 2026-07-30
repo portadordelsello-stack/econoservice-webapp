@@ -261,7 +261,6 @@ export default function Clientes() {
     // Reset multiple equipment states
     setFormEquipos([]);
     setDeletedEquipoIds([]);
-    setIsEquipoModalOpen(false);
     setEquipoModalIndex(null);
     setEquipoModalTipo("Lavarropas");
     setEquipoModalMarca("");

@@ -163,7 +163,7 @@ export default function Usuarios() {
     let doneCount = 0;
 
     // Count total docs first for accurate progress
-    for (const docs of Object.values(restoreData)) {
+    for (const docs of (Object.values(restoreData) as any[][])) {
       totalDocs += docs.length;
     }
 
@@ -1466,7 +1466,7 @@ export default function Usuarios() {
 
   if (activeSubView === "restaurar") {
     const totalRestoreDocs = restoreData
-      ? Object.values(restoreData).reduce((acc, d) => acc + d.length, 0)
+      ? (Object.values(restoreData) as any[][]).reduce((acc: number, d) => acc + d.length, 0)
       : 0;
     const progressPct = restoreProgress && restoreProgress.total > 0
       ? Math.round((restoreProgress.done / restoreProgress.total) * 100)
@@ -1598,7 +1598,7 @@ export default function Usuarios() {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Se restaurarán estas colecciones en lotes de hasta 400 documentos</p>
             </div>
             <div className="divide-y divide-gray-50 dark:divide-gray-800/60">
-              {Object.entries(restoreData).map(([colName, docs]) => (
+              {Object.entries(restoreData).map(([colName, docs]: [string, any[]]) => (
                 <div key={colName} className="flex items-center gap-3 px-6 py-3">
                   <span className="text-[10px] font-mono font-bold text-gray-400 dark:text-gray-500 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-md w-28 shrink-0 text-center">
                     {colName}
@@ -1619,7 +1619,7 @@ export default function Usuarios() {
             </div>
             <div className="px-6 py-3 bg-gray-50/80 dark:bg-gray-850/40 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
               <span className="text-xs text-gray-500 dark:text-gray-400">Total</span>
-              <span className="text-sm font-extrabold text-gray-800 dark:text-gray-200">{totalRestoreDocs.toLocaleString("es-AR")} documentos</span>
+              <span className="text-sm font-extrabold text-gray-800 dark:text-gray-200">{Number(totalRestoreDocs).toLocaleString("es-AR")} documentos</span>
             </div>
           </div>
         )}
@@ -1663,7 +1663,7 @@ export default function Usuarios() {
               ) : (
                 <>
                   <UploadCloud className="w-5 h-5" />
-                  <span>Iniciar Restauración ({totalRestoreDocs.toLocaleString("es-AR")} docs)</span>
+                  <span>Iniciar Restauración ({Number(totalRestoreDocs).toLocaleString("es-AR")} docs)</span>
                 </>
               )}
             </button>

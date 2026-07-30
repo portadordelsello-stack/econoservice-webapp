@@ -92,6 +92,7 @@ export default function Logistica() {
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
   const [activeEntregaTab, setActiveEntregaTab] = useState<"pendientes" | "entregados">("pendientes");
   const [selectedGroupForModal, setSelectedGroupForModal] = useState<GroupedWithdrawal | null>(null);
+  const [selectedDelivery, setSelectedDelivery] = useState<Servicio | null>(null);
 
   const handleToggleRetirado = async (srvId: string, currentVal: boolean) => {
     try {
