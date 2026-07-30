@@ -233,7 +233,7 @@ function MainLayout() {
           </div>
 
           {/* Nav links */}
-          <nav className="mt-8 space-y-1.5">
+          <nav className="mt-8 space-y-3 md:space-y-1.5">
             {navigationLinks.map((link) => {
               // Check user role permission
               if (link.roles && !link.roles.includes(profile?.rol || "")) {
@@ -245,13 +245,13 @@ function MainLayout() {
                 <button
                   key={link.view}
                   onClick={() => handleNavLinkClick(link.view)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                  className={`w-full flex items-center gap-4 md:gap-3 px-5 py-4 md:px-4 md:py-2.5 text-sm md:text-xs font-semibold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                     isActive
                       ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
                       : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
-                  <Icon className="w-4.5 h-4.5" />
+                  <Icon className="w-6 h-6 md:w-4.5 md:h-4.5 shrink-0" />
                   {link.label}
                 </button>
               );
