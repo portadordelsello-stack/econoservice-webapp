@@ -665,7 +665,7 @@ export default function Usuarios() {
   }, []);
 
   const handleToggleActivo = async (user: UserProfile) => {
-    if (user.rol === "superadmin") {
+    if (user.rol === "superadmin" && user.activo) {
       setErrorMessage("No se puede desactivar a un Superadministrador.");
       return;
     }
@@ -2170,7 +2170,7 @@ export default function Usuarios() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 text-sm">
                 {usuarios.map((user) => {
-                  const isPrimaryAdmin = user.rol === "superadmin";
+                  const isPrimaryAdmin = user.email.toLowerCase() === "juanpacheco@playcode.com.ar";
                   const isSelf = user.uid === profile?.uid;
                   
                   return (

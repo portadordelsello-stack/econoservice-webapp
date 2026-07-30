@@ -18,8 +18,10 @@ service cloud.firestore {
     }
 
     function isUserActive() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.activo == true;
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.activo == true ||
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'superadmin'
+      );
     }
 
     // Unified helper that reads the document at most once and handles role-checking safely.

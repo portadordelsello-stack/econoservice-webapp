@@ -61,8 +61,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (existing.rol === "superadmin") {
                 // Ensure superadmin is always active in Firestore too
                 if (!existing.activo) {
-                  await setDoc(userDocRef, { activo: true }, { merge: true });
-                  existing.activo = true;
+                  try {
+                    await setDoc(userDocRef, { activo: true }, { merge: true });
+                    existing.activo = true;
+                  } catch (e) {
+                    console.warn("Could not set active:true in Firestore for superadmin:", e);
+                  }
                 }
                 setProfile(existing);
               } else if (!existing.activo) {
