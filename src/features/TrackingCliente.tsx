@@ -11,7 +11,9 @@ import {
   CheckCircle, 
   AlertCircle,
   HelpCircle,
-  Navigation
+  Navigation,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import { BrandingService } from "../services/branding";
 
@@ -128,12 +130,23 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
   const [geocodingDone, setGeocodingDone] = useState(false);
   const [mapInstance, setMapInstance] = useState<any>(null);
 
-  // Map references
+  // Map references and fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const driverMarkerRef = useRef<any>(null);
   const clientMarkerRef = useRef<any>(null);
   const routeLineRef = useRef<any>(null);
+
+  // Invalidate map size when toggling fullscreen
+  useEffect(() => {
+    if (mapInstance) {
+      const timer = setTimeout(() => {
+        mapInstance.invalidateSize();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isFullscreen, mapInstance]);
 
   // Load basic service details initially
   useEffect(() => {
@@ -504,21 +517,57 @@ export default function TrackingCliente({ servicioId }: TrackingClienteProps) {
         </div>
 
         {/* RIGHT PANEL - LIVE MAP */}
-        <div className="lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-3xl p-4 flex flex-col h-[350px] md:h-[500px] lg:h-[600px] relative">
-          <div className="flex items-center justify-between mb-3 border-b border-gray-50 dark:border-gray-800 pb-2.5">
-            <span className="text-xs font-bold text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Navigation className="w-4 h-4 text-indigo-500" />
-              Recorrido en Tiempo Real
-            </span>
+        <div className={
+          isFullscreen 
+            ? "fixed inset-0 z-[9999] bg-white dark:bg-gray-900 p-3 sm:p-6 flex flex-col h-screen w-screen" 
+            : "lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-3xl p-4 flex flex-col h-[350px] md:h-[500px] lg:h-[600px] relative"
+        }>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3 border-b border-gray-50 dark:border-gray-800 pb-2.5">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-indigo-600 rounded-full inline-block animate-pulse"></span>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Tu Casa</span>
-              <span className="w-2 h-2 bg-amber-500 rounded-full inline-block animate-ping"></span>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Chofer</span>
+              <span className="text-xs font-bold text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Navigation className="w-4 h-4 text-indigo-500" />
+                Recorrido en Tiempo Real
+              </span>
+              <div className="hidden sm:flex items-center gap-2 ml-2">
+                <span className="w-2 h-2 bg-indigo-600 rounded-full inline-block animate-pulse"></span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Tu Casa</span>
+                <span className="w-2 h-2 bg-amber-500 rounded-full inline-block animate-ping"></span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Chofer</span>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(prev => !prev)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-xl transition-all border border-indigo-200/50 dark:border-indigo-800/40 cursor-pointer active:scale-95 shadow-xs"
+              title={isFullscreen ? "Salir de pantalla completa" : "Ver en pantalla completa"}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Salir de Pantalla Completa</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Ver en pantalla completa</span>
+                </>
+              )}
+            </button>
           </div>
 
           <div className="flex-1 rounded-2xl overflow-hidden relative border border-gray-100 dark:border-gray-850">
+            {/* Floating Fullscreen button inside map overlay */}
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(prev => !prev)}
+              className="absolute top-3 right-3 z-[1000] p-2 bg-white/90 dark:bg-gray-900/90 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl shadow-md border border-gray-200/60 dark:border-gray-750 backdrop-blur-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+              title={isFullscreen ? "Salir de pantalla completa" : "Ver en pantalla completa"}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4 text-indigo-500" /> : <Maximize2 className="w-4 h-4 text-indigo-500" />}
+              <span className="hidden sm:inline">{isFullscreen ? "Salir" : "Ver en pantalla completa"}</span>
+            </button>
+
             {/* Loading / Waiting for leaflet */}
             {!leafletLoaded && (
               <div className="absolute inset-0 z-50 bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center space-y-2">
