@@ -395,8 +395,21 @@ export default function DetalleServicio() {
         );
       }
 
-      // Workflow triggers: Notify admin when technician saves diagnosis, notify technician when admin confirms repair
-      if (profile?.rol === "tecnico") {
+      // Workflow triggers: Notify admin & logistica when finished, or notify admin when diagnosed
+      if (isReparacionTerminada || finalState === "LISTO_PARA_ENTREGA") {
+        await NotificationsService.create({
+          targetRole: "admin",
+          title: "Reparación Terminada",
+          message: `El técnico ${userNombre} dio por terminada la reparación del Servicio #${servicio.numeroServicio} (${servicio.aparato || "Equipo"} ${servicio.marcaModelo || ""}).`,
+          serviceId: selectedId
+        });
+        await NotificationsService.create({
+          targetRole: "logistica",
+          title: "Equipo Listo para Entrega",
+          message: `El Servicio #${servicio.numeroServicio} fue marcado como listo para entrega. Coordinar despacho.`,
+          serviceId: selectedId
+        });
+      } else if (profile?.rol === "tecnico") {
         const hasDiagnosis = Boolean(editDiagnostico && editDiagnostico.trim());
         if (hasDiagnosis || finalState === "DIAGNOSTICO" || finalState === "EN_ESPERA") {
           await NotificationsService.create({
@@ -452,6 +465,24 @@ export default function DetalleServicio() {
         terminado: true,
         updatedAt: serverTimestamp()
       });
+
+      // Notify admin and logistica
+      try {
+        await NotificationsService.create({
+          targetRole: "admin",
+          title: "Reparación Terminada",
+          message: `El técnico ${profile.nombre || "Técnico"} dio por terminada la reparación del Servicio #${servicio.numeroServicio} (${servicio.aparato || "Equipo"} ${servicio.marcaModelo || ""}).`,
+          serviceId: selectedId
+        });
+        await NotificationsService.create({
+          targetRole: "logistica",
+          title: "Equipo Listo para Entrega",
+          message: `El Servicio #${servicio.numeroServicio} fue marcado como listo para entrega. Coordinar despacho.`,
+          serviceId: selectedId
+        });
+      } catch (notifErr) {
+        console.warn("No se pudo enviar notificación:", notifErr);
+      }
 
       // Try to log to historial (non-blocking)
       try {

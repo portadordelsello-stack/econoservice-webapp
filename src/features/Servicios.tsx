@@ -314,8 +314,14 @@ export default function Servicios() {
           message: `El Administrador confirmó la reparación del Servicio #${srv.numeroServicio} (${srv.aparato || "Equipo"} ${srv.marcaModelo || ""}). Proceder con la reparación.`,
           serviceId: srv.id
         });
-      } else if (finalState === "LISTO_PARA_ENTREGA") {
-        // Taller -> Logistica & Admin: Repair finished, ready for delivery
+      } else if (finalState === "LISTO_PARA_ENTREGA" || isFinished) {
+        // Taller -> Admin & Logistica: Repair finished
+        await NotificationsService.create({
+          targetRole: "admin",
+          title: "Reparación Terminada",
+          message: `El Taller / Técnico ${userNombre} dio por terminada la reparación del Servicio #${srv.numeroServicio} (${srv.aparato || "Equipo"} ${srv.marcaModelo || ""}).`,
+          serviceId: srv.id
+        });
         await NotificationsService.create({
           targetRole: "logistica",
           title: "Equipo Listo para Entrega",
