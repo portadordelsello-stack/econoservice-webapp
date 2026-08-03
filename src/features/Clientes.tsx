@@ -907,35 +907,37 @@ export default function Clientes() {
         </div>
 
         {/* Option Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto pt-6">
+        <div className={`grid grid-cols-1 ${profile?.rol === "logistica" ? "max-w-2xl" : "md:grid-cols-2 max-w-4xl"} mx-auto pt-6 gap-6`}>
           
           {/* Card: Nuevo Servicio */}
-          <button 
-            type="button"
-            onClick={() => {
-              resetCustomForm();
-              setCurrentSubView("nuevo");
-            }}
-            className="group w-full cursor-pointer bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl shadow-sm p-6 hover:shadow-md hover:border-indigo-500/50 dark:hover:border-indigo-500/50 transition-all text-left flex flex-col justify-between space-y-8"
-          >
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <UserPlus className="w-6 h-6" />
+          {profile?.rol !== "logistica" && (
+            <button 
+              type="button"
+              onClick={() => {
+                resetCustomForm();
+                setCurrentSubView("nuevo");
+              }}
+              className="group w-full cursor-pointer bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl shadow-sm p-6 hover:shadow-md hover:border-indigo-500/50 dark:hover:border-indigo-500/50 transition-all text-left flex flex-col justify-between space-y-8"
+            >
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <UserPlus className="w-6 h-6" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    Nuevo Servicio
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                    Registra un nuevo servicio junto con los datos de su domicilio, su equipo, la fecha de retiro acordada, desperfecto reportado y observaciones de cobro de forma manual y directa.
+                  </p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                  Nuevo Servicio
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Registra un nuevo servicio junto con los datos de su domicilio, su equipo, la fecha de retiro acordada, desperfecto reportado y observaciones de cobro de forma manual y directa.
-                </p>
+              <div className="flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 gap-1 pt-2">
+                <span>Comenzar registro</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
-            <div className="flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 gap-1 pt-2">
-              <span>Comenzar registro</span>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
+            </button>
+          )}
 
           {/* Card: Lista de Servicios */}
           <button 
@@ -1628,7 +1630,7 @@ export default function Clientes() {
             </p>
           </div>
         </div>
-        {canWrite && (
+        {canWrite && profile?.rol !== "logistica" && (
           <button
             onClick={() => {
               resetCustomForm();
