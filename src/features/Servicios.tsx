@@ -306,12 +306,12 @@ export default function Servicios() {
           message: `El Taller completó el diagnóstico del Servicio #${srv.numeroServicio}. Comunicar presupuesto al cliente.`,
           serviceId: srv.id
         });
-      } else if (finalState === "ACEPTADO") {
-        // Admin -> Taller: Quote accepted, begin repair
+      } else if (finalState === "ACEPTADO" || finalState === "EN_REPARACION") {
+        // Admin -> Taller: Repair confirmed, begin repair
         await NotificationsService.create({
           targetRole: "taller",
-          title: "Presupuesto Aceptado",
-          message: `El cliente aceptó el presupuesto del Servicio #${srv.numeroServicio}. Iniciar reparación.`,
+          title: "Reparación Confirmada",
+          message: `El Administrador confirmó la reparación del Servicio #${srv.numeroServicio} (${srv.aparato || "Equipo"} ${srv.marcaModelo || ""}). Proceder con la reparación.`,
           serviceId: srv.id
         });
       } else if (finalState === "LISTO_PARA_ENTREGA") {

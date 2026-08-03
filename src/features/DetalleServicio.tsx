@@ -395,7 +395,7 @@ export default function DetalleServicio() {
         );
       }
 
-      // Workflow triggers: Notify admin when technician saves or updates a diagnosis
+      // Workflow triggers: Notify admin when technician saves diagnosis, notify technician when admin confirms repair
       if (profile?.rol === "tecnico") {
         const hasDiagnosis = Boolean(editDiagnostico && editDiagnostico.trim());
         if (hasDiagnosis || finalState === "DIAGNOSTICO" || finalState === "EN_ESPERA") {
@@ -403,6 +403,15 @@ export default function DetalleServicio() {
             targetRole: "admin",
             title: "Equipo Diagnosticado",
             message: `El técnico ${userNombre} completó/actualizó el diagnóstico del Servicio #${servicio.numeroServicio} (${servicio.aparato || "Equipo"} ${servicio.marcaModelo || ""}).`,
+            serviceId: selectedId
+          });
+        }
+      } else if (profile?.rol === "admin" || profile?.rol === "superadmin") {
+        if (finalState === "ACEPTADO" || finalState === "EN_REPARACION" || editAcepta) {
+          await NotificationsService.create({
+            targetRole: "taller",
+            title: "Reparación Confirmada",
+            message: `El Administrador confirmó la reparación del Servicio #${servicio.numeroServicio} (${servicio.aparato || "Equipo"} ${servicio.marcaModelo || ""}). Proceder con la reparación.`,
             serviceId: selectedId
           });
         }
