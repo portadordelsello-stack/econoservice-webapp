@@ -290,11 +290,19 @@ export default function Servicios() {
       }
 
       // Send automatic notifications based on state transitions
-      if (finalState === "EN_ESPERA") {
+      const hasDiagContent = Boolean(formServiciosRequeridos.trim() || formNotasInternas.trim());
+      if (profile?.rol === "tecnico" && (hasDiagContent || finalState === "EN_ESPERA" || finalState === "DIAGNOSTICO")) {
+        await NotificationsService.create({
+          targetRole: "admin",
+          title: "Equipo Diagnosticado",
+          message: `El técnico ${userNombre} completó/actualizó el diagnóstico del Servicio #${srv.numeroServicio} (${srv.aparato || "Equipo"} ${srv.marcaModelo || ""}).`,
+          serviceId: srv.id
+        });
+      } else if (finalState === "EN_ESPERA") {
         // Taller -> Admin: Equipment diagnosed, ready for quote communication
         await NotificationsService.create({
           targetRole: "admin",
-          title: "Diagnóstico Completo",
+          title: "Equipo Diagnosticado",
           message: `El Taller completó el diagnóstico del Servicio #${srv.numeroServicio}. Comunicar presupuesto al cliente.`,
           serviceId: srv.id
         });

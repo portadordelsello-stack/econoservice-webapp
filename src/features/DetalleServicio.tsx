@@ -395,13 +395,14 @@ export default function DetalleServicio() {
         );
       }
 
-      // Workflow triggers
+      // Workflow triggers: Notify admin when technician saves or updates a diagnosis
       if (profile?.rol === "tecnico") {
-        if (finalState === "EN_ESPERA") {
+        const hasDiagnosis = Boolean(editDiagnostico && editDiagnostico.trim());
+        if (hasDiagnosis || finalState === "DIAGNOSTICO" || finalState === "EN_ESPERA") {
           await NotificationsService.create({
             targetRole: "admin",
-            title: "Diagnóstico Completo",
-            message: `El Taller completó el diagnóstico del Servicio #${servicio.numeroServicio}. Comunicar presupuesto.`,
+            title: "Equipo Diagnosticado",
+            message: `El técnico ${userNombre} completó/actualizó el diagnóstico del Servicio #${servicio.numeroServicio} (${servicio.aparato || "Equipo"} ${servicio.marcaModelo || ""}).`,
             serviceId: selectedId
           });
         }

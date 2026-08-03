@@ -758,6 +758,13 @@ export const NotificationsService = {
             if (isTallerTarget) {
               return isUserTaller;
             }
+
+            const isAdminTarget = notif.targetRole === "admin" || notif.targetRole === "superadmin";
+            const isUserAdmin = role === "admin" || role === "superadmin";
+            
+            if (isAdminTarget) {
+              return isUserAdmin;
+            }
             
             return notif.targetRole === role;
           }
