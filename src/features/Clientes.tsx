@@ -25,8 +25,18 @@ import {
   Calendar,
   Upload,
   ImageIcon,
-  Plus
+  Plus,
+  MessageSquare
 } from "lucide-react";
+
+const getWhatsAppUrl = (phone?: string) => {
+  if (!phone) return "";
+  let clean = phone.replace(/\D/g, "");
+  if (clean.length === 10 && !clean.startsWith("54")) {
+    clean = "54" + clean;
+  }
+  return `https://wa.me/${clean}`;
+};
 
 export default function Clientes() {
   const { profile } = useAuth();
@@ -1184,9 +1194,23 @@ export default function Clientes() {
                 {/* Celular input */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                      Teléfono Celular
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Teléfono Celular
+                      </label>
+                      {formTelCel && (
+                        <a
+                          href={getWhatsAppUrl(formTelCel)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-[10px] font-bold transition-all shadow-xs cursor-pointer"
+                          title="Enviar mensaje por WhatsApp"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          <span>WhatsApp</span>
+                        </a>
+                      )}
+                    </div>
                     <input
                       type="text"
                       value={formTelCel}
@@ -1710,9 +1734,22 @@ export default function Clientes() {
               {/* Col 2: Celular */}
               <div className="sm:col-span-3 text-xs text-gray-600 dark:text-gray-400 font-semibold">
                 {c.telCel ? (
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span>{c.telCel}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>{c.telCel}</span>
+                    </div>
+                    <a
+                      href={getWhatsAppUrl(c.telCel)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all text-[11px] font-bold shrink-0 shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
+                      title="Enviar mensaje por WhatsApp"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
                   </div>
                 ) : (
                   <span className="text-[11px] text-gray-400 dark:text-gray-550 italic">No registrado</span>
