@@ -1675,7 +1675,8 @@ export default function Clientes() {
           filteredClientes.map((c) => (
             <div
               key={c.id}
-              className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-xl py-2.5 px-4 shadow-[0_1px_2px_rgba(0,0,0,0.01)] hover:shadow-xs hover:border-indigo-500/20 dark:hover:border-indigo-900/40 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center transition-all duration-200"
+              onClick={() => handleStartEdit(c)}
+              className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-xl py-2.5 px-4 shadow-[0_1px_2px_rgba(0,0,0,0.01)] hover:shadow-sm hover:border-indigo-500/40 dark:hover:border-indigo-900/60 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center transition-all duration-200 cursor-pointer group"
             >
               {/* Col 1: ID & Address & Note */}
               <div className="sm:col-span-7 space-y-0.5 min-w-0">
@@ -1685,7 +1686,7 @@ export default function Clientes() {
                       ID: {formatClienteId(c)}
                     </span>
                   )}
-                  <span className="font-bold text-gray-900 dark:text-white text-sm">
+                  <span className="font-bold text-gray-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     {[
                       c.calle ? `${c.calle} ${c.numero || ""}` : "",
                       c.barrio ? `B° ${c.barrio}` : "",
@@ -1720,16 +1721,12 @@ export default function Clientes() {
 
               {/* Col 3: Actions */}
               <div className="sm:col-span-2 flex items-center justify-end gap-1.5 shrink-0 self-end sm:self-center">
-                <button
-                  onClick={() => handleStartEdit(c)}
-                  className="p-1.5 text-indigo-600 hover:text-indigo-700 bg-indigo-50/60 dark:bg-indigo-950/20 hover:bg-indigo-100/80 dark:hover:bg-indigo-950/40 rounded-lg transition-all cursor-pointer border border-indigo-100/40 dark:border-indigo-900/20 flex items-center justify-center hover:scale-105 active:scale-95"
-                  title="Editar Cliente"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
                 {isAdmin && (
                   <button
-                    onClick={() => handleDeleteCliente(c.id || "")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteCliente(c.id || "");
+                    }}
                     className="p-1.5 text-red-600 hover:text-red-700 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/80 dark:hover:bg-red-950/40 rounded-lg transition-all cursor-pointer border border-red-100/40 dark:border-red-900/20 flex items-center justify-center hover:scale-105 active:scale-95"
                     title="Eliminar Cliente"
                   >
