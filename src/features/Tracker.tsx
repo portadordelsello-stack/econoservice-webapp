@@ -991,26 +991,20 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                         }
 
                         return (
-                          <div className="space-y-1 mt-1.5">
-                            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300" title={addressStr}>
-                              <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              <span className="truncate max-w-[220px] font-medium">
+                          <div className="space-y-2 mt-2">
+                            <div className="flex items-start gap-2 text-slate-800 dark:text-slate-150" title={addressStr}>
+                              <MapPin className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                              <span className="text-[12px] sm:text-sm font-extrabold leading-tight tracking-tight">
                                 {addressStr}
                               </span>
                             </div>
                             
                             {scheduleText && (
-                              <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                                <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                                <span className="truncate font-medium">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
+                                <span className="text-[12px] sm:text-sm font-black tracking-wide text-indigo-650 dark:text-indigo-400">
                                   {scheduleText}
                                 </span>
-                              </div>
-                            )}
-
-                            {serv.infoLogistica && (
-                              <div className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/5 dark:bg-amber-500/10 px-2 py-0.5 rounded italic truncate max-w-[220px]">
-                                Nota: {serv.infoLogistica}
                               </div>
                             )}
                           </div>
