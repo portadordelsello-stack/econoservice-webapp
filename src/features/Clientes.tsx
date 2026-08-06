@@ -379,12 +379,20 @@ export default function Clientes() {
       
       const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
 
+      let calle = formCalle.trim();
+      let numero = formNumero.trim();
+      const numMatch = calle.match(/(.*?)\s+(\d+[\w\s/-]*)$/);
+      if (numMatch) {
+        calle = numMatch[1].trim();
+        numero = numMatch[2].trim();
+      }
+
       // 1. Create client
       const clienteId = await ClientesService.create({
         nombreApellido: clientName,
         telCel: formTelCel.trim() || "",
-        calle: formCalle.trim() || "",
-        numero: formNumero.trim() || "",
+        calle,
+        numero,
         localidad: formCiudad.trim() || "",
         depto: formDepto.trim() || "",
         clienteProblematico: false,
@@ -465,7 +473,8 @@ export default function Clientes() {
       // Set client states
       setFormNombreApellido(c.nombreApellido || "");
       setFormTelCel(c.telCel || "");
-      setFormCalle(c.calle || "");
+      const fullCalle = [c.calle, c.numero].filter(Boolean).join(" ");
+      setFormCalle(fullCalle);
       setFormNumero(c.numero || "");
       setFormCiudad(c.localidad || "");
       setFormDepto(c.depto || "");
@@ -611,12 +620,20 @@ export default function Clientes() {
 
       const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
 
+      let calle = formCalle.trim();
+      let numero = formNumero.trim();
+      const numMatch = calle.match(/(.*?)\s+(\d+[\w\s/-]*)$/);
+      if (numMatch) {
+        calle = numMatch[1].trim();
+        numero = numMatch[2].trim();
+      }
+
       // 2. Update client details
       await ClientesService.update(editingId, {
         nombreApellido: clientName,
         telCel: formTelCel.trim() || "",
-        calle: formCalle.trim() || "",
-        numero: formNumero.trim() || "",
+        calle,
+        numero,
         localidad: formCiudad.trim() || "",
         depto: formDepto.trim() || "",
         observaciones: formObservaciones.trim() || ""
