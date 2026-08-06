@@ -35,7 +35,9 @@ import {
   ListOrdered,
   Calendar,
   Maximize,
-  Minimize
+  Minimize,
+  CalendarClock,
+  X as XIcon
 } from "lucide-react";
 
 // Hook to dynamically load Leaflet CDN assets (React 19 safe and extremely robust)
@@ -143,7 +145,63 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
   } | null>(null);
   const [optimizationError, setOptimizationError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
+  // Delivery scheduling modal state
+  const [scheduleModalService, setScheduleModalService] = useState<Servicio | null>(null);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleHoraDesde, setScheduleHoraDesde] = useState("");
+  const [scheduleHoraHasta, setScheduleHoraHasta] = useState("");
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+
+  const openScheduleModal = (serv: Servicio, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Pre-fill with existing values if any
+    if (serv.citaEntrega) {
+      try {
+        const dt = serv.citaEntrega instanceof Date ? serv.citaEntrega : (serv.citaEntrega as any).toDate();
+        const isoDate = dt.toISOString().slice(0, 10);
+        setScheduleDate(isoDate);
+      } catch { setScheduleDate(""); }
+    } else {
+      setScheduleDate("");
+    }
+    setScheduleHoraDesde(serv.horaEntregaDesde || "");
+    setScheduleHoraHasta(serv.horaEntregaHasta || "");
+    setScheduleModalService(serv);
+  };
+
+  const saveSchedule = async () => {
+    if (!scheduleModalService?.id) return;
+    setScheduleSaving(true);
+    try {
+      const updateData: Record<string, any> = {
+        horaEntregaDesde: scheduleHoraDesde,
+        horaEntregaHasta: scheduleHoraHasta
+      };
+      if (scheduleDate) {
+        updateData.citaEntrega = new Date(scheduleDate + "T12:00:00");
+      }
+      await ServiciosService.update(
+        scheduleModalService.id,
+        updateData,
+        profile?.uid || "logistica",
+        profile?.nombre || "Logística",
+        `Fecha de entrega acordada: ${scheduleDate} de ${scheduleHoraDesde} hasta ${scheduleHoraHasta}`
+      );
+      // Refresh card data
+      setActiveServices(prev => prev.map(s =>
+        s.id === scheduleModalService.id
+          ? { ...s, citaEntrega: scheduleDate ? new Date(scheduleDate + "T12:00:00") as any : s.citaEntrega, horaEntregaDesde: scheduleHoraDesde, horaEntregaHasta: scheduleHoraHasta }
+          : s
+      ));
+      setScheduleModalService(null);
+    } catch (err) {
+      alert("Error al guardar la fecha de entrega.");
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+
   const isSuperadmin = profile?.rol === "superadmin";
 
   const mapSectionRef = useRef<HTMLDivElement>(null);
@@ -937,53 +995,59 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                         );
                       })()}
 
-                      {/* Action buttons */}
-                      <div className="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-2">
-                        {/* Copy Link */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(serv.id!);
-                          }}
-                          className="px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-lg flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
-                          title="Copiar Link de Seguimiento"
-                        >
-                          {copiedId === serv.id ? (
-                            <>
-                              <Check className="w-3 h-3 text-emerald-500" />
-                              Copiado
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3" />
-                              Link
-                            </>
-                          )}
-                        </button>
+                      {/* Action buttons — responsive row */}
+                      <div className="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Schedule delivery date */}
+                          <button
+                            onClick={(e) => openScheduleModal(serv, e)}
+                            className="px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900/40 rounded-lg flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
+                            title="Acordar fecha y horario de entrega"
+                          >
+                            <CalendarClock className="w-3.5 h-3.5" />
+                            <span>Fecha Entrega</span>
+                          </button>
 
-                        {/* WhatsApp Client */}
-                        <a
-                          href={getWhatsAppLink(serv)}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
-                          title="Enviar aviso WhatsApp con mapa real-time"
-                        >
-                          <MessageSquare className="w-3 h-3 fill-current" />
-                          WhatsApp
-                        </a>
+                          {/* Copy tracking link */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyToClipboard(serv.id!);
+                            }}
+                            className="px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-lg flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
+                            title="Copiar Link de Seguimiento"
+                          >
+                            {copiedId === serv.id ? (
+                              <><Check className="w-3 h-3 text-emerald-500" />Copiado</>
+                            ) : (
+                              <><Copy className="w-3 h-3" />Link</>
+                            )}
+                          </button>
 
-                        {/* Complete Delivery */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            completeDelivery(serv);
-                          }}
-                          className="ml-auto px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
-                        >
-                          Entregado
-                        </button>
+                          {/* WhatsApp Client */}
+                          <a
+                            href={getWhatsAppLink(serv)}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
+                            title="Enviar aviso WhatsApp al cliente"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            <span>WhatsApp</span>
+                          </a>
+
+                          {/* Complete Delivery */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              completeDelivery(serv);
+                            }}
+                            className="ml-auto px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
+                          >
+                            ✓ Entregado
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -991,6 +1055,133 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
               </div>
             )}
           </div>
+
+          {/* Delivery Scheduling Modal */}
+          {scheduleModalService && (
+            <div
+              className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
+              onClick={() => setScheduleModalService(null)}
+            >
+              {/* Backdrop */}
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+              {/* Sheet / Modal */}
+              <div
+                className="relative w-full sm:max-w-sm bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl shadow-2xl p-5 sm:p-6 space-y-5 animate-slide-up"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CalendarClock className="w-5 h-5 text-indigo-500" />
+                    <h3 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">
+                      Fecha de Entrega Acordada
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setScheduleModalService(null)}
+                    className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-all cursor-pointer"
+                  >
+                    <XIcon className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <p className="text-[11px] text-gray-400 -mt-2">
+                  Orden #{scheduleModalService.numeroServicio} — {scheduleModalService.aparato} {scheduleModalService.marcaModelo}
+                </p>
+
+                {/* Date picker */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                    Fecha
+                  </label>
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-850 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer"
+                  />
+                </div>
+
+                {/* Time range — numeric HH:MM inputs */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                    Horario Acordado
+                  </label>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <span className="shrink-0 font-medium text-xs">de</span>
+                    {/* DESDE */}
+                    <div className="flex items-center gap-1 flex-1">
+                      <input
+                        type="number" inputMode="numeric" pattern="[0-9]*"
+                        min="0" max="23" placeholder="HH"
+                        value={scheduleHoraDesde ? scheduleHoraDesde.split(":")[0] : ""}
+                        onChange={(e) => {
+                          const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          const mm = scheduleHoraDesde ? (scheduleHoraDesde.split(":")[1] || "00") : "00";
+                          setScheduleHoraDesde(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
+                        }}
+                        className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                      <span className="font-bold text-gray-400">:</span>
+                      <input
+                        type="number" inputMode="numeric" pattern="[0-9]*"
+                        min="0" max="59" placeholder="MM"
+                        value={scheduleHoraDesde ? scheduleHoraDesde.split(":")[1] : ""}
+                        onChange={(e) => {
+                          const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          const hh = scheduleHoraDesde ? (scheduleHoraDesde.split(":")[0] || "00") : "00";
+                          setScheduleHoraDesde(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
+                        }}
+                        className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                    </div>
+                    <span className="shrink-0 font-medium text-xs">hasta</span>
+                    {/* HASTA */}
+                    <div className="flex items-center gap-1 flex-1">
+                      <input
+                        type="number" inputMode="numeric" pattern="[0-9]*"
+                        min="0" max="23" placeholder="HH"
+                        value={scheduleHoraHasta ? scheduleHoraHasta.split(":")[0] : ""}
+                        onChange={(e) => {
+                          const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          const mm = scheduleHoraHasta ? (scheduleHoraHasta.split(":")[1] || "00") : "00";
+                          setScheduleHoraHasta(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
+                        }}
+                        className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                      <span className="font-bold text-gray-400">:</span>
+                      <input
+                        type="number" inputMode="numeric" pattern="[0-9]*"
+                        min="0" max="59" placeholder="MM"
+                        value={scheduleHoraHasta ? scheduleHoraHasta.split(":")[1] : ""}
+                        onChange={(e) => {
+                          const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          const hh = scheduleHoraHasta ? (scheduleHoraHasta.split(":")[0] || "00") : "00";
+                          setScheduleHoraHasta(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
+                        }}
+                        className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save button */}
+                <button
+                  onClick={saveSchedule}
+                  disabled={scheduleSaving || !scheduleDate}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400 text-white font-bold rounded-xl text-sm transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {scheduleSaving ? (
+                    <><span className="w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin inline-block" />Guardando...</>
+                  ) : (
+                    <><CalendarClock className="w-4 h-4" />Guardar Fecha de Entrega</>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Asistente de Ruta Inteligente (Gemini AI) */}
           <div className="bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/10 dark:to-gray-900 border border-indigo-100/60 dark:border-indigo-900/40 rounded-2xl p-5 shadow-sm space-y-4">
