@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { collection, getDocs, doc, updateDoc, query, orderBy, deleteDoc, writeBatch, limit } from "firebase/firestore";
-import { db } from "../lib/firebase";
 import { useAuth } from "../providers/AuthProvider";
+import { supabase } from "../lib/supabase";
 import { UserProfile, Role } from "../types";
 import { DriveService } from "../services/drive";
 import { GeminiConfigService } from "../services/geminiConfig";
@@ -714,12 +714,16 @@ export default function Usuarios() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      const list: UserProfile[] = [];
-      snapshot.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() } as any);
-      });
+      const { data, error } = await supabase.from("user_profiles").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      const list: UserProfile[] = (data || []).map(u => ({
+        uid: u.uid,
+        nombre: u.nombre,
+        email: u.email,
+        rol: u.rol as Role,
+        activo: !!u.activo,
+        createdAt: u.created_at
+      }));
       setUsuarios(list);
     } catch (err: any) {
       console.error("Error fetching users:", err);
@@ -748,9 +752,9 @@ export default function Usuarios() {
     setSuccessMessage(null);
 
     try {
-      const userRef = doc(db, "users", user.uid);
       const nuevoEstado = !user.activo;
-      await updateDoc(userRef, { activo: nuevoEstado });
+      const { error } = await supabase.from("user_profiles").update({ activo: nuevoEstado }).eq("uid", user.uid);
+      if (error) throw error;
       
       setUsuarios((prev) =>
         prev.map((u) => (u.uid === user.uid ? { ...u, activo: nuevoEstado } : u))
@@ -780,8 +784,8 @@ export default function Usuarios() {
     setUserToDelete(null);
 
     try {
-      const userRef = doc(db, "users", user.uid);
-      await deleteDoc(userRef);
+      const { error } = await supabase.from("user_profiles").delete().eq("uid", user.uid);
+      if (error) throw error;
       
       setUsuarios((prev) => prev.filter((u) => u.uid !== user.uid));
       setSuccessMessage(`Usuario ${user.nombre} eliminado con éxito.`);
@@ -799,8 +803,8 @@ export default function Usuarios() {
     setErrorMessage(null);
     setSuccessMessage(null);
     try {
-      const userRef = doc(db, "users", editingUser.uid);
-      await updateDoc(userRef, { nombre: editNombre.trim() });
+      const { error } = await supabase.from("user_profiles").update({ nombre: editNombre.trim() }).eq("uid", editingUser.uid);
+      if (error) throw error;
       setUsuarios((prev) =>
         prev.map((u) =>
           u.uid === editingUser.uid ? { ...u, nombre: editNombre.trim() } : u
@@ -827,8 +831,8 @@ export default function Usuarios() {
     setSuccessMessage(null);
 
     try {
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, { rol: nuevoRol });
+      const { error } = await supabase.from("user_profiles").update({ rol: nuevoRol }).eq("uid", user.uid);
+      if (error) throw error;
       
       setUsuarios((prev) =>
         prev.map((u) => (u.uid === user.uid ? { ...u, rol: nuevoRol } : u))

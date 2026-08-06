@@ -6,8 +6,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { auth } from "../lib/firebase";
+import { supabase } from "../lib/supabase";
 import { Role, UserProfile } from "../types";
 
 interface AuthContextType {
@@ -33,7 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         setUser(firebaseUser);
         try {
-          const userDocRef = doc(db, "users", firebaseUser.uid);
           const isPrimaryGlobalAdmin = firebaseUser.email?.toLowerCase() === "juanpacheco@playcode.com.ar";
 
           if (isPrimaryGlobalAdmin) {
@@ -46,36 +45,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               activo: true,
               createdAt: new Date(),
             };
-            await setDoc(userDocRef, {
-              ...adminProfile,
-              activo: true,
-              rol: "superadmin"
-            }, { merge: true });
+            await supabase.from("user_profiles").upsert({
+              uid: firebaseUser.uid,
+              nombre: adminProfile.nombre,
+              email: adminProfile.email,
+              rol: "superadmin",
+              activo: true
+            });
             setProfile(adminProfile);
             setLoading(false);
           } else {
-            const userDoc = await getDoc(userDocRef);
-            if (userDoc.exists()) {
-              const existing = userDoc.data() as UserProfile;
-              // ANY superadmin always bypasses the active check
-              if (existing.rol === "superadmin") {
-                // Ensure superadmin is always active in Firestore too
-                if (!existing.activo) {
+            const { data: existing, error } = await supabase
+              .from("user_profiles")
+              .select("*")
+              .eq("uid", firebaseUser.uid)
+              .single();
+
+            if (existing) {
+              const userProfile: UserProfile = {
+                uid: existing.uid,
+                nombre: existing.nombre,
+                email: existing.email,
+                rol: existing.rol as Role,
+                activo: !!existing.activo,
+                createdAt: new Date(existing.created_at)
+              };
+
+              if (userProfile.rol === "superadmin") {
+                // Ensure superadmin is always active
+                if (!userProfile.activo) {
                   try {
-                    await setDoc(userDocRef, { activo: true }, { merge: true });
-                    existing.activo = true;
+                    await supabase.from("user_profiles").update({ activo: true }).eq("uid", userProfile.uid);
+                    userProfile.activo = true;
                   } catch (e) {
-                    console.warn("Could not set active:true in Firestore for superadmin:", e);
+                    console.warn("Could not set active:true in Supabase for superadmin:", e);
                   }
                 }
-                setProfile(existing);
-              } else if (!existing.activo) {
+                setProfile(userProfile);
+              } else if (!userProfile.activo) {
                 setAuthError("espera que el administrador del sistema active tu cuenta, intenta mas tarde");
                 setUser(null);
                 setProfile(null);
                 await firebaseSignOut(auth);
               } else {
-                setProfile(existing);
+                setProfile(userProfile);
               }
             } else {
               // Create default profile for new user - default to inactive
@@ -87,9 +100,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 activo: false,
                 createdAt: new Date(),
               };
-              await setDoc(userDocRef, {
-                ...newProfile,
-                createdAt: serverTimestamp()
+              await supabase.from("user_profiles").insert({
+                uid: newProfile.uid,
+                nombre: newProfile.nombre,
+                email: newProfile.email,
+                rol: newProfile.rol,
+                activo: false
               });
               setAuthError("espera que el administrador del sistema active tu cuenta, intenta mas tarde");
               setUser(null);
@@ -119,7 +135,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthError(null);
     try {
       const provider = new GoogleAuthProvider();
-      // Enforce select_account to make testing multiple accounts easier
       provider.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(auth, provider);
     } catch (error: any) {
