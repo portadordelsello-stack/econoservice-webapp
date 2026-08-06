@@ -33,14 +33,43 @@ export const toDate = (timestamp: any): Date | null => {
 // CLIENTES SERVICES
 // ============================================================================
 export const ClientesService = {
-  async getAll(): Promise<Cliente[]> {
+  async getAll(limitCount?: number): Promise<Cliente[]> {
     const colRef = collection(db, "clientes");
-    const q = query(colRef, orderBy("nombreApellido", "asc"));
+    const q = limitCount
+      ? query(colRef, orderBy("numeroCliente", "desc"), limit(limitCount))
+      : query(colRef, orderBy("nombreApellido", "asc"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Cliente[];
+  },
+
+  async search(term: string): Promise<Cliente[]> {
+    const colRef = collection(db, "clientes");
+    const termClean = term.trim();
+    if (!termClean) return this.getAll(30);
+
+    if (/^\d+$/.test(termClean)) {
+      const qNum = query(colRef, where("numeroCliente", "==", Number(termClean)));
+      const snapNum = await getDocs(qNum);
+      if (!snapNum.empty) {
+        return snapNum.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Cliente[];
+      }
+      
+      const qPhone = query(colRef, where("telCel", "==", termClean));
+      const snapPhone = await getDocs(qPhone);
+      return snapPhone.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Cliente[];
+    }
+
+    const qName = query(
+      colRef, 
+      where("nombreApellido", ">=", termClean), 
+      where("nombreApellido", "<=", termClean + "\uf8ff"),
+      limit(30)
+    );
+    const snapName = await getDocs(qName);
+    return snapName.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Cliente[];
   },
 
   async create(cliente: Omit<Cliente, "id" | "createdAt" | "updatedAt">): Promise<string> {
@@ -260,14 +289,37 @@ export const EquiposService = {
 // SERVICIOS SERVICES
 // ============================================================================
 export const ServiciosService = {
-  async getAll(): Promise<Servicio[]> {
+  async getAll(limitCount?: number): Promise<Servicio[]> {
     const colRef = collection(db, "servicios");
-    const q = query(colRef, orderBy("numeroServicio", "desc"));
+    const q = limitCount
+      ? query(colRef, orderBy("numeroServicio", "desc"), limit(limitCount))
+      : query(colRef, orderBy("numeroServicio", "desc"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Servicio[];
+  },
+
+  async search(term: string): Promise<Servicio[]> {
+    const colRef = collection(db, "servicios");
+    const termClean = term.trim();
+    if (!termClean) return this.getAll(30);
+
+    if (/^\d+$/.test(termClean)) {
+      const qNum = query(colRef, where("numeroServicio", "==", Number(termClean)));
+      const snapNum = await getDocs(qNum);
+      return snapNum.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Servicio[];
+    }
+
+    const qAparato = query(
+      colRef,
+      where("aparato", ">=", termClean),
+      where("aparato", "<=", termClean + "\uf8ff"),
+      limit(30)
+    );
+    const snapAparato = await getDocs(qAparato);
+    return snapAparato.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Servicio[];
   },
 
   async getById(id: string): Promise<Servicio | null> {

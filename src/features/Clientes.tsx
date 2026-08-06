@@ -779,7 +779,9 @@ export default function Clientes() {
   const loadClientes = async () => {
     try {
       setLoading(true);
-      const data = await ClientesService.getAll();
+      const data = searchTerm.trim()
+        ? await ClientesService.search(searchTerm)
+        : await ClientesService.getAll(30);
       setClientes(data);
     } catch (err) {
       console.error("Error loading clientes:", err);
@@ -790,7 +792,7 @@ export default function Clientes() {
 
   useEffect(() => {
     loadClientes();
-  }, []);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (selectedId && clientes.length > 0) {

@@ -114,11 +114,15 @@ export default function Servicios() {
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [srvList, clList, eqList] = await Promise.all([
-        ServiciosService.getAll(),
-        ClientesService.getAll(),
-        EquiposService.getAll()
-      ]);
+      const srvList = searchTerm.trim() 
+        ? await ServiciosService.search(searchTerm)
+        : await ServiciosService.getAll(30);
+
+      const clList = searchTerm.trim()
+        ? await ClientesService.search(searchTerm)
+        : await ClientesService.getAll(30);
+
+      const eqList = await EquiposService.getAll();
       setServicios(srvList);
       setClientes(clList);
       setEquipos(eqList);
@@ -131,7 +135,7 @@ export default function Servicios() {
 
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, [searchTerm]);
 
   // Map utilities for quick lookups
   const clientMap = new Map<string, Cliente>();
