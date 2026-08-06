@@ -334,7 +334,24 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
         ServiciosService.getAll(),
         ClientesService.getAll()
       ]);
-      const list = all.filter(s => s.estado === "LISTO_PARA_ENTREGA" || s.estado === "ENTREGA_EN_PROGRESO");
+      const list = all.filter(s => {
+        const isTargetState = s.estado === "LISTO_PARA_ENTREGA" || s.estado === "ENTREGA_EN_PROGRESO";
+        if (!isTargetState) return false;
+
+        if (s.citaEntrega) {
+          try {
+            const dt = s.citaEntrega instanceof Date ? s.citaEntrega : (typeof s.citaEntrega.toDate === "function" ? s.citaEntrega.toDate() : new Date(s.citaEntrega));
+            const today = new Date();
+            const isSameDay = dt.getDate() === today.getDate() &&
+                              dt.getMonth() === today.getMonth() &&
+                              dt.getFullYear() === today.getFullYear();
+            return isSameDay;
+          } catch {
+            return true;
+          }
+        }
+        return true; // Keep unscheduled ones since they are not scheduled for "another" day
+      });
       setActiveServices(list);
       
       const cMap: Record<string, Cliente> = {};
