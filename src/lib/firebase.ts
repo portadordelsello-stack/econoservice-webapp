@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { initializeFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -16,7 +16,11 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 
-// Use initializeFirestore to specify our custom Firestore database ID
-export const db = initializeFirestore(app, {}, "ai-studio-3ef48e00-59d6-46d6-b905-c2b8843145f7");
+// Use initializeFirestore to specify our custom Firestore database ID and enable offline persistence cache
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+}, "ai-studio-3ef48e00-59d6-46d6-b905-c2b8843145f7");
 
 export const storage = getStorage(app);
