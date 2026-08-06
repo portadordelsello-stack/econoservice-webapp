@@ -27,7 +27,8 @@ import {
   X,
   Trash2,
   Wrench,
-  Laptop
+  Laptop,
+  CalendarClock
 } from "lucide-react";
 
 type LogisticaView = "hub" | "tracker" | "retiros" | "agenda-general" | "entregas" | "detalle-entrega";
@@ -407,8 +408,8 @@ export default function Logistica() {
           </div>
 
           {/* Cards Container */}
-          <div className={`grid grid-cols-1 ${isAdmin ? "md:grid-cols-3" : "md:grid-cols-2"} gap-6 max-w-5xl pt-2`}>
-            {isAdmin && (
+          <div className={`grid grid-cols-1 ${(isAdmin || profile?.rol === "logistica") ? "md:grid-cols-3" : "md:grid-cols-2"} gap-6 max-w-5xl pt-2`}>
+            {(isAdmin || profile?.rol === "logistica") && (
               /* CARD: ENTREGAS */
               <button
                 onClick={() => setView("entregas")}
@@ -1083,7 +1084,7 @@ export default function Logistica() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-              {activeEntregaTab === "pendientes" && (
+              {activeEntregaTab === "pendientes" && isAdmin && (
                 <button
                 onClick={() => {
                   const selectedSrvs = readyDeliveries.filter(s => selectedReceipts.includes(s.id));
@@ -1294,13 +1295,14 @@ export default function Logistica() {
                           client.localidad ? `${client.localidad}` : ""
                         ].filter(Boolean).join(", ");
 
-                        const isChecked = selectedReceipts.includes(srv.id);
+                        const isChecked = isAdmin && selectedReceipts.includes(srv.id);
                         const maxReached = selectedReceipts.length >= 5 && !isChecked;
 
                         return (
                           <div
                             key={srv.id}
                             onClick={() => {
+                              if (!isAdmin) return;
                               if (isChecked) {
                                 setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
                               } else {
@@ -1309,21 +1311,23 @@ export default function Logistica() {
                                 }
                               }
                             }}
-                            className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden space-y-3 ${
+                            className={`p-4 rounded-2xl border-2 transition-all relative overflow-hidden space-y-3 ${
                               isChecked
-                                ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500/80 dark:border-indigo-500"
+                                ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500/80 dark:border-indigo-500 cursor-pointer"
                                 : "bg-white dark:bg-gray-900 border-slate-150 dark:border-gray-800 hover:border-slate-300 dark:hover:border-gray-700"
                             }`}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  disabled={maxReached}
-                                  onChange={() => {}} // Handled by outer div onClick
-                                  className="w-4.5 h-4.5 text-indigo-600 border-slate-300 dark:border-gray-700 rounded focus:ring-indigo-500 cursor-pointer"
-                                />
+                                {isAdmin && (
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={maxReached}
+                                    onChange={() => {}} // Handled by outer div onClick
+                                    className="w-4.5 h-4.5 text-indigo-600 border-slate-300 dark:border-gray-700 rounded focus:ring-indigo-500 cursor-pointer"
+                                  />
+                                )}
                                 <span className="text-xs font-mono font-bold text-slate-700 dark:text-gray-300 bg-slate-100 dark:bg-gray-800 px-2 py-0.5 rounded">
                                   Orden #{srv.numeroServicio}
                                 </span>
@@ -1395,9 +1399,11 @@ export default function Logistica() {
                       <table className="w-full text-left border-collapse min-w-[700px]">
                         <thead>
                           <tr className="border-b border-slate-150 dark:border-gray-850 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider bg-slate-50/50 dark:bg-gray-850/20">
-                            <th className="py-3.5 pl-4 pr-2 font-extrabold w-10">
-                              <span className="sr-only">Seleccionar</span>
-                            </th>
+                            {isAdmin && (
+                              <th className="py-3.5 pl-4 pr-2 font-extrabold w-10">
+                                <span className="sr-only">Seleccionar</span>
+                              </th>
+                            )}
                             <th className="py-3.5 px-4 font-extrabold">Orden</th>
                             <th className="py-3.5 px-4 font-extrabold">Cliente / Dirección</th>
                             <th className="py-3.5 px-4 font-extrabold">Equipo</th>
@@ -1424,12 +1430,15 @@ export default function Logistica() {
                             return (
                               <tr
                                 key={srv.id}
-                                className={`transition-colors cursor-pointer ${
+                                className={`transition-colors ${
+                                  isAdmin ? "cursor-pointer" : ""
+                                } ${
                                   isChecked
                                     ? "bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/30"
                                     : "hover:bg-slate-50/40 dark:hover:bg-gray-850/10"
                                 }`}
                                 onClick={() => {
+                                  if (!isAdmin) return;
                                   if (isChecked) {
                                     setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
                                   } else if (!maxReached) {
@@ -1437,22 +1446,24 @@ export default function Logistica() {
                                   }
                                 }}
                               >
-                                <td className="py-3.5 pl-4 pr-2 w-10" onClick={e => e.stopPropagation()}>
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    disabled={maxReached}
-                                    onChange={() => {
-                                      if (isChecked) {
-                                        setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
-                                      } else if (!maxReached) {
-                                        setSelectedReceipts(prev => [...prev, srv.id]);
-                                      }
-                                    }}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                    title={maxReached ? "Máximo 5 clientes" : ""}
-                                  />
-                                </td>
+                                {isAdmin && (
+                                  <td className="py-3.5 pl-4 pr-2 w-10" onClick={e => e.stopPropagation()}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      disabled={maxReached}
+                                      onChange={() => {
+                                        if (isChecked) {
+                                          setSelectedReceipts(prev => prev.filter(id => id !== srv.id));
+                                        } else if (!maxReached) {
+                                          setSelectedReceipts(prev => [...prev, srv.id]);
+                                        }
+                                      }}
+                                      className="w-4/5 h-4 rounded border-slate-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                      title={maxReached ? "Máximo 5 clientes" : ""}
+                                    />
+                                  </td>
+                                )}
                                 <td className="py-3.5 px-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                   #{srv.numeroServicio}
                                 </td>
@@ -1918,6 +1929,189 @@ export default function Logistica() {
                     <span className="text-sm font-semibold text-slate-700 dark:text-gray-255">{srv.marcaModelo || "S/D"}</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Delivery Planning Section */}
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 p-5 sm:p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-805 border-slate-205 dark:border-gray-800 pb-3">
+                  <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-450 flex items-center gap-1.5">
+                    <CalendarClock className="w-4 h-4 text-indigo-500" />
+                    Planificación de Entrega
+                  </h3>
+                  {!isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingDeliveryId(srv.id || null);
+                        if (srv.citaEntrega) {
+                          try {
+                            const dt = srv.citaEntrega instanceof Date ? srv.citaEntrega : (srv.citaEntrega as any).toDate();
+                            setDeliveryCita(dt.toISOString().slice(0, 10));
+                          } catch { setDeliveryCita(""); }
+                        } else { setDeliveryCita(""); }
+                        setDeliveryHoraDesde(srv.horaEntregaDesde || "");
+                        setDeliveryHoraHasta(srv.horaEntregaHasta || "");
+                        setDeliveryInfo(srv.infoLogistica || "");
+                      }}
+                      className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold transition-all cursor-pointer border border-indigo-200/60 dark:border-indigo-900/40"
+                    >
+                      Planificar / Editar
+                    </button>
+                  )}
+                </div>
+
+                {!isEditing ? (
+                  <div className="space-y-3.5 text-xs text-slate-700 dark:text-gray-300 font-medium">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Fecha Acordada</span>
+                        {srv.citaEntrega ? (
+                          <span className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-indigo-500" />
+                            {(() => {
+                              try {
+                                const dt = srv.citaEntrega instanceof Date ? srv.citaEntrega : (srv.citaEntrega as any).toDate();
+                                return dt.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                              } catch { return "Fecha no válida"; }
+                            })()}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400 dark:text-gray-500 italic">No programada</span>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Horario Acordado</span>
+                        {srv.horaEntregaDesde || srv.horaEntregaHasta ? (
+                          <span className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                            <Clock className="w-4 h-4 text-indigo-500" />
+                            de {srv.horaEntregaDesde || "--:--"} hasta {srv.horaEntregaHasta || "--:--"}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400 dark:text-gray-500 italic">No programado</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Información / Notas Logísticas</span>
+                      <p className="p-3 bg-slate-50 dark:bg-gray-850 rounded-xl text-slate-700 dark:text-gray-300 font-medium italic border border-slate-100 dark:border-gray-800 leading-relaxed">
+                        {srv.infoLogistica || "Sin observaciones logísticas."}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 animate-scale-up">
+                    {/* Date Selector */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                        Fecha de Entrega
+                      </label>
+                      <input
+                        type="date"
+                        value={deliveryCita}
+                        onChange={(e) => setDeliveryCita(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-gray-850 text-slate-900 dark:text-white border border-slate-200 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      />
+                    </div>
+
+                    {/* Numeric HH:MM Input Range */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                        Rango Horario de Entrega
+                      </label>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span className="shrink-0 font-medium text-xs">de</span>
+                        {/* DESDE */}
+                        <div className="flex items-center gap-1 flex-1">
+                          <input
+                            type="number" inputMode="numeric" pattern="[0-9]*"
+                            min="0" max="23" placeholder="HH"
+                            value={deliveryHoraDesde ? deliveryHoraDesde.split(":")[0] : ""}
+                            onChange={(e) => {
+                              const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
+                              const mm = deliveryHoraDesde ? (deliveryHoraDesde.split(":")[1] || "00") : "00";
+                              setDeliveryHoraDesde(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
+                            }}
+                            className="w-14 px-2 py-2 bg-slate-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-slate-200 dark:border-gray-800 rounded-xl text-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                          />
+                          <span className="font-bold text-gray-400">:</span>
+                          <input
+                            type="number" inputMode="numeric" pattern="[0-9]*"
+                            min="0" max="59" placeholder="MM"
+                            value={deliveryHoraDesde ? deliveryHoraDesde.split(":")[1] : ""}
+                            onChange={(e) => {
+                              const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
+                              const hh = deliveryHoraDesde ? (deliveryHoraDesde.split(":")[0] || "00") : "00";
+                              setDeliveryHoraDesde(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
+                            }}
+                            className="w-14 px-2 py-2 bg-slate-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-slate-200 dark:border-gray-800 rounded-xl text-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                          />
+                        </div>
+                        <span className="shrink-0 font-medium text-xs">hasta</span>
+                        {/* HASTA */}
+                        <div className="flex items-center gap-1 flex-1">
+                          <input
+                            type="number" inputMode="numeric" pattern="[0-9]*"
+                            min="0" max="23" placeholder="HH"
+                            value={deliveryHoraHasta ? deliveryHoraHasta.split(":")[0] : ""}
+                            onChange={(e) => {
+                              const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
+                              const mm = deliveryHoraHasta ? (deliveryHoraHasta.split(":")[1] || "00") : "00";
+                              setDeliveryHoraHasta(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
+                            }}
+                            className="w-14 px-2 py-2 bg-slate-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-slate-200 dark:border-gray-800 rounded-xl text-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                          />
+                          <span className="font-bold text-gray-400">:</span>
+                          <input
+                            type="number" inputMode="numeric" pattern="[0-9]*"
+                            min="0" max="59" placeholder="MM"
+                            value={deliveryHoraHasta ? deliveryHoraHasta.split(":")[1] : ""}
+                            onChange={(e) => {
+                              const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
+                              const hh = deliveryHoraHasta ? (deliveryHoraHasta.split(":")[0] || "00") : "00";
+                              setDeliveryHoraHasta(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
+                            }}
+                            className="w-14 px-2 py-2 bg-slate-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-slate-200 dark:border-gray-800 rounded-xl text-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Logistics Notes Textarea */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                        Observaciones / Notas Logísticas
+                      </label>
+                      <textarea
+                        value={deliveryInfo}
+                        onChange={(e) => setDeliveryInfo(e.target.value)}
+                        placeholder="Ej. Entregar por la mañana, tocar timbre de planta alta."
+                        rows={3}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-gray-850 text-slate-905 dark:text-white text-xs font-medium rounded-xl border border-slate-205 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      />
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveDeliveryInfo(srv.id!)}
+                        className="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                      >
+                        Guardar Planificación
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingDeliveryId(null)}
+                        className="h-10 px-4 text-xs font-bold text-slate-505 hover:text-slate-800 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
