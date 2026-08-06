@@ -1232,7 +1232,7 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                     onClick={() => setPaymentModalService(null)}
                     className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-505 dark:text-gray-400 transition-all cursor-pointer border border-transparent"
                   >
-                    <X className="w-4 h-4" />
+                    <XIcon className="w-4 h-4" />
                   </button>
                 </div>
 
