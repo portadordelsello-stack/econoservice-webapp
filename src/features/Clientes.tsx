@@ -1440,20 +1440,76 @@ export default function Clientes() {
                   Horario de Retiro
                 </label>
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <span>de</span>
-                  <input
-                    type="time"
-                    value={equipoModalHoraDesde}
-                    onChange={(e) => setEquipoModalHoraDesde(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                  <span>hasta</span>
-                  <input
-                    type="time"
-                    value={equipoModalHoraHasta}
-                    onChange={(e) => setEquipoModalHoraHasta(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
+                  <span className="shrink-0 font-medium">de</span>
+                  {/* DESDE: HH:MM numeric inputs */}
+                  <div className="flex items-center gap-1 flex-1">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min="0"
+                      max="23"
+                      placeholder="HH"
+                      value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[0] : ""}
+                      onChange={(e) => {
+                        const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const mm = equipoModalHoraDesde ? (equipoModalHoraDesde.split(":")[1] || "00") : "00";
+                        setEquipoModalHoraDesde(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
+                      }}
+                      className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                    <span className="font-bold text-gray-400">:</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min="0"
+                      max="59"
+                      placeholder="MM"
+                      value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[1] : ""}
+                      onChange={(e) => {
+                        const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const hh = equipoModalHoraDesde ? (equipoModalHoraDesde.split(":")[0] || "00") : "00";
+                        setEquipoModalHoraDesde(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
+                      }}
+                      className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
+                  <span className="shrink-0 font-medium">hasta</span>
+                  {/* HASTA: HH:MM numeric inputs */}
+                  <div className="flex items-center gap-1 flex-1">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min="0"
+                      max="23"
+                      placeholder="HH"
+                      value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[0] : ""}
+                      onChange={(e) => {
+                        const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const mm = equipoModalHoraHasta ? (equipoModalHoraHasta.split(":")[1] || "00") : "00";
+                        setEquipoModalHoraHasta(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
+                      }}
+                      className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                    <span className="font-bold text-gray-400">:</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min="0"
+                      max="59"
+                      placeholder="MM"
+                      value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[1] : ""}
+                      onChange={(e) => {
+                        const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const hh = equipoModalHoraHasta ? (equipoModalHoraHasta.split(":")[0] || "00") : "00";
+                        setEquipoModalHoraHasta(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
+                      }}
+                      className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
