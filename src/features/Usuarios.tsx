@@ -396,19 +396,22 @@ export default function Usuarios() {
             serie: serie || ""
           } : null;
 
-          // Service fields
           const desperfectoUsuario = row.desperfectoUsuario || row.desperfecto || "";
           const estado = (row.estado || row.estadoServicio || "RECIBIDO").toUpperCase();
-          const notasInternas = row.notasInternas || row.diagnostico || "";
           const infoLogistica = row.infoLogistica || "";
+          const presupuestoVal = row.presupuesto ? parseFloat(row.presupuesto) : undefined;
 
           const hasService = hasEquipment || !!(desperfectoUsuario || estado || infoLogistica);
           const serviceData = hasService ? {
             aparato: aparato || "Lavarropas",
             marcaModelo: `${marca} ${modelo}`.trim() || "Genérico",
             desperfectoUsuario: desperfectoUsuario || "No especificado",
+            serviciosRequeridos: row.serviciosRequeridos || "",
+            serviciosConvenidos: row.serviciosConvenidos || "",
+            diagnostico: row.diagnostico || "",
+            presupuesto: isNaN(presupuestoVal as any) ? undefined : presupuestoVal,
             estado: ["RECIBIDO", "DIAGNOSTICO", "PENDIENTE_APROBACION", "EN_REPARACION", "LISTO_PARA_ENTREGA", "ENTREGA_EN_PROGRESO", "ENTREGADO", "CANCELADO", "EN_ESPERA", "ACEPTADO", "RECHAZADO"].includes(estado) ? estado : "RECIBIDO",
-            notasInternas: notasInternas || "",
+            notasInternas: row.notasInternas || "",
             infoLogistica: infoLogistica || "",
             acepta: false,
             rechazaDevolver: false,
@@ -1905,14 +1908,18 @@ export default function Usuarios() {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-gray-800 dark:text-gray-200 block">Formato esperado del CSV:</span>
                   <a 
-                    href={`data:text/csv;charset=utf-8,nombreApellido%2CtelFijo%2CtelCel%2Ccalle%2Cnumero%2Clocalidad%2Cbarrio%2CclienteProblematico%2Cobservaciones%2Caparato%2Cmarca%2Cmodelo%2CobservacionesEquipo%2CdesperfectoUsuario%2Cestado%2CnotasInternas%0AJuan%20Perez%2C4221122%2C3424123456%2CSan%20Martin%2C1234%2CSanta%20Fe%2CCentro%2CNO%2CLlamar%20antes%20de%20ir%2CLavarropas%2CDream%2CNext%208.12%2CTapa%20floja%2CNo%20desagota%2CRECIBIDO%2CFiltro%20obstruido%0AMaria%20Gomez%2C%2C3425987654%2CRivadavia%2C456%2CSanto%20Tome%2CLas%20Vegas%2CSI%2CNo%20atiende%20el%20timbre%2CLavavajillas%2CWhirlpool%2CWLF12%2CBisagra%20rota%2CPuerta%20no%20traba%2CDIAGNOSTICO%2CCambiar%20resorte`}
+                    href={`data:text/csv;charset=utf-8,${encodeURIComponent(
+                      "nombreApellido,telFijo,telCel,telCelBis,telCelOtro,calle,numero,piso,depto,localidad,barrio,zona,clienteProblematico,observaciones,aparato,marca,modelo,serie,observacionesEquipo,desperfectoUsuario,serviciosRequeridos,serviciosConvenidos,diagnostico,presupuesto,estado,notasInternas,infoLogistica\n" +
+                      "Juan Perez,4221122,3424123456,,,San Martin,1234,1,A,Santa Fe,Centro,ZONA_A,NO,Llamar antes de ir,Lavarropas,Dream,Next 8.12,SN123456,Tapa floja,No desagota,Revisar bomba,Cambio de bomba,Bomba quemada,45000,RECIBIDO,Cliente conforme,Retiro acordado: 2026-08-07Tde 10:00 hasta 12:00\n" +
+                      "Maria Gomez,,3425987654,,,Rivadavia,456,,,Santo Tome,Las Vegas,ZONA_B,SI,No atiende el timbre,Lavavajillas,Whirlpool,WLF12,SN987654,Bisagra rota,Puerta no traba,Cambiar resorte,Cambio de resorte,Resorte roto,32000,DIAGNOSTICO,Esperando repuesto,"
+                    )}`}
                     download="plantilla_clientes_equipos_servicios.csv"
                     className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold underline decoration-indigo-600/30 underline-offset-2 flex items-center gap-1"
                   >
                     Descargar CSV de Ejemplo
                   </a>
                 </div>
-                <p>El archivo CSV permite cargar datos de clientes, sus equipos y sus órdenes de servicio de forma simultánea. Los campos reconocidos son: <code>nombreApellido</code> (o <code>nombre</code>/<code>cliente</code>), <code>telFijo</code>, <code>telCel</code> (o <code>celular</code>), <code>calle</code>, <code>numero</code>, <code>localidad</code>, <code>barrio</code>, <code>clienteProblematico</code> (SI/NO o true/false), <code>observaciones</code>, <code>aparato</code> (o <code>tipoEquipo</code>), <code>marca</code>, <code>modelo</code>, <code>observacionesEquipo</code>, <code>desperfectoUsuario</code>, <code>estado</code> (RECIBIDO, DIAGNOSTICO, etc.) y <code>notasInternas</code>.</p>
+                <p>El archivo CSV permite cargar datos de clientes, sus equipos y sus órdenes de servicio de forma simultánea. Los campos reconocidos son: <code>nombreApellido</code> (o <code>nombre</code>/<code>cliente</code>), <code>telFijo</code>, <code>telCel</code> (o <code>celular</code>), <code>telCelBis</code>, <code>telCelOtro</code>, <code>calle</code>, <code>numero</code>, <code>piso</code>, <code>depto</code>, <code>localidad</code>, <code>barrio</code>, <code>zona</code>, <code>clienteProblematico</code> (SI/NO o true/false), <code>observaciones</code>, <code>aparato</code>, <code>marca</code>, <code>modelo</code>, <code>serie</code>, <code>observacionesEquipo</code>, <code>desperfectoUsuario</code>, <code>serviciosRequeridos</code>, <code>serviciosConvenidos</code>, <code>diagnostico</code>, <code>presupuesto</code>, <code>estado</code> (RECIBIDO, DIAGNOSTICO, etc.), <code>notasInternas</code> e <code>infoLogistica</code>.</p>
               </div>
             </div>
           </div>
