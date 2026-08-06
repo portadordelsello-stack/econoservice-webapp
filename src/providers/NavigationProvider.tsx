@@ -16,7 +16,8 @@ export type ViewType =
 interface NavigationContextType {
   currentView: ViewType;
   selectedId: string | null;
-  navigate: (view: ViewType, id?: string | null) => void;
+  navigationData: Record<string, any> | null;
+  navigate: (view: ViewType, id?: string | null, data?: Record<string, any> | null) => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
@@ -43,6 +44,8 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     return null;
   });
 
+  const [navigationData, setNavigationData] = useState<Record<string, any> | null>(null);
+
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace("#", "");
@@ -51,6 +54,8 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
         if (isValidView(view)) {
           setCurrentView(view as ViewType);
           setSelectedId(id || null);
+          // Clear pre-loaded data on hash-driven navigation (browser back/forward)
+          setNavigationData(null);
         }
       }
     };
@@ -59,9 +64,10 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  const navigate = (view: ViewType, id: string | null = null) => {
+  const navigate = (view: ViewType, id: string | null = null, data: Record<string, any> | null = null) => {
     setCurrentView(view);
     setSelectedId(id);
+    setNavigationData(data);
     if (id) {
       window.location.hash = `${view}/${id}`;
     } else {
@@ -86,7 +92,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <NavigationContext.Provider value={{ currentView, selectedId, navigate }}>
+    <NavigationContext.Provider value={{ currentView, selectedId, navigationData, navigate }}>
       {children}
     </NavigationContext.Provider>
   );

@@ -100,7 +100,7 @@ const formatClienteId = (c: Cliente): string => {
 
 export default function DetalleServicio() {
   const { profile } = useAuth();
-  const { selectedId, navigate } = useNavigation();
+  const { selectedId, navigationData, navigate } = useNavigation();
 
   // Primary data states
   const [servicio, setServicio] = useState<Servicio | null>(null);
@@ -150,14 +150,19 @@ export default function DetalleServicio() {
     if (!selectedId) return;
     try {
       setLoading(true);
-      const serv = await ServiciosService.getById(selectedId);
+
+      // Use pre-loaded data from navigation if available (instant render)
+      let serv = (navigationData?.servicio as Servicio) || null;
+      if (!serv) {
+        serv = await ServiciosService.getById(selectedId);
+      }
       if (!serv) {
         navigate("servicios");
         return;
       }
       setServicio(serv);
 
-      // Sync form fields with DB immediately
+      // Sync form fields immediately
       setEditEstado(serv.estado);
       setEditTecnicoId(serv.tecnicoId || "");
       setEditDiagnostico(serv.diagnostico || serv.serviciosRequeridos || "");
@@ -177,12 +182,19 @@ export default function DetalleServicio() {
       setEditContado(serv.contado || false);
       setEditNotasInternas(serv.notasInternas || "");
 
-      // Execute dependency loads in parallel
-      const clientPromise = serv.clienteId
+      // If pre-loaded client/equipo are available, use them right away
+      if (navigationData?.cliente) setCliente(navigationData.cliente as Cliente);
+      if (navigationData?.equipo) setEquipo(navigationData.equipo as Equipo);
+
+      // Stop showing spinner immediately once we have the service
+      setLoading(false);
+
+      // Execute remaining dependency loads in parallel in background
+      const clientPromise = (!navigationData?.cliente && serv.clienteId)
         ? ClientesService.getById(serv.clienteId).then(cli => setCliente(cli)).catch(err => console.error("Error loading related client:", err))
         : Promise.resolve();
 
-      const eqPromise = serv.equipoId
+      const eqPromise = (!navigationData?.equipo && serv.equipoId)
         ? EquiposService.getById(serv.equipoId).then(eq => setEquipo(eq)).catch(err => console.error("Error loading related equipment:", err))
         : Promise.resolve();
 
@@ -209,7 +221,6 @@ export default function DetalleServicio() {
 
     } catch (err) {
       console.error("Error loading primary service details:", err);
-    } finally {
       setLoading(false);
     }
   };

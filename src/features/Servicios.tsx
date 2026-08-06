@@ -524,7 +524,7 @@ export default function Servicios() {
             return (
               <div
                 key={srv.id}
-                onClick={() => navigate("detalle-servicio", srv.id)}
+                onClick={() => navigate("detalle-servicio", srv.id, { servicio: srv, cliente: client || null, equipo: equipo || null })}
                 className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/80 rounded-2xl shadow-3xs overflow-hidden transition-all duration-300 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/10 cursor-pointer"
               >
                 {/* Header Banner */}
