@@ -1018,21 +1018,21 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                       })()}
 
                       {/* Action buttons — responsive row */}
-                      <div className="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-800">
-                        <div className="flex flex-wrap items-center gap-2">
+                      <div className="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2.5">
+                        <div className="flex items-center gap-2">
                           {/* Copy tracking link */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               copyToClipboard(serv.id!);
                             }}
-                            className="px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-lg flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
+                            className="flex-1 px-2.5 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
                             title="Copiar Link de Seguimiento"
                           >
                             {copiedId === serv.id ? (
                               <><Check className="w-3 h-3 text-emerald-500" />Copiado</>
                             ) : (
-                              <><Copy className="w-3 h-3" />Link</>
+                              <><Copy className="w-3.5 h-3.5" />Link</>
                             )}
                           </button>
 
@@ -1042,24 +1042,25 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                             target="_blank"
                             rel="noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
+                            className="flex-1 px-2.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
                             title="Enviar aviso WhatsApp al cliente"
                           >
-                            <MessageSquare className="w-3 h-3" />
+                            <MessageSquare className="w-3.5 h-3.5" />
                             <span>WhatsApp</span>
                           </a>
-
-                          {/* Complete Delivery */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              completeDelivery(serv);
-                            }}
-                            className="ml-auto px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
-                          >
-                            ✓ Entregado
-                          </button>
                         </div>
+
+                        {/* Complete Delivery — full width orange button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            completeDelivery(serv);
+                          }}
+                          className="w-full py-2.5 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center gap-1.5 font-extrabold text-[11px] uppercase tracking-wider cursor-pointer transition-all shadow-md shadow-orange-500/10 active:scale-[0.98]"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>Marcar como Entregado</span>
+                        </button>
                       </div>
                     </div>
                   );
