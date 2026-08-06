@@ -352,12 +352,17 @@ export default function Clientes() {
         for (let i = 0; i < finalEquipos.length; i++) {
           const eq = finalEquipos[i];
           if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
-            setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.marca} ${eq.modelo}).`);
+            setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
             setFormSaving(false);
             return;
           }
           if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
-            setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.marca} ${eq.modelo}).`);
+            setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+            setFormSaving(false);
+            return;
+          }
+          if (!eq.fechaRetiro || !eq.fechaRetiro.trim()) {
+            setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
             setFormSaving(false);
             return;
           }
@@ -490,9 +495,9 @@ export default function Clientes() {
             const parts = logistica.split(" | ");
             parts.forEach(part => {
               if (part.startsWith("Retiro acordado: ")) {
-                const val = part.replace("Retiro acordado: ", "");
-                const isDatetimeLocal = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val);
-                if (isDatetimeLocal) {
+                const val = part.replace("Retiro acordado: ", "").trim();
+                // Accept new format: "YYYY-MM-DDTde HH:MM hasta HH:MM" OR legacy "YYYY-MM-DDTHH:MM"
+                if (val) {
                   fechaRetiro = val;
                 }
               }
@@ -627,12 +632,17 @@ export default function Clientes() {
         for (let i = 0; i < finalEquipos.length; i++) {
           const eq = finalEquipos[i];
           if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
-            setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.marca} ${eq.modelo}).`);
+            setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
             setFormSaving(false);
             return;
           }
           if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
-            setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.marca} ${eq.modelo}).`);
+            setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+            setFormSaving(false);
+            return;
+          }
+          if (!eq.fechaRetiro || !eq.fechaRetiro.trim()) {
+            setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
             setFormSaving(false);
             return;
           }
