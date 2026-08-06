@@ -177,43 +177,19 @@ export default function DetalleServicio() {
       setEditContado(serv.contado || false);
       setEditNotasInternas(serv.notasInternas || "");
 
-      // Load related client
-      if (serv.clienteId) {
-        try {
-          const cli = await ClientesService.getById(serv.clienteId);
-          setCliente(cli);
-        } catch (cliErr) {
-          console.error("Error loading related client:", cliErr);
-        }
-      }
+      // Execute dependency loads in parallel
+      const clientPromise = serv.clienteId
+        ? ClientesService.getById(serv.clienteId).then(cli => setCliente(cli)).catch(err => console.error("Error loading related client:", err))
+        : Promise.resolve();
 
-      // Load related equipment
-      if (serv.equipoId) {
-        try {
-          const eq = await EquiposService.getById(serv.equipoId);
-          setEquipo(eq);
-        } catch (eqErr) {
-          console.error("Error loading related equipment:", eqErr);
-        }
-      }
+      const eqPromise = serv.equipoId
+        ? EquiposService.getById(serv.equipoId).then(eq => setEquipo(eq)).catch(err => console.error("Error loading related equipment:", err))
+        : Promise.resolve();
 
-      // Load technicians list
-      try {
-        const tecList = await TecnicosService.getAll();
-        setTecnicos(tecList);
-      } catch (tecErr) {
-        console.error("Error loading technicians list:", tecErr);
-      }
+      const tecPromise = TecnicosService.getAll().then(tecList => setTecnicos(tecList)).catch(err => console.error("Error loading technicians list:", err));
 
-      // Load historical logs
-      try {
-        const histList = await ServiciosService.getHistorial(selectedId);
-        setHistorial(histList);
-      } catch (histErr) {
-        console.error("Error loading historical timeline:", histErr);
-      }
+      const histPromise = ServiciosService.getHistorial(selectedId).then(histList => setHistorial(histList)).catch(err => console.error("Error loading historical timeline:", err));
 
-      // Load uploaded files list from Firebase Storage
       const fetchStorageFiles = async () => {
         try {
           const storageRef = ref(storage, `servicios/${selectedId}`);
@@ -228,8 +204,8 @@ export default function DetalleServicio() {
           console.warn("Storage bucket list error:", storageErr);
         }
       };
-      
-      fetchStorageFiles();
+
+      await Promise.all([clientPromise, eqPromise, tecPromise, histPromise, fetchStorageFiles()]);
 
     } catch (err) {
       console.error("Error loading primary service details:", err);
