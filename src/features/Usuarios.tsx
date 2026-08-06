@@ -6,7 +6,7 @@ import { UserProfile, Role } from "../types";
 import { DriveService } from "../services/drive";
 import { GeminiConfigService } from "../services/geminiConfig";
 import { BrandingService, DEFAULT_BRANDING } from "../services/branding";
-import { ClientesService } from "../services/db";
+import Papa from "papaparse";
 
 import { 
   Users, 
@@ -1566,7 +1566,6 @@ export default function Usuarios() {
   }
 
   if (activeSubView === "importar") {
-
     return (
       <div className="space-y-6 animate-in fade-in duration-200">
         <div>
@@ -1581,6 +1580,157 @@ export default function Usuarios() {
 
         {canManageConfig ? (
           <div className="space-y-6">
+            {/* Main Importer Card */}
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800 flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <UploadCloud className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                      Importar Órdenes de Servicio por CSV
+                    </h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Sube tu planilla de órdenes de servicio para crear automáticamente los Clientes, Equipos y Servicios en Firebase.
+                    </p>
+                  </div>
+                </div>
+
+                <a 
+                  href={`data:text/csv;charset=utf-8,${encodeURIComponent(
+                    "calle,numero,ciudad,depto,aparato,marca,modelo,desperfectoUsuario,fechaRetiro,horaRetiroDesde,horaRetiroHasta,telCel,nombreApellido,notasRetiro,ns1,ns2,ns3,observaciones,estado,notasInternas,diagnostico,repuestosComprar,citaEntrega,horaEntregaDesde,horaEntregaHasta,terminado,entregado,metodoPago,montoEfectivo,montoTransferencia\n" +
+                    "7 de marzo,2701,Santo Tome,,Lavarropas,Samsung,Plus,se apaga,2026-08-07,10:00,12:00,3424123456,Juan Perez,Dejar en conserjería,SI,NO,SI,Cliente prefiere mañana,EN_ESPERA,Revisión inicial en taller,cambiar placa,una placa,2026-08-10,09:00,12:00,NO,NO,,0,0\n" +
+                    "Rivadavia,456,Santo Tome,,Lavavajillas,Whirlpool,WLF12,Puerta no traba,2026-07-25,14:00,16:00,3425987654,,No atiende timbre,NO,SI,NO,Sin observaciones,ENTREGADO,Entregado a cliente,Cambio de resorte bisagra,Resorte Whirlpool,2026-07-30,10:00,12:00,SI,SI,Efectivo + Transferencia,15000,17000"
+                  )}`}
+                  download="plantilla_ordenes_servicio_oficial.csv"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-bold transition-all border border-indigo-200/60 dark:border-indigo-800/40"
+                >
+                  <Download className="w-4 h-4" />
+                  Descargar Plantilla CSV Oficial
+                </a>
+              </div>
+
+              {importSuccessMsg && (
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-xl flex items-center gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs font-medium animate-in fade-in">
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>{importSuccessMsg}</span>
+                </div>
+              )}
+
+              {importErrorMsg && (
+                <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 rounded-xl flex items-center gap-2.5 text-red-800 dark:text-red-300 text-xs font-medium animate-in fade-in">
+                  <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                  <span>{importErrorMsg}</span>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    Seleccionar Archivo CSV
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleCsvChange}
+                      className="flex-1 px-3.5 py-3 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-900 dark:file:text-indigo-300 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-800"
+                      disabled={isImporting}
+                    />
+                    <button
+                      onClick={processCsvImport}
+                      disabled={!csvFile || !parsedRowsPreview || parsedRowsPreview.length === 0 || isImporting}
+                      className="inline-flex items-center gap-1.5 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer shrink-0"
+                    >
+                      <UploadCloud className="w-4 h-4" />
+                      {isImporting ? "Importando..." : `Importar (${parsedRowsPreview?.length || 0} filas)`}
+                    </button>
+                  </div>
+                </div>
+
+                {isImporting && (
+                  <div className="space-y-2 pt-2">
+                    <div className="flex justify-between text-xs font-medium text-gray-500">
+                      <span>Procesando e insertando órdenes de servicio en Firebase...</span>
+                      <span className="font-bold text-indigo-600">{importProgress} / {importTotal} procesadas</span>
+                    </div>
+                    <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${importTotal > 0 ? (importProgress / importTotal) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Pre-flight inspection preview table */}
+                {parsedRowsPreview && parsedRowsPreview.length > 0 && !isImporting && (
+                  <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                        Vista previa de pre-carga ({parsedRowsPreview.length} registros detectados):
+                      </span>
+                      <span className="text-[11px] text-gray-400">Mostrando hasta las primeras 5 filas</span>
+                    </div>
+
+                    <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded-xl">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-gray-50 dark:bg-gray-850 border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 font-semibold">
+                            <th className="py-2.5 px-3">#</th>
+                            <th className="py-2.5 px-3">Celular</th>
+                            <th className="py-2.5 px-3">Domicilio</th>
+                            <th className="py-2.5 px-3">Equipo</th>
+                            <th className="py-2.5 px-3">Desperfecto</th>
+                            <th className="py-2.5 px-3">Estado</th>
+                            <th className="py-2.5 px-3 text-right">Validación</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                          {parsedRowsPreview.slice(0, 5).map((row, idx) => {
+                            const tel = row.telCel || row.celular || row.telefono;
+                            const isValid = !!tel;
+                            return (
+                              <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-850/50">
+                                <td className="py-2 px-3 font-mono text-gray-400">{idx + 1}</td>
+                                <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white">
+                                  {tel || <span className="text-red-500 italic">Falta celular</span>}
+                                </td>
+                                <td className="py-2 px-3 text-gray-600 dark:text-gray-300">
+                                  {row.calle ? `${row.calle} ${row.numero || ""}` : "-"}
+                                </td>
+                                <td className="py-2 px-3 text-gray-600 dark:text-gray-300">
+                                  {row.aparato || "Lavarropas"} - {row.marca || "Genérico"}
+                                </td>
+                                <td className="py-2 px-3 text-amber-700 dark:text-amber-400 italic">
+                                  "{row.desperfectoUsuario || "No especificado"}"
+                                </td>
+                                <td className="py-2 px-3 uppercase font-bold text-[10px]">
+                                  {row.estado || "RECIBIDO"}
+                                </td>
+                                <td className="py-2 px-3 text-right">
+                                  {isValid ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400">
+                                      VÁLIDO
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400">
+                                      INVÁLIDO
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Card: Eliminación Masiva de Clientes */}
           <div className="bg-white dark:bg-gray-900 border border-red-100 dark:border-red-950/40 rounded-2xl shadow-sm p-6 space-y-6">
             <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-800">
