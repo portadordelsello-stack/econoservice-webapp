@@ -288,6 +288,308 @@ export default function Usuarios() {
     }
   };
 
+  // CSV Import States & Handlers
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [parsedRowsPreview, setParsedRowsPreview] = useState<any[] | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importTotal, setImportTotal] = useState(0);
+  const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
+  const [importErrorMsg, setImportErrorMsg] = useState<string | null>(null);
+
+  const handleCsvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setCsvFile(file);
+      setImportErrorMsg(null);
+      setImportSuccessMsg(null);
+      setImportProgress(0);
+      setImportTotal(0);
+
+      // Parse preview
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          setParsedRowsPreview(results.data as any[]);
+        },
+        error: () => {
+          setImportErrorMsg("Error al leer el archivo CSV.");
+          setParsedRowsPreview(null);
+        }
+      });
+    }
+  };
+
+  const processCsvImport = async () => {
+    if (!csvFile || !parsedRowsPreview) {
+      setImportErrorMsg("Debe seleccionar un archivo CSV válido.");
+      return;
+    }
+
+    setIsImporting(true);
+    setImportErrorMsg(null);
+    setImportSuccessMsg(null);
+    setImportProgress(0);
+    setImportTotal(parsedRowsPreview.length);
+
+    try {
+      let nextClientNum = 1;
+      try {
+        const qHighestClient = query(collection(db, "clientes"), orderBy("numeroCliente", "desc"), limit(1));
+        const highestClientSnap = await getDocs(qHighestClient);
+        if (!highestClientSnap.empty) {
+          const highestDoc = highestClientSnap.docs[0].data() as any;
+          if (highestDoc && highestDoc.numeroCliente) {
+            nextClientNum = Number(highestDoc.numeroCliente) + 1;
+          }
+        }
+      } catch (e) {
+        console.warn("Could not find highest numeroCliente:", e);
+      }
+
+      let nextSrvNum = 1001;
+      try {
+        const qHighestSrv = query(collection(db, "servicios"), orderBy("numeroServicio", "desc"), limit(1));
+        const highestSrvSnap = await getDocs(qHighestSrv);
+        if (!highestSrvSnap.empty) {
+          const highestDoc = highestSrvSnap.docs[0].data() as any;
+          if (highestDoc && highestDoc.numeroServicio) {
+            nextSrvNum = Number(highestDoc.numeroServicio) + 1;
+          }
+        }
+      } catch (e) {
+        console.warn("Could not find highest numeroServicio:", e);
+      }
+
+      const mapCsvRow = (row: any) => {
+        const parseBool = (val: any, defaultVal = false): boolean => {
+          if (val === undefined || val === null || val === "") return defaultVal;
+          const s = String(val).trim().toUpperCase();
+          return s === "SI" || s === "TRUE" || s === "1" || s === "YES";
+        };
+
+        const parseFloatOrUndefined = (val: any): number | undefined => {
+          if (val === undefined || val === null || val === "") return undefined;
+          const cleanStr = String(val).replace(/[^0-9.-]/g, "");
+          const num = parseFloat(cleanStr);
+          return isNaN(num) ? undefined : num;
+        };
+
+        // 1 & 3. DATOS DEL CLIENTE Y CONTACTO (Domicilio de Retiro + Contacto)
+        const telCel = row.telCel || row.celular || row.telefono || "";
+        const nombreApellido = (
+          row.nombreApellido || row.nombre || row.cliente || ""
+        ).trim() || (telCel ? `Cel: ${telCel}` : "Cliente S/N");
+
+        const clientData = {
+          nombreApellido,
+          telFijo:    row.telFijo    || "",
+          telCel:     telCel         || "",
+          telCelBis:  row.telCelBis  || "",
+          telCelOtro: row.telCelOtro || "",
+          localidad:  row.ciudad     || row.localidad || "",
+          barrio:     row.barrio     || "",
+          zona:       row.zona       || "",
+          calle:      row.calle      || row.direccion || "",
+          numero:     row.numero     || "",
+          piso:       row.piso       || "",
+          depto:      row.depto      || row.departamento || "",
+          clienteProblematico: parseBool(row.clienteProblematico, false),
+          observaciones: row.observaciones || row.observacionesCliente || ""
+        };
+
+        // 2. DATOS DEL EQUIPO
+        const aparato = row.aparato || row.tipo || row.tipoEquipo || "";
+        const marca   = row.marca   || "";
+        const modelo  = row.modelo  || "";
+        const serie   = row.serie   || row.numeroSerie || "";
+        const observacionesEquipo = row.observacionesEquipo || "";
+
+        const hasEquipment = !!(aparato || marca || modelo);
+        const equipmentData = hasEquipment ? {
+          tipo:         aparato || "Lavarropas",
+          marca:        marca   || "Genérico",
+          modelo:       modelo  || "Genérico",
+          observaciones:observacionesEquipo,
+          serie:        serie
+        } : null;
+
+        // 2 & 3. RETIRO Y LOGÍSTICA
+        let fechaRetiroStr = row.fechaRetiro?.trim() || "";
+        if (fechaRetiroStr && (row.horaRetiroDesde || row.horaRetiroHasta)) {
+          const desde = row.horaRetiroDesde?.trim() || "09:00";
+          const hasta = row.horaRetiroHasta?.trim() || "12:00";
+          if (!fechaRetiroStr.includes("Tde")) {
+            fechaRetiroStr = `${fechaRetiroStr}Tde ${desde} hasta ${hasta}`;
+          }
+        }
+
+        const nsPartes = [
+          parseBool(row.ns1) ? "NS1" : "",
+          parseBool(row.ns2) ? "NS2" : "",
+          parseBool(row.ns3) ? "NS3" : ""
+        ].filter(Boolean).join(", ");
+
+        const infoLogistica = row.infoLogistica || [
+          fechaRetiroStr                     ? `Retiro acordado: ${fechaRetiroStr}` : "",
+          row.notasRetiro?.trim()             ? `Notas retiro: ${row.notasRetiro.trim()}` : "",
+          nsPartes                           ? `Config: ${nsPartes}` : ""
+        ].filter(Boolean).join(" | ");
+
+        // 4. ESTADO DEL SERVICIO EN TALLER Y LOGÍSTICA
+        const desperfectoUsuario = row.desperfectoUsuario || row.desperfecto || "";
+        const estadoRaw = (row.estado || row.estadoServicio || "RECIBIDO").toUpperCase();
+
+        let citaEntregaVal = null;
+        if (row.citaEntrega || row.fechaEntrega) {
+          try {
+            const dt = new Date(row.citaEntrega || row.fechaEntrega);
+            if (!isNaN(dt.getTime())) citaEntregaVal = dt;
+          } catch {}
+        }
+
+        let fechaIngresoVal = new Date();
+        if (row.fechaIngreso) {
+          try {
+            const dt = new Date(row.fechaIngreso);
+            if (!isNaN(dt.getTime())) fechaIngresoVal = dt;
+          } catch {}
+        }
+
+        const isDelivered = estadoRaw === "ENTREGADO" || parseBool(row.entregado);
+        const isFinished = estadoRaw === "LISTO_PARA_ENTREGA" || estadoRaw === "ENTREGADO" || parseBool(row.terminado);
+
+        const hasService = hasEquipment || !!(desperfectoUsuario || infoLogistica || row.estado);
+        const serviceData = hasService ? {
+          aparato:             aparato || "Lavarropas",
+          marcaModelo:         `${marca} ${modelo}`.trim() || "Genérico",
+          desperfectoUsuario:  desperfectoUsuario || "No especificado",
+          fechaIngreso:        fechaIngresoVal,
+          serviciosRequeridos: row.serviciosRequeridos || row.diagnostico || "",
+          serviciosConvenidos: row.serviciosConvenidos || row.presupuestoTexto || "",
+          diagnostico:         row.diagnostico         || row.serviciosRequeridos || "",
+          repuestosComprar:    row.repuestosComprar    || "",
+          repuestosComprados:  row.repuestosComprados  || "",
+          presupuesto:         parseFloatOrUndefined(row.presupuesto),
+          presupuestoTexto:    row.presupuestoTexto    || row.serviciosConvenidos || "",
+          estado: ["RECIBIDO","DIAGNOSTICO","PENDIENTE_APROBACION","EN_REPARACION",
+                   "LISTO_PARA_ENTREGA","ENTREGA_EN_PROGRESO","ENTREGADO",
+                   "CANCELADO","EN_ESPERA","ACEPTADO","RECHAZADO"].includes(estadoRaw)
+                  ? estadoRaw : "RECIBIDO",
+          notasInternas:      row.notasInternas       || "",
+          infoLogistica:      infoLogistica,
+          acepta:             parseBool(row.acepta, false),
+          rechazaDevolver:    parseBool(row.rechazaDevolver, false),
+          garantia:           parseBool(row.garantia, false),
+          esReclamoGarantia: parseBool(row.esReclamoGarantia, false),
+          ingresoTaller:      parseBool(row.ingresoTaller, true),
+          pasaStock:          parseBool(row.pasaStock, false),
+          terminado:          isFinished,
+          entregado:          isDelivered,
+          factura:            parseBool(row.factura, false),
+          contado:            parseBool(row.contado, false),
+          citaEntrega:        citaEntregaVal,
+          horaEntregaDesde:   row.horaEntregaDesde || "",
+          horaEntregaHasta:   row.horaEntregaHasta || "",
+          metodoPago:         row.metodoPago       || "",
+          montoEfectivo:      parseFloatOrUndefined(row.montoEfectivo)      || 0,
+          montoTransferencia: parseFloatOrUndefined(row.montoTransferencia) || 0,
+          fotosDrive:         []
+        } : null;
+
+        return { clientData, equipmentData, serviceData };
+      };
+
+      const mappedRows = parsedRowsPreview.map(mapCsvRow);
+
+      let partes = 15;
+      let chunkSize = Math.ceil(mappedRows.length / partes);
+      if (chunkSize > 120) {
+        chunkSize = 120;
+        partes = Math.ceil(mappedRows.length / chunkSize);
+      }
+
+      let currentProcessed = 0;
+      let clientIdxOffset = 0;
+      let srvIdxOffset = 0;
+
+      for (let i = 0; i < partes; i++) {
+        const chunk = mappedRows.slice(i * chunkSize, (i + 1) * chunkSize);
+        if (chunk.length === 0) continue;
+        
+        const batch = writeBatch(db);
+
+        for (const row of chunk) {
+          const clientRef = doc(collection(db, "clientes"));
+          
+          batch.set(clientRef, {
+            ...row.clientData,
+            numeroCliente: nextClientNum + clientIdxOffset,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+
+          clientIdxOffset++;
+
+          if (row.equipmentData) {
+            const eqRef = doc(collection(db, "equipos"));
+            batch.set(eqRef, {
+              ...row.equipmentData,
+              clienteId: clientRef.id,
+              createdAt: new Date()
+            });
+
+            if (row.serviceData) {
+              const srvRef = doc(collection(db, "servicios"));
+              batch.set(srvRef, {
+                ...row.serviceData,
+                clienteId: clientRef.id,
+                equipoId: eqRef.id,
+                numeroServicio: nextSrvNum + srvIdxOffset,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+
+              const logRef = doc(collection(db, "servicios", srvRef.id, "historial"));
+              batch.set(logRef, {
+                fecha: new Date(),
+                usuarioId: profile?.uid || "importador",
+                usuarioNombre: profile?.nombre || "Importador CSV",
+                descripcion: "Servicio creado mediante importación masiva de CSV",
+                detalles: `Estado inicial: ${row.serviceData.estado}`
+              });
+
+              srvIdxOffset++;
+            }
+          }
+        }
+
+        await batch.commit();
+        currentProcessed += chunk.length;
+        setImportProgress(currentProcessed);
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+
+      setImportSuccessMsg(`Se han importado exitosamente ${mappedRows.length} órdenes de servicio.`);
+      setCsvFile(null);
+      setParsedRowsPreview(null);
+    } catch (error) {
+      console.error("Error importando datos desde CSV:", error);
+      setImportErrorMsg("Hubo un error durante la importación.");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // Bulk Delete States
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState(0);
+  const [deleteSuccessMsg, setDeleteSuccessMsg] = useState<string | null>(null);
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+
 
 
   const processDeleteAllClientes = async () => {
