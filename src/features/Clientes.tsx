@@ -26,7 +26,8 @@ import {
   Upload,
   ImageIcon,
   Plus,
-  MessageSquare
+  MessageSquare,
+  ChevronLeft
 } from "lucide-react";
 
 const getWhatsAppUrl = (phone?: string) => {
@@ -43,6 +44,13 @@ export default function Clientes() {
   const { navigate, selectedId } = useNavigation();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [clienteEquipos, setClienteEquipos] = useState<Equipo[]>([]);
   const [clienteServicios, setClienteServicios] = useState<Servicio[]>([]);
@@ -903,6 +911,9 @@ export default function Clientes() {
     return idMatches || phoneMatches || addressMatches;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredClientes.length / itemsPerPage));
+  const paginatedClientes = filteredClientes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const canWrite = profile?.rol === "superadmin" || profile?.rol === "logistica";
 
   if (loading && clientes.length === 0) {
@@ -1762,7 +1773,7 @@ export default function Clientes() {
             No se encontraron servicios.
           </div>
         ) : (
-          filteredClientes.map((c) => (
+          paginatedClientes.map((c) => (
             <div
               key={c.id}
               onClick={() => handleStartEdit(c)}
@@ -1841,6 +1852,34 @@ export default function Clientes() {
           ))
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {filteredClientes.length > 0 && (
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-gray-850/40 p-4 border border-slate-150 dark:border-gray-850 rounded-2xl select-none">
+          <span className="text-xs font-semibold text-slate-500 dark:text-gray-400">
+            Mostrando <span className="font-extrabold text-slate-700 dark:text-white">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredClientes.length)}</span> - <span className="font-extrabold text-slate-700 dark:text-white">{Math.min(currentPage * itemsPerPage, filteredClientes.length)}</span> de <span className="font-extrabold text-slate-700 dark:text-white">{filteredClientes.length}</span> clientes
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="inline-flex items-center justify-center w-9 h-9 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 text-slate-700 dark:text-gray-300 rounded-xl transition-all hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-extrabold text-slate-700 dark:text-white">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="inline-flex items-center justify-center w-9 h-9 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 text-slate-700 dark:text-gray-300 rounded-xl transition-all hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Slide Modal for Create / Edit */}
       {isFormOpen && (

@@ -26,7 +26,8 @@ import {
   Handshake,
   XCircle,
   MessageSquare,
-  Trash2
+  Trash2,
+  ChevronLeft
 } from "lucide-react";
 
 const getEstadoBadgeClass = (estado: string) => {
@@ -90,6 +91,14 @@ export default function Servicios() {
   const [activeTab, setActiveTab] = useState<"recibidos" | "espera" | "aceptados" | "rechazados" | "terminados" | "todos">("recibidos");
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchTerm]);
 
   // Form states for the currently expanded service
   const [formNotasInternas, setFormNotasInternas] = useState("");
@@ -188,6 +197,8 @@ export default function Servicios() {
   };
 
   const filteredList = getFilteredList();
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / itemsPerPage));
+  const paginatedList = filteredList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Expand or collapse card, loading existing fields into state
   const handleToggleExpand = (srv: Servicio) => {
@@ -492,7 +503,7 @@ export default function Servicios() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredList.map((srv) => {
+          {paginatedList.map((srv) => {
             const client = clientMap.get(srv.clienteId);
             const equipo = equipoMap.get(srv.equipoId);
             const isExpanded = expandedId === srv.id;
@@ -563,6 +574,34 @@ export default function Servicios() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {filteredList.length > 0 && (
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-gray-850/40 p-4 border border-slate-150 dark:border-gray-850 rounded-2xl select-none">
+          <span className="text-xs font-semibold text-slate-500 dark:text-gray-400">
+            Mostrando <span className="font-extrabold text-slate-700 dark:text-white">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredList.length)}</span> - <span className="font-extrabold text-slate-700 dark:text-white">{Math.min(currentPage * itemsPerPage, filteredList.length)}</span> de <span className="font-extrabold text-slate-700 dark:text-white">{filteredList.length}</span> servicios
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="inline-flex items-center justify-center w-9 h-9 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 text-slate-700 dark:text-gray-300 rounded-xl transition-all hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-extrabold text-slate-700 dark:text-white">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="inline-flex items-center justify-center w-9 h-9 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 text-slate-700 dark:text-gray-300 rounded-xl transition-all hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>
