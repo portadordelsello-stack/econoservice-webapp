@@ -159,8 +159,10 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
     if (serv.citaEntrega) {
       try {
         const dt = serv.citaEntrega instanceof Date ? serv.citaEntrega : (serv.citaEntrega as any).toDate();
-        const isoDate = dt.toISOString().slice(0, 10);
-        setScheduleDate(isoDate);
+        const yyyy = dt.getFullYear();
+        const mm = String(dt.getMonth() + 1).padStart(2, '0');
+        const dd = String(dt.getDate()).padStart(2, '0');
+        setScheduleDate(`${yyyy}-${mm}-${dd}`);
       } catch { setScheduleDate(""); }
     } else {
       setScheduleDate("");
@@ -178,8 +180,11 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
         horaEntregaDesde: scheduleHoraDesde,
         horaEntregaHasta: scheduleHoraHasta
       };
+      let resolvedDate: Date | null = null;
       if (scheduleDate) {
-        updateData.citaEntrega = new Date(scheduleDate + "T12:00:00");
+        const [year, month, day] = scheduleDate.split("-").map(Number);
+        resolvedDate = new Date(year, month - 1, day, 12, 0, 0);
+        updateData.citaEntrega = resolvedDate;
       }
       await ServiciosService.update(
         scheduleModalService.id,
@@ -191,7 +196,7 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
       // Refresh card data
       setActiveServices(prev => prev.map(s =>
         s.id === scheduleModalService.id
-          ? { ...s, citaEntrega: scheduleDate ? new Date(scheduleDate + "T12:00:00") as any : s.citaEntrega, horaEntregaDesde: scheduleHoraDesde, horaEntregaHasta: scheduleHoraHasta }
+          ? { ...s, citaEntrega: resolvedDate ? resolvedDate as any : s.citaEntrega, horaEntregaDesde: scheduleHoraDesde, horaEntregaHasta: scheduleHoraHasta }
           : s
       ));
       setScheduleModalService(null);

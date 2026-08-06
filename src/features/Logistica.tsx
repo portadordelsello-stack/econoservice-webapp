@@ -367,10 +367,16 @@ export default function Logistica() {
       const userUid = profile?.uid || user?.uid || "logistica";
       const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Logística";
 
+      let resolvedDate: Date | null = null;
+      if (deliveryCita) {
+        const [year, month, day] = deliveryCita.split("-").map(Number);
+        resolvedDate = new Date(year, month - 1, day, 12, 0, 0);
+      }
+
       await ServiciosService.update(
         srvId,
         {
-          citaEntrega: deliveryCita ? new Date(deliveryCita) : null,
+          citaEntrega: resolvedDate,
           horaEntregaDesde: deliveryHoraDesde,
           horaEntregaHasta: deliveryHoraHasta,
           infoLogistica: deliveryInfo
@@ -1946,7 +1952,10 @@ export default function Logistica() {
                         if (srv.citaEntrega) {
                           try {
                             const dt = srv.citaEntrega instanceof Date ? srv.citaEntrega : (srv.citaEntrega as any).toDate();
-                            setDeliveryCita(dt.toISOString().slice(0, 10));
+                            const yyyy = dt.getFullYear();
+                            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+                            const dd = String(dt.getDate()).padStart(2, '0');
+                            setDeliveryCita(`${yyyy}-${mm}-${dd}`);
                           } catch { setDeliveryCita(""); }
                         } else { setDeliveryCita(""); }
                         setDeliveryHoraDesde(srv.horaEntregaDesde || "");
