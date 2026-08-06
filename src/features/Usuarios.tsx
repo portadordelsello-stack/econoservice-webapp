@@ -375,7 +375,7 @@ export default function Usuarios() {
             return isNaN(num) ? undefined : num;
           };
 
-          // 1. DATOS DEL CLIENTE
+          // 1 & 3. DATOS DEL CLIENTE Y CONTACTO (Domicilio de Retiro + Contacto)
           const telCel = row.telCel || row.celular || row.telefono || "";
           const nombreApellido = (
             row.nombreApellido || row.nombre || row.cliente || ""
@@ -387,7 +387,7 @@ export default function Usuarios() {
             telCel:     telCel         || "",
             telCelBis:  row.telCelBis  || "",
             telCelOtro: row.telCelOtro || "",
-            localidad:  row.localidad  || row.ciudad || "",
+            localidad:  row.ciudad     || row.localidad || "",
             barrio:     row.barrio     || "",
             zona:       row.zona       || "",
             calle:      row.calle      || row.direccion || "",
@@ -395,7 +395,7 @@ export default function Usuarios() {
             piso:       row.piso       || "",
             depto:      row.depto      || row.departamento || "",
             clienteProblematico: parseBool(row.clienteProblematico, false),
-            observaciones: row.observacionesCliente || row.observaciones || ""
+            observaciones: row.observaciones || row.observacionesCliente || ""
           };
 
           // 2. DATOS DEL EQUIPO
@@ -414,9 +414,15 @@ export default function Usuarios() {
             serie:        serie
           } : null;
 
-          // 3. CICLO DE VIDA COMPLETO DE LA ÓRDEN DE SERVICIO
-          const desperfectoUsuario = row.desperfectoUsuario || row.desperfecto || "";
-          const estadoRaw = (row.estado || row.estadoServicio || "RECIBIDO").toUpperCase();
+          // 2 & 3. RETIRO Y LOGÍSTICA
+          let fechaRetiroStr = row.fechaRetiro?.trim() || "";
+          if (fechaRetiroStr && (row.horaRetiroDesde || row.horaRetiroHasta)) {
+            const desde = row.horaRetiroDesde?.trim() || "09:00";
+            const hasta = row.horaRetiroHasta?.trim() || "12:00";
+            if (!fechaRetiroStr.includes("Tde")) {
+              fechaRetiroStr = `${fechaRetiroStr}Tde ${desde} hasta ${hasta}`;
+            }
+          }
 
           const nsPartes = [
             parseBool(row.ns1) ? "NS1" : "",
@@ -425,12 +431,15 @@ export default function Usuarios() {
           ].filter(Boolean).join(", ");
 
           const infoLogistica = row.infoLogistica || [
-            row.fechaRetiro?.trim() ? `Retiro acordado: ${row.fechaRetiro.trim()}` : "",
-            row.notasRetiro?.trim() ? `Notas retiro: ${row.notasRetiro.trim()}`    : "",
-            nsPartes               ? `Config: ${nsPartes}`                          : ""
+            fechaRetiroStr                     ? `Retiro acordado: ${fechaRetiroStr}` : "",
+            row.notasRetiro?.trim()             ? `Notas retiro: ${row.notasRetiro.trim()}` : "",
+            nsPartes                           ? `Config: ${nsPartes}` : ""
           ].filter(Boolean).join(" | ");
 
-          // Fechas opcionales
+          // 4. ESTADO DEL SERVICIO EN TALLER Y LOGÍSTICA
+          const desperfectoUsuario = row.desperfectoUsuario || row.desperfecto || "";
+          const estadoRaw = (row.estado || row.estadoServicio || "RECIBIDO").toUpperCase();
+
           let citaEntregaVal = undefined;
           if (row.citaEntrega || row.fechaEntrega) {
             try {
