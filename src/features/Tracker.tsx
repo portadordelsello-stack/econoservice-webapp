@@ -1020,16 +1020,6 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                       {/* Action buttons — responsive row */}
                       <div className="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-800">
                         <div className="flex flex-wrap items-center gap-2">
-                          {/* Schedule delivery date */}
-                          <button
-                            onClick={(e) => openScheduleModal(serv, e)}
-                            className="px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900/40 rounded-lg flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
-                            title="Acordar fecha y horario de entrega"
-                          >
-                            <CalendarClock className="w-3.5 h-3.5" />
-                            <span>Fecha Entrega</span>
-                          </button>
-
                           {/* Copy tracking link */}
                           <button
                             onClick={(e) => {
