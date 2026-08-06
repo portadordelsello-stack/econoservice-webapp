@@ -2123,6 +2123,39 @@ export default function Logistica() {
                 )}
               </div>
 
+              {/* Payment Details Section */}
+              {(srv.metodoPago || srv.montoEfectivo || srv.montoTransferencia) && (
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-slate-150 dark:border-gray-800 p-5 sm:p-6 shadow-xs space-y-4 animate-scale-up">
+                  <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-450 border-b border-slate-100 dark:border-gray-800 pb-3 flex items-center gap-1.5">
+                    <ClipboardList className="w-4 h-4 text-emerald-500" />
+                    Detalle de Pago Cobrado
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1">Método de Pago</span>
+                      <span className="text-sm font-extrabold text-slate-800 dark:text-white uppercase">
+                        {srv.metodoPago || "No especificado"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1">Monto Efectivo</span>
+                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                        {srv.montoEfectivo ? `$${srv.montoEfectivo.toLocaleString("es-AR")}` : "$0"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1">Monto Transferencia</span>
+                      <span className="text-sm font-bold text-indigo-650 dark:text-indigo-400">
+                        {srv.montoTransferencia ? `$${srv.montoTransferencia.toLocaleString("es-AR")}` : "$0"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         );
