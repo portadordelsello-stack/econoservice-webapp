@@ -94,7 +94,7 @@ export default function Servicios() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     setCurrentPage(1);

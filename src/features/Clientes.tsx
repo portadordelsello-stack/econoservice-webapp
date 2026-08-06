@@ -45,7 +45,7 @@ export default function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     setCurrentPage(1);
