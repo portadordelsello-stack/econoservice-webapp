@@ -114,6 +114,17 @@ async function geocodeAddress(calle: string, numero: string, localidad: string):
   return null;
 }
 
+const CARD_BORDER_COLORS = [
+  "border-l-4 border-l-indigo-500 dark:border-l-indigo-400",
+  "border-l-4 border-l-emerald-500 dark:border-l-emerald-400",
+  "border-l-4 border-l-amber-500 dark:border-l-amber-400",
+  "border-l-4 border-l-rose-500 dark:border-l-rose-400",
+  "border-l-4 border-l-violet-500 dark:border-l-violet-400",
+  "border-l-4 border-l-cyan-500 dark:border-l-cyan-400",
+  "border-l-4 border-l-teal-500 dark:border-l-teal-400",
+  "border-l-4 border-l-pink-500 dark:border-l-pink-400"
+];
+
 export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { profile } = useAuth();
   const leafletLoaded = useLeaflet();
@@ -945,16 +956,17 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
               <p className="text-xs text-gray-400 text-center py-2">No hay repartos pendientes.</p>
             ) : (
               <div className="space-y-3.5 max-h-[350px] overflow-y-auto pr-1">
-                {activeServices.map((serv) => {
+                {activeServices.map((serv, index) => {
                   const isCurrent = selectedService?.id === serv.id;
+                  const borderStrip = CARD_BORDER_COLORS[index % CARD_BORDER_COLORS.length];
                   return (
                     <div 
                       key={serv.id}
                       onClick={() => setSelectedService(serv)}
-                      className={`p-3.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                      className={`p-3.5 rounded-xl border text-xs cursor-pointer transition-all ${borderStrip} ${
                         isCurrent
                           ? "border-amber-500/40 bg-amber-500/5 dark:bg-amber-950/10"
-                          : "border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-750 bg-gray-50/50 dark:bg-gray-850/50"
+                          : "border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-750 bg-gray-50/50 dark:bg-gray-855/50"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1.5">
