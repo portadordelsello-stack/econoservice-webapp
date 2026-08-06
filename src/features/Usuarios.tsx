@@ -362,75 +362,98 @@ export default function Usuarios() {
         }
 
         const mapCsvRow = (row: any) => {
-          // Client fields
+          // ------ DATOS DEL CLIENTE ------
+          const telCel = row.telCel || row.celular || row.telefono || "";
+          // Si no viene nombre, el sistema genera "Cel: <número>" igual que el formulario principal
+          const nombreApellido = (
+            row.nombreApellido || row.nombre || row.cliente || ""
+          ).trim() || (telCel ? `Cel: ${telCel}` : "Cliente S/N");
+
           const clientData = {
-            nombreApellido: row.nombreApellido || row.nombre || row.cliente || "Sin Nombre",
-            telFijo: row.telFijo || row.telefonoFijo || "",
-            telCel: row.telCel || row.celular || row.telefono || "",
-            telCelBis: row.telCelBis || "",
+            nombreApellido,
+            telFijo:    row.telFijo    || "",
+            telCel:     telCel         || "",
+            telCelBis:  row.telCelBis  || "",
             telCelOtro: row.telCelOtro || "",
-            localidad: row.localidad || row.ciudad || "",
-            barrio: row.barrio || "",
-            zona: row.zona || "",
-            calle: row.calle || row.direccion || "",
-            numero: row.numero || "",
-            piso: row.piso || "",
-            depto: row.depto || row.departamento || "",
-            clienteProblematico: row.clienteProblematico === "true" || row.clienteProblematico === "SI" || row.clienteProblematico === "1" || false,
+            localidad:  row.localidad  || row.ciudad || "",
+            barrio:     row.barrio     || "",
+            zona:       row.zona       || "",
+            calle:      row.calle      || row.direccion || "",
+            numero:     row.numero     || "",
+            piso:       row.piso       || "",
+            depto:      row.depto      || row.departamento || "",
+            clienteProblematico:
+              row.clienteProblematico === "true" ||
+              row.clienteProblematico === "SI"   ||
+              row.clienteProblematico === "1"    ||
+              false,
             observaciones: row.observaciones || ""
           };
 
-          // Equipment fields
+          // ------ DATOS DEL EQUIPO ------
           const aparato = row.aparato || row.tipo || row.tipoEquipo || "";
-          const marca = row.marca || "";
-          const modelo = row.modelo || "";
-          const observationsEquipo = row.observacionesEquipo || "";
-          const serie = row.serie || row.numeroSerie || "";
+          const marca   = row.marca   || "";
+          const modelo  = row.modelo  || "";
+          const serie   = row.serie   || row.numeroSerie || "";
+          const observacionesEquipo = row.observacionesEquipo || "";
 
           const hasEquipment = !!(aparato || marca || modelo);
           const equipmentData = hasEquipment ? {
-            tipo: aparato || "Lavarropas",
-            marca: marca || "Genérico",
-            modelo: modelo || "Genérico",
-            observaciones: observationsEquipo || "",
-            serie: serie || ""
+            tipo:         aparato || "Lavarropas",
+            marca:        marca   || "Genérico",
+            modelo:       modelo  || "Genérico",
+            observaciones:observacionesEquipo,
+            serie:        serie
           } : null;
 
+          // ------ DATOS DEL SERVICIO ------
           const desperfectoUsuario = row.desperfectoUsuario || row.desperfecto || "";
-          const estado = (row.estado || row.estadoServicio || "RECIBIDO").toUpperCase();
-          const infoLogistica = row.infoLogistica || "";
+          const estadoRaw = (row.estado || row.estadoServicio || "RECIBIDO").toUpperCase();
           const presupuestoVal = row.presupuesto ? parseFloat(row.presupuesto) : undefined;
 
-          const hasService = hasEquipment || !!(desperfectoUsuario || estado || infoLogistica);
+          // Construir infoLogistica igual que el formulario principal:
+          // "Retiro acordado: <fechaRetiro> | Notas retiro: <notasRetiro> | Config: NS1, NS2"
+          const nsPartes = [
+            row.ns1 === "SI" || row.ns1 === "true" || row.ns1 === "1" ? "NS1" : "",
+            row.ns2 === "SI" || row.ns2 === "true" || row.ns2 === "1" ? "NS2" : "",
+            row.ns3 === "SI" || row.ns3 === "true" || row.ns3 === "1" ? "NS3" : ""
+          ].filter(Boolean).join(", ");
+
+          const infoLogistica = [
+            row.fechaRetiro?.trim() ? `Retiro acordado: ${row.fechaRetiro.trim()}` : "",
+            row.notasRetiro?.trim() ? `Notas retiro: ${row.notasRetiro.trim()}`    : "",
+            nsPartes               ? `Config: ${nsPartes}`                          : ""
+          ].filter(Boolean).join(" | ");
+
+          const hasService = hasEquipment || !!(desperfectoUsuario || infoLogistica);
           const serviceData = hasService ? {
-            aparato: aparato || "Lavarropas",
-            marcaModelo: `${marca} ${modelo}`.trim() || "Genérico",
-            desperfectoUsuario: desperfectoUsuario || "No especificado",
+            aparato:             aparato || "Lavarropas",
+            marcaModelo:         `${marca} ${modelo}`.trim() || "Genérico",
+            desperfectoUsuario:  desperfectoUsuario || "No especificado",
             serviciosRequeridos: row.serviciosRequeridos || "",
             serviciosConvenidos: row.serviciosConvenidos || "",
-            diagnostico: row.diagnostico || "",
-            presupuesto: isNaN(presupuestoVal as any) ? undefined : presupuestoVal,
-            estado: ["RECIBIDO", "DIAGNOSTICO", "PENDIENTE_APROBACION", "EN_REPARACION", "LISTO_PARA_ENTREGA", "ENTREGA_EN_PROGRESO", "ENTREGADO", "CANCELADO", "EN_ESPERA", "ACEPTADO", "RECHAZADO"].includes(estado) ? estado : "RECIBIDO",
-            notasInternas: row.notasInternas || "",
-            infoLogistica: infoLogistica || "",
-            acepta: false,
+            diagnostico:         row.diagnostico         || "",
+            presupuesto:         isNaN(presupuestoVal as any) ? undefined : presupuestoVal,
+            estado: ["RECIBIDO","DIAGNOSTICO","PENDIENTE_APROBACION","EN_REPARACION",
+                     "LISTO_PARA_ENTREGA","ENTREGA_EN_PROGRESO","ENTREGADO",
+                     "CANCELADO","EN_ESPERA","ACEPTADO","RECHAZADO"].includes(estadoRaw)
+                    ? estadoRaw : "RECIBIDO",
+            notasInternas:   row.notasInternas || "",
+            infoLogistica:   infoLogistica,
+            acepta:          false,
             rechazaDevolver: false,
-            garantia: false,
+            garantia:        false,
             esReclamoGarantia: false,
-            ingresoTaller: true,
-            pasaStock: false,
-            entregado: false,
-            terminado: false,
-            factura: false,
-            contado: false,
-            fotosDrive: []
+            ingresoTaller:   true,
+            pasaStock:       false,
+            entregado:       false,
+            terminado:       false,
+            factura:         false,
+            contado:         false,
+            fotosDrive:      []
           } : null;
 
-          return {
-            clientData,
-            equipmentData,
-            serviceData
-          };
+          return { clientData, equipmentData, serviceData };
         };
 
         const parsedRows = rows.map(mapCsvRow);
@@ -1909,9 +1932,21 @@ export default function Usuarios() {
                   <span className="font-bold text-gray-800 dark:text-gray-200 block">Formato esperado del CSV:</span>
                   <a 
                     href={`data:text/csv;charset=utf-8,${encodeURIComponent(
-                      "nombreApellido,telFijo,telCel,telCelBis,telCelOtro,calle,numero,piso,depto,localidad,barrio,zona,clienteProblematico,observaciones,aparato,marca,modelo,serie,observacionesEquipo,desperfectoUsuario,serviciosRequeridos,serviciosConvenidos,diagnostico,presupuesto,estado,notasInternas,infoLogistica\n" +
-                      "Juan Perez,4221122,3424123456,,,San Martin,1234,1,A,Santa Fe,Centro,ZONA_A,NO,Llamar antes de ir,Lavarropas,Dream,Next 8.12,SN123456,Tapa floja,No desagota,Revisar bomba,Cambio de bomba,Bomba quemada,45000,RECIBIDO,Cliente conforme,Retiro acordado: 2026-08-07Tde 10:00 hasta 12:00\n" +
-                      "Maria Gomez,,3425987654,,,Rivadavia,456,,,Santo Tome,Las Vegas,ZONA_B,SI,No atiende el timbre,Lavavajillas,Whirlpool,WLF12,SN987654,Bisagra rota,Puerta no traba,Cambiar resorte,Cambio de resorte,Resorte roto,32000,DIAGNOSTICO,Esperando repuesto,"
+                      // Cabeceras — igual que los campos del formulario actual
+                      "telCel,telFijo,telCelBis,calle,numero,localidad,barrio,depto,clienteProblematico,observaciones," +
+                      "aparato,marca,modelo,serie,observacionesEquipo," +
+                      "desperfectoUsuario,fechaRetiro,notasRetiro,ns1,ns2,ns3," +
+                      "serviciosRequeridos,serviciosConvenidos,diagnostico,presupuesto,estado,notasInternas\n" +
+                      // Fila ejemplo 1 (sin nombre — se genera automáticamente como "Cel: 3424123456")
+                      "3424123456,4221122,,San Martin,1234,Santa Fe,Centro,,NO,Llamar antes de ir," +
+                      "Lavarropas,Dream,Next 8.12,SN123456,Tapa floja," +
+                      "No desagota,2026-08-07Tde 10:00 hasta 12:00,Dejar en conserjería,SI,NO,SI," +
+                      "Revisar bomba,Cambio de bomba,Bomba quemada,45000,RECIBIDO,Cliente conforme\n" +
+                      // Fila ejemplo 2
+                      "3425987654,,,Rivadavia,456,Santo Tome,Las Vegas,,SI,No atiende timbre," +
+                      "Lavavajillas,Whirlpool,WLF12,,Bisagra rota," +
+                      "Puerta no traba,2026-08-08Tde 14:00 hasta 16:00,,NO,SI,NO," +
+                      "Cambiar resorte,Cambio de resorte,Resorte roto,32000,DIAGNOSTICO,"
                     )}`}
                     download="plantilla_clientes_equipos_servicios.csv"
                     className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold underline decoration-indigo-600/30 underline-offset-2 flex items-center gap-1"
@@ -1919,7 +1954,9 @@ export default function Usuarios() {
                     Descargar CSV de Ejemplo
                   </a>
                 </div>
-                <p>El archivo CSV permite cargar datos de clientes, sus equipos y sus órdenes de servicio de forma simultánea. Los campos reconocidos son: <code>nombreApellido</code> (o <code>nombre</code>/<code>cliente</code>), <code>telFijo</code>, <code>telCel</code> (o <code>celular</code>), <code>telCelBis</code>, <code>telCelOtro</code>, <code>calle</code>, <code>numero</code>, <code>piso</code>, <code>depto</code>, <code>localidad</code>, <code>barrio</code>, <code>zona</code>, <code>clienteProblematico</code> (SI/NO o true/false), <code>observaciones</code>, <code>aparato</code>, <code>marca</code>, <code>modelo</code>, <code>serie</code>, <code>observacionesEquipo</code>, <code>desperfectoUsuario</code>, <code>serviciosRequeridos</code>, <code>serviciosConvenidos</code>, <code>diagnostico</code>, <code>presupuesto</code>, <code>estado</code> (RECIBIDO, DIAGNOSTICO, etc.), <code>notasInternas</code> e <code>infoLogistica</code>.</p>
+                <p>
+                  El CSV refleja exactamente los campos del formulario actual. <strong>Cliente:</strong> <code>telCel</code> (obligatorio — si no hay nombre, el sistema genera <em>"Cel: número"</em> automáticamente), <code>telFijo</code>, <code>telCelBis</code>, <code>calle</code>, <code>numero</code>, <code>localidad</code>, <code>barrio</code>, <code>depto</code>, <code>clienteProblematico</code> (SI/NO), <code>observaciones</code>. <strong>Equipo:</strong> <code>aparato</code>, <code>marca</code>, <code>modelo</code>, <code>serie</code>, <code>observacionesEquipo</code>. <strong>Servicio:</strong> <code>desperfectoUsuario</code>, <code>fechaRetiro</code> (formato <code>YYYY-MM-DDTde HH:MM hasta HH:MM</code>), <code>notasRetiro</code>, <code>ns1</code>/<code>ns2</code>/<code>ns3</code> (SI/NO — opciones logísticas), <code>serviciosRequeridos</code>, <code>serviciosConvenidos</code>, <code>diagnostico</code>, <code>presupuesto</code>, <code>estado</code> (RECIBIDO, DIAGNOSTICO, EN_REPARACION, etc.), <code>notasInternas</code>.
+                </p>
               </div>
             </div>
           </div>
