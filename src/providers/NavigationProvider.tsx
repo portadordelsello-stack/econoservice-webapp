@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 
 export type ViewType =
   | "clientes"
@@ -23,8 +23,9 @@ interface NavigationContextType {
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export function NavigationProvider({ children }: { children: React.ReactNode }) {
+  const skipHashSyncRef = useRef(false);
+
   const [currentView, setCurrentView] = useState<ViewType>(() => {
-    // Attempt hash recovery for better UX during dev reloads
     const hash = window.location.hash.replace("#", "");
     if (hash) {
       const [view, id] = hash.split("/");
@@ -48,13 +49,16 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     const handleHashChange = () => {
+      if (skipHashSyncRef.current) {
+        skipHashSyncRef.current = false;
+        return;
+      }
       const hash = window.location.hash.replace("#", "");
       if (hash) {
         const [view, id] = hash.split("/");
         if (isValidView(view)) {
           setCurrentView(view as ViewType);
           setSelectedId(id || null);
-          // Clear pre-loaded data on hash-driven navigation (browser back/forward)
           setNavigationData(null);
         }
       }
@@ -65,6 +69,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const navigate = (view: ViewType, id: string | null = null, data: Record<string, any> | null = null) => {
+    skipHashSyncRef.current = true;
     setCurrentView(view);
     setSelectedId(id);
     setNavigationData(data);

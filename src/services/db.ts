@@ -5,6 +5,7 @@ import {
   updateDoc, 
   deleteDoc, 
   getDoc, 
+  getDocFromCache,
   getDocs, 
   query, 
   where, 
@@ -141,6 +142,12 @@ export const ClientesService = {
   async getById(id: string): Promise<Cliente | null> {
     if (!id) return null;
     const docRef = doc(db, "clientes", id);
+    try {
+      const cacheSnap = await getDocFromCache(docRef);
+      if (cacheSnap.exists()) {
+        return { id: cacheSnap.id, ...cacheSnap.data() } as Cliente;
+      }
+    } catch (e) {}
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() } as Cliente;
@@ -274,6 +281,12 @@ export const EquiposService = {
   async getById(id: string): Promise<Equipo | null> {
     if (!id) return null;
     const docRef = doc(db, "equipos", id);
+    try {
+      const cacheSnap = await getDocFromCache(docRef);
+      if (cacheSnap.exists()) {
+        return { id: cacheSnap.id, ...cacheSnap.data() } as Equipo;
+      }
+    } catch (e) {}
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() } as Equipo;
@@ -325,6 +338,12 @@ export const ServiciosService = {
   async getById(id: string): Promise<Servicio | null> {
     if (!id) return null;
     const docRef = doc(db, "servicios", id);
+    try {
+      const cacheSnap = await getDocFromCache(docRef);
+      if (cacheSnap.exists()) {
+        return { id: cacheSnap.id, ...cacheSnap.data() } as Servicio;
+      }
+    } catch (e) {}
     const snap = await getDoc(docRef);
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() } as Servicio;
