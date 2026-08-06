@@ -869,8 +869,9 @@ export const NotificationsService = {
     userId: string,
     onUpdate: (notifications: AppNotification[]) => void
   ) {
+    const uniqueChannelId = `notifications-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const channel = supabase
-      .channel('notifications-changes')
+      .channel(uniqueChannelId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, async () => {
         const { data } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(50);
         if (data) {

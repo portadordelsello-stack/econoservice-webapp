@@ -1,5 +1,4 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { supabase } from "../lib/supabase";
 import { BrandingConfig } from "../types";
 
 export const DEFAULT_BRANDING: BrandingConfig = {
@@ -32,10 +31,8 @@ export const BrandingService = {
 
   async getConfig(): Promise<BrandingConfig> {
     try {
-      const docRef = doc(db, "config", "branding");
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
-        const data = snap.data();
+      const { data, error } = await supabase.from("config").select("*").eq("id", "branding").single();
+      if (data && !error) {
         const config: BrandingConfig = {
           logo: data.logo || DEFAULT_BRANDING.logo,
           titulo: data.titulo || DEFAULT_BRANDING.titulo,
@@ -44,14 +41,12 @@ export const BrandingService = {
         };
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify(config));
-        } catch (e) {
-          // ignore localStorage full
-        }
+        } catch (e) {}
         this.updateDocumentTitle(config.titulo);
         return config;
       }
     } catch (err) {
-      console.error("Error getting branding config from Firestore, falling back to cache:", err);
+      console.error("Error getting branding config from Supabase, falling back to cache:", err);
     }
     const fallback = this.getLocalConfig();
     this.updateDocumentTitle(fallback.titulo);
@@ -59,18 +54,19 @@ export const BrandingService = {
   },
 
   async setConfig(config: BrandingConfig): Promise<void> {
-    const docRef = doc(db, "config", "branding");
     const sanitized = {
+      id: "branding",
       logo: config.logo || "",
       titulo: config.titulo.trim() || DEFAULT_BRANDING.titulo,
       subtitulo: config.subtitulo.trim() || DEFAULT_BRANDING.subtitulo,
       badge: config.badge.trim() || DEFAULT_BRANDING.badge,
     };
-    await setDoc(docRef, sanitized, { merge: true });
+    const { error } = await supabase.from("config").upsert(sanitized);
+    if (error) throw error;
+
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify(sanitized));
     } catch (e) {}
     this.updateDocumentTitle(sanitized.titulo);
   }
 };
-
