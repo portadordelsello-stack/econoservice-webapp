@@ -793,7 +793,7 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                     Seleccionar Orden de Reparto Activa
                   </label>
                   <select
@@ -803,9 +803,9 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                       const found = activeServices.find(s => s.id === e.target.value);
                       setSelectedService(found || null);
                     }}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-750 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-600 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/60 border border-slate-200 dark:border-gray-750 rounded-xl text-sm sm:text-base font-extrabold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900 dark:text-white transition-all cursor-pointer shadow-xs"
                   >
-                    <option value="">-- Seleccionar Orden --</option>
+                    <option value="" className="font-bold text-slate-400">-- Seleccionar Orden --</option>
                     {activeServices.map(s => {
                       const client = clientsMap[s.clienteId];
                       const address = client ? [
@@ -814,7 +814,7 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                         client.localidad || ""
                       ].filter(Boolean).join(", ") : "Dirección no registrada";
                       return (
-                        <option key={s.id} value={s.id}>
+                        <option key={s.id} value={s.id} className="font-bold text-slate-900 dark:text-white">
                           Orden #{s.numeroServicio} - {address}
                         </option>
                       );
