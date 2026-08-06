@@ -839,12 +839,14 @@ export default function DetalleServicio() {
                 const rawPhone = cliente?.telCel || cliente?.telCelBis || cliente?.telCelOtro || cliente?.telFijo || "";
                 const cleanPhone = rawPhone.replace(/\D/g, "");
                 if (!cleanPhone) return null;
+                // Prepend Argentina country code if not already present
+                const intlPhone = cleanPhone.startsWith("54") ? cleanPhone : `54${cleanPhone}`;
                 return (
                   <a
-                    href={`https://wa.me/${cleanPhone}`}
+                    href={`https://wa.me/${intlPhone}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-550 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     <span>Escribirle al Cliente</span>
