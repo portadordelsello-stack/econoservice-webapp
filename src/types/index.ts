@@ -115,6 +115,9 @@ export interface Servicio {
   infoLogistica?: string;
   notasInternas?: string;
   estado: EstadoServicio;
+  montoEfectivo?: number;
+  montoTransferencia?: number;
+  metodoPago?: string;
   createdAt: any;
   updatedAt: any;
   createdBy: string;

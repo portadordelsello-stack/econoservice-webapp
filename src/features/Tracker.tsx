@@ -164,6 +164,23 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
   const [scheduleHoraHasta, setScheduleHoraHasta] = useState("");
   const [scheduleSaving, setScheduleSaving] = useState(false);
 
+  // Payment modal state
+  const [paymentModalService, setPaymentModalService] = useState<Servicio | null>(null);
+  const [payEfectivo, setPayEfectivo] = useState(false);
+  const [payTransferencia, setPayTransferencia] = useState(false);
+  const [montoEfectivo, setMontoEfectivo] = useState("");
+  const [montoTransferencia, setMontoTransferencia] = useState("");
+  const [paymentSaving, setPaymentSaving] = useState(false);
+
+  useEffect(() => {
+    if (paymentModalService) {
+      setPayEfectivo(false);
+      setPayTransferencia(false);
+      setMontoEfectivo("");
+      setMontoTransferencia("");
+    }
+  }, [paymentModalService]);
+
   const openScheduleModal = (serv: Servicio, e: React.MouseEvent) => {
     e.stopPropagation();
     // Pre-fill with existing values if any
@@ -671,42 +688,66 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
     }
   };
 
-  // Complete delivery: set status to ENTREGADO and stop tracking
-  const completeDelivery = async (service: Servicio) => {
-    if (!window.confirm(`¿Confirmar que el equipo de la Orden #${service.numeroServicio} fue entregado con éxito al cliente?`)) {
+  // Complete delivery: set status to ENTREGADO, register payment methods/amounts, and stop tracking
+  const handleConfirmDeliveryWithPayment = async () => {
+    if (!paymentModalService?.id) return;
+    
+    // Validation
+    if (!payEfectivo && !payTransferencia) {
+      alert("Por favor, selecciona al menos un método de pago.");
+      return;
+    }
+    if (payEfectivo && (!montoEfectivo || parseFloat(montoEfectivo) < 0)) {
+      alert("Por favor, ingresa un monto válido para efectivo.");
+      return;
+    }
+    if (payTransferencia && (!montoTransferencia || parseFloat(montoTransferencia) < 0)) {
+      alert("Por favor, ingresa un monto válido para transferencia.");
       return;
     }
 
-    if (selectedService?.id === service.id) {
+    setPaymentSaving(true);
+
+    if (selectedService?.id === paymentModalService.id) {
       await stopGpsTracking();
     }
 
     try {
+      const paymentMethods: string[] = [];
+      if (payEfectivo) paymentMethods.push("Efectivo");
+      if (payTransferencia) paymentMethods.push("Transferencia");
+
       await ServiciosService.update(
-        service.id!,
+        paymentModalService.id,
         { 
           estado: "ENTREGADO" as EstadoServicio,
           entregado: true,
-          citaEntrega: new Date().toISOString()
+          citaEntrega: new Date(),
+          metodoPago: paymentMethods.join(" + "),
+          montoEfectivo: payEfectivo ? parseFloat(montoEfectivo) : 0,
+          montoTransferencia: payTransferencia ? parseFloat(montoTransferencia) : 0
         },
         profile?.uid || "logistica",
         profile?.nombre || "Encargado de Logística",
-        "Equipo entregado satisfactoriamente por el transporte"
+        `Equipo entregado. Pago registrado: ${paymentMethods.join(" + ")} (Efectivo: $${montoEfectivo || 0}, Transferencia: $${montoTransferencia || 0})`
       );
       
       // Inactive the tracking document
-      await setDoc(doc(db, "tracking_envios", service.id!), {
+      await setDoc(doc(db, "tracking_envios", paymentModalService.id), {
         activo: false,
         actualizadoEn: new Date().toISOString()
       }, { merge: true });
 
-      alert("¡Entrega guardada con éxito!");
+      alert("¡Entrega y pago registrados con éxito!");
+      setPaymentModalService(null);
       setSelectedService(null);
       setClientData(null);
       loadServices();
     } catch (e) {
       console.error(e);
-      alert("Ocurrió un error al guardar la entrega.");
+      alert("Ocurrió un error al registrar la entrega.");
+    } finally {
+      setPaymentSaving(false);
     }
   };
 
@@ -924,7 +965,7 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            completeDelivery(selectedService);
+                            setPaymentModalService(selectedService);
                           }}
                           className="w-full py-2.5 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center gap-1.5 font-extrabold text-[11px] uppercase tracking-wider cursor-pointer transition-all shadow-md shadow-orange-500/10 active:scale-[0.98]"
                         >
@@ -1159,6 +1200,141 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                     <><span className="w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin inline-block" />Guardando...</>
                   ) : (
                     <><CalendarClock className="w-4 h-4" />Guardar Fecha de Entrega</>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Payment Modal */}
+          {paymentModalService && (
+            <div
+              className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
+              onClick={() => setPaymentModalService(null)}
+            >
+              {/* Backdrop */}
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+              {/* Sheet / Modal */}
+              <div
+                className="relative w-full sm:max-w-sm bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl shadow-2xl p-5 sm:p-6 space-y-5 animate-slide-up"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-5 h-5 text-orange-500" />
+                    <h3 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">
+                      Registrar Modo de Pago
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setPaymentModalService(null)}
+                    className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-505 dark:text-gray-400 transition-all cursor-pointer border border-transparent"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <p className="text-[11px] text-gray-405 dark:text-gray-400 -mt-2">
+                  Orden #{paymentModalService.numeroServicio} — Confirmar entrega completando el modo de pago del cliente.
+                </p>
+
+                {/* Checklist options */}
+                <div className="space-y-4 pt-1">
+                  {/* EFECTIVO */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={payEfectivo}
+                        onChange={(e) => {
+                          setPayEfectivo(e.target.checked);
+                          if (!e.target.checked) setMontoEfectivo("");
+                        }}
+                        className="w-4.5 h-4.5 text-indigo-650 border-slate-300 dark:border-gray-700 rounded focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">
+                        Efectivo
+                      </span>
+                    </label>
+
+                    {payEfectivo && (
+                      <div className="pl-7 animate-scale-up">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          Monto Efectivo ($)
+                        </label>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={montoEfectivo}
+                          onChange={(e) => setMontoEfectivo(e.target.value)}
+                          placeholder="Monto abonado en efectivo"
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-850 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* TRANSFERENCIA */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={payTransferencia}
+                        onChange={(e) => {
+                          setPayTransferencia(e.target.checked);
+                          if (!e.target.checked) setMontoTransferencia("");
+                        }}
+                        className="w-4.5 h-4.5 text-indigo-650 border-slate-300 dark:border-gray-700 rounded focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">
+                        Transferencia
+                      </span>
+                    </label>
+
+                    {payTransferencia && (
+                      <div className="pl-7 animate-scale-up">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          Monto Transferencia ($)
+                        </label>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={montoTransferencia}
+                          onChange={(e) => setMontoTransferencia(e.target.value)}
+                          placeholder="Monto abonado por transferencia"
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-850 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Validation Info */}
+                {(!payEfectivo && !payTransferencia) && (
+                  <p className="text-[10px] font-semibold text-rose-500 dark:text-rose-455 italic">
+                    * Debe seleccionar al menos un modo de pago para confirmar.
+                  </p>
+                )}
+
+                {/* Confirm Button */}
+                <button
+                  onClick={handleConfirmDeliveryWithPayment}
+                  disabled={
+                    paymentSaving || 
+                    (!payEfectivo && !payTransferencia) || 
+                    (payEfectivo && !montoEfectivo) || 
+                    (payTransferencia && !montoTransferencia)
+                  }
+                  className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-250 dark:disabled:bg-gray-800 disabled:text-gray-400 text-white font-bold rounded-xl text-sm transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 shadow-md shadow-orange-500/10 disabled:shadow-none"
+                >
+                  {paymentSaving ? (
+                    <><span className="w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin inline-block" />Guardando...</>
+                  ) : (
+                    <><Check className="w-4 h-4" />Confirmar Entrega</>
                   )}
                 </button>
               </div>
