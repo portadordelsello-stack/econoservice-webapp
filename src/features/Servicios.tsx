@@ -27,7 +27,9 @@ import {
   XCircle,
   MessageSquare,
   Trash2,
-  ChevronLeft
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react";
 
 const getEstadoBadgeClass = (estado: string) => {
@@ -114,15 +116,11 @@ export default function Servicios() {
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const srvList = searchTerm.trim() 
-        ? await ServiciosService.search(searchTerm)
-        : await ServiciosService.getAll(30);
-
-      const clList = searchTerm.trim()
-        ? await ClientesService.search(searchTerm)
-        : await ClientesService.getAll(30);
-
-      const eqList = await EquiposService.getAll();
+      const [srvList, clList, eqList] = await Promise.all([
+        ServiciosService.getAll(),
+        ClientesService.getAll(),
+        EquiposService.getAll()
+      ]);
       setServicios(srvList);
       setClientes(clList);
       setEquipos(eqList);
@@ -135,7 +133,7 @@ export default function Servicios() {
 
   useEffect(() => {
     loadAllData();
-  }, [searchTerm]);
+  }, []);
 
   // Map utilities for quick lookups
   const clientMap = new Map<string, Cliente>();
@@ -587,23 +585,41 @@ export default function Servicios() {
           <span className="text-xs font-semibold text-slate-500 dark:text-gray-400">
             Mostrando <span className="font-extrabold text-slate-700 dark:text-white">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredList.length)}</span> - <span className="font-extrabold text-slate-700 dark:text-white">{Math.min(currentPage * itemsPerPage, filteredList.length)}</span> de <span className="font-extrabold text-slate-700 dark:text-white">{filteredList.length}</span> servicios
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="inline-flex items-center justify-center w-9 h-9 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 text-slate-700 dark:text-gray-300 rounded-xl transition-all hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              title="Primera página"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
               className="inline-flex items-center justify-center w-9 h-9 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 text-slate-700 dark:text-gray-300 rounded-xl transition-all hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              title="Página anterior"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-extrabold text-slate-700 dark:text-white">
+            <span className="text-xs font-extrabold text-slate-700 dark:text-white px-2">
               Página {currentPage} de {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
               className="inline-flex items-center justify-center w-9 h-9 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 text-slate-700 dark:text-gray-300 rounded-xl transition-all hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              title="Página siguiente"
             >
               <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="inline-flex items-center justify-center w-9 h-9 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 text-slate-700 dark:text-gray-300 rounded-xl transition-all hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              title="Última página"
+            >
+              <ChevronsRight className="w-4 h-4" />
             </button>
           </div>
         </div>
