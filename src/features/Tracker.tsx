@@ -822,26 +822,119 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
                   </select>
                 </div>
 
-                {selectedService && (
-                  <div className="bg-gray-50 dark:bg-gray-850 p-3.5 rounded-xl text-xs space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Cliente:</span>
-                      <span className="font-bold text-gray-900 dark:text-white">{clientData?.nombreApellido || "Cargando..."}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Dirección:</span>
-                      <span className="font-semibold text-gray-900 dark:text-white truncate max-w-[200px]" title={`${clientData?.calle} ${clientData?.numero}, ${clientData?.localidad}`}>
-                        {clientData?.calle ? `${clientData?.calle} ${clientData?.numero || ""}, ${clientData?.localidad || ""}` : "No registrada"}
-                      </span>
-                    </div>
-                    {clientData?.telCel && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Celular:</span>
-                        <span className="font-semibold text-indigo-500 dark:text-indigo-400">{clientData.telCel}</span>
+                {selectedService && (() => {
+                  const idx = activeServices.findIndex(s => s.id === selectedService.id);
+                  const borderStrip = CARD_BORDER_COLORS[idx !== -1 ? idx % CARD_BORDER_COLORS.length : 0];
+                  
+                  let scheduleText = "";
+                  if (selectedService.citaEntrega) {
+                    const dt = selectedService.citaEntrega instanceof Date ? selectedService.citaEntrega : selectedService.citaEntrega.toDate();
+                    const dateStr = dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                    scheduleText = `${dateStr}`;
+                    if (selectedService.horaEntregaDesde || selectedService.horaEntregaHasta) {
+                      scheduleText += ` (${selectedService.horaEntregaDesde || "?"} - ${selectedService.horaEntregaHasta || "?"})`;
+                    }
+                  }
+
+                  const clientAddress = clientData 
+                    ? `${clientData.calle || ""} ${clientData.numero || ""}, ${clientData.localidad || "Santo Tomé"}`
+                    : "Cargando dirección...";
+
+                  return (
+                    <div className={`p-4 rounded-xl border text-xs bg-gray-50/50 dark:bg-gray-855/50 border-gray-100 dark:border-gray-800/80 ${borderStrip} space-y-3`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-gray-900 dark:text-white">
+                          Orden #{selectedService.numeroServicio}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          selectedService.estado === "ENTREGA_EN_PROGRESO"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                            : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300"
+                        }`}>
+                          {getEstadoLabel(selectedService.estado)}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                )}
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Cliente</span>
+                        <p className="font-bold text-sm text-slate-800 dark:text-white">
+                          {clientData?.nombreApellido || "Cargando..."}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Equipo</span>
+                        <p className="font-semibold text-gray-700 dark:text-gray-300">
+                          {selectedService.aparato} {selectedService.marcaModelo}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2 pt-2 border-t border-gray-150 dark:border-gray-800">
+                        <div className="flex items-start gap-2 text-slate-800 dark:text-slate-150" title={clientAddress}>
+                          <MapPin className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span className="text-[12px] sm:text-sm font-extrabold leading-tight tracking-tight">
+                            {clientAddress}
+                          </span>
+                        </div>
+                        
+                        {scheduleText && (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <span className="text-[12px] sm:text-sm font-black tracking-wide text-indigo-650 dark:text-indigo-400">
+                              {scheduleText}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="pt-3 border-t border-gray-150 dark:border-gray-800 space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          {/* Copy tracking link */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyToClipboard(selectedService.id!);
+                            }}
+                            className="flex-1 px-2.5 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
+                            title="Copiar Link de Seguimiento"
+                          >
+                            {copiedId === selectedService.id ? (
+                              <><Check className="w-3 h-3 text-emerald-500" />Copiado</>
+                            ) : (
+                              <><Copy className="w-3.5 h-3.5" />Link</>
+                            )}
+                          </button>
+
+                          {/* WhatsApp Client */}
+                          <a
+                            href={getWhatsAppLink(selectedService)}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 px-2.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
+                            title="Enviar aviso WhatsApp al cliente"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </a>
+                        </div>
+
+                        {/* Complete Delivery — full width orange button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            completeDelivery(selectedService);
+                          }}
+                          className="w-full py-2.5 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center gap-1.5 font-extrabold text-[11px] uppercase tracking-wider cursor-pointer transition-all shadow-md shadow-orange-500/10 active:scale-[0.98]"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>Marcar como Entregado</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Conditional view based on role */}
                 {isSuperadmin ? (
@@ -943,137 +1036,7 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
             )}
           </div>
 
-          {/* List of Deliveries in Progress */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-5 shadow-sm space-y-4">
-            <h2 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 pb-3">
-              <Truck className="w-4 h-4 text-indigo-500" />
-              Órdenes de Reparto ({activeServices.length})
-            </h2>
 
-            {loading ? (
-              <div className="text-center py-4 text-xs text-gray-400">Cargando repartos...</div>
-            ) : activeServices.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-2">No hay repartos pendientes.</p>
-            ) : (
-              <div className="space-y-3.5 max-h-[350px] overflow-y-auto pr-1">
-                {activeServices.map((serv, index) => {
-                  const isCurrent = selectedService?.id === serv.id;
-                  const borderStrip = CARD_BORDER_COLORS[index % CARD_BORDER_COLORS.length];
-                  return (
-                    <div 
-                      key={serv.id}
-                      onClick={() => setSelectedService(serv)}
-                      className={`p-3.5 rounded-xl border text-xs cursor-pointer transition-all ${borderStrip} ${
-                        isCurrent
-                          ? "border-amber-500/40 bg-amber-500/5 dark:bg-amber-950/10"
-                          : "border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-750 bg-gray-50/50 dark:bg-gray-855/50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="font-bold text-gray-900 dark:text-white">
-                          Orden #{serv.numeroServicio}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          serv.estado === "ENTREGA_EN_PROGRESO"
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
-                            : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300"
-                        }`}>
-                          {getEstadoLabel(serv.estado)}
-                        </span>
-                      </div>
-
-                      <p className="font-semibold text-gray-700 dark:text-gray-300">
-                        {serv.aparato} {serv.marcaModelo}
-                      </p>
-
-                      {(() => {
-                        const client = clientsMap[serv.clienteId];
-                        const addressStr = client && client.calle 
-                          ? `${client.calle} ${client.numero || ""}, ${client.localidad || "Santo Tomé"}`
-                          : "Falta ingresar dirección de entrega";
-                          
-                        let scheduleText = "";
-                        if (serv.citaEntrega) {
-                          const dt = serv.citaEntrega instanceof Date ? serv.citaEntrega : serv.citaEntrega.toDate();
-                          const dateStr = dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-                          scheduleText = `${dateStr}`;
-                          if (serv.horaEntregaDesde || serv.horaEntregaHasta) {
-                            scheduleText += ` (${serv.horaEntregaDesde || "?"} - ${serv.horaEntregaHasta || "?"})`;
-                          }
-                        }
-
-                        return (
-                          <div className="space-y-2 mt-2">
-                            <div className="flex items-start gap-2 text-slate-800 dark:text-slate-150" title={addressStr}>
-                              <MapPin className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                              <span className="text-[12px] sm:text-sm font-extrabold leading-tight tracking-tight">
-                                {addressStr}
-                              </span>
-                            </div>
-                            
-                            {scheduleText && (
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
-                                <span className="text-[12px] sm:text-sm font-black tracking-wide text-indigo-650 dark:text-indigo-400">
-                                  {scheduleText}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Action buttons — responsive row */}
-                      <div className="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2.5">
-                        <div className="flex items-center gap-2">
-                          {/* Copy tracking link */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              copyToClipboard(serv.id!);
-                            }}
-                            className="flex-1 px-2.5 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
-                            title="Copiar Link de Seguimiento"
-                          >
-                            {copiedId === serv.id ? (
-                              <><Check className="w-3 h-3 text-emerald-500" />Copiado</>
-                            ) : (
-                              <><Copy className="w-3.5 h-3.5" />Link</>
-                            )}
-                          </button>
-
-                          {/* WhatsApp Client */}
-                          <a
-                            href={getWhatsAppLink(serv)}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex-1 px-2.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
-                            title="Enviar aviso WhatsApp al cliente"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                            <span>WhatsApp</span>
-                          </a>
-                        </div>
-
-                        {/* Complete Delivery — full width orange button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            completeDelivery(serv);
-                          }}
-                          className="w-full py-2.5 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center gap-1.5 font-extrabold text-[11px] uppercase tracking-wider cursor-pointer transition-all shadow-md shadow-orange-500/10 active:scale-[0.98]"
-                        >
-                          <Check className="w-4 h-4" />
-                          <span>Marcar como Entregado</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
           {/* Delivery Scheduling Modal */}
           {scheduleModalService && (
