@@ -46,12 +46,13 @@ export default function Clientes() {
   const { navigate, selectedId } = useNavigation();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, selectedDate]);
 
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [clienteEquipos, setClienteEquipos] = useState<Equipo[]>([]);
@@ -938,6 +939,20 @@ export default function Clientes() {
 
   // Filter clients locally
   const filteredClientes = clientes.filter(c => {
+    if (selectedDate) {
+      if (!c.createdAt) return false;
+      try {
+        const date = new Date(c.createdAt);
+        if (isNaN(date.getTime())) return false;
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        const dd = String(date.getDate()).padStart(2, "0");
+        if (`${yyyy}-${mm}-${dd}` !== selectedDate) return false;
+      } catch {
+        return false;
+      }
+    }
+
     const term = searchTerm.toLowerCase().trim();
     if (!term) return true;
     
@@ -1811,15 +1826,40 @@ export default function Clientes() {
 
       {/* Search and Action Bar */}
       <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar servicio por dirección, ID o teléfono..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-          />
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+          {/* Search Input */}
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar servicio por dirección, ID o teléfono..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+            />
+          </div>
+
+          {/* Date Input */}
+          <div className="relative shrink-0 w-full sm:w-auto flex items-center">
+            <div className="relative flex items-center bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus-within:ring-2 focus-within:ring-indigo-600 transition-all w-full sm:w-auto select-none">
+              <Calendar className="w-4.5 h-4.5 text-gray-400 shrink-0 mr-2" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent text-sm font-semibold focus:outline-none border-none text-slate-700 dark:text-gray-200 w-[115px] cursor-pointer scheme-light dark:scheme-dark"
+              />
+              {selectedDate && (
+                <button
+                  onClick={() => setSelectedDate("")}
+                  className="ml-1.5 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-gray-700 text-slate-400 hover:text-slate-600 dark:hover:text-gray-250 transition-colors shrink-0"
+                  title="Limpiar fecha"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
