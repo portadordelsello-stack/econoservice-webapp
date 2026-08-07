@@ -513,6 +513,7 @@ export default function Servicios() {
             // Format address
             const addressStr = client ? [
               client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+              client.torre ? `Torre ${client.torre}` : "",
               client.piso ? `Piso ${client.piso}` : "",
               client.depto ? `Depto ${client.depto}` : "",
               client.barrio ? `Barrio ${client.barrio}` : "",

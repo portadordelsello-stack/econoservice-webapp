@@ -11,6 +11,7 @@ export const ClienteSchema = z.object({
   zona: z.string().optional().or(z.literal("")),
   calle: z.string().optional().or(z.literal("")),
   numero: z.string().optional().or(z.literal("")),
+  torre: z.string().optional().or(z.literal("")),
   piso: z.string().optional().or(z.literal("")),
   depto: z.string().optional().or(z.literal("")),
   clienteProblematico: z.boolean().default(false),

@@ -533,6 +533,7 @@ export default function DetalleServicio() {
   // Address formatting
   const addressStr = cliente ? [
     cliente.calle ? `${cliente.calle} ${cliente.numero || ""}`.trim() : "",
+    cliente.torre ? `Torre ${cliente.torre}` : "",
     cliente.piso ? `Piso ${cliente.piso}` : "",
     cliente.depto ? `Depto ${cliente.depto}` : "",
     cliente.barrio ? `Barrio ${cliente.barrio}` : "",

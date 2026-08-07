@@ -143,6 +143,7 @@ export default function Clientes() {
   const [formCiudad, setFormCiudad] = useState("");
   const [formDepto, setFormDepto] = useState("");
   const [formPiso, setFormPiso] = useState("");
+  const [formTorre, setFormTorre] = useState("");
   const [formMarca, setFormMarca] = useState("");
   const [formModelo, setFormModelo] = useState("");
   const [formFechaRetiro, setFormFechaRetiro] = useState("");
@@ -301,6 +302,7 @@ export default function Clientes() {
     setFormCiudad("");
     setFormDepto("");
     setFormPiso("");
+    setFormTorre("");
     setFormMarca("");
     setFormModelo("");
     setFormFechaRetiro("");
@@ -402,6 +404,7 @@ export default function Clientes() {
         localidad: formCiudad.trim() || "",
         depto: formDepto.trim() || "",
         piso: formPiso.trim() || "",
+        torre: formTorre.trim() || "",
         clienteProblematico: false,
         observaciones: formObservaciones.trim() || ""
       });
@@ -486,6 +489,7 @@ export default function Clientes() {
       setFormCiudad(c.localidad || "");
       setFormDepto(c.depto || "");
       setFormPiso(c.piso || "");
+      setFormTorre(c.torre || "");
       setFormObservaciones(c.observaciones || "");
 
       // Initialize associated equipment and service states to empty
@@ -647,6 +651,7 @@ export default function Clientes() {
         localidad: formCiudad.trim() || "",
         depto: formDepto.trim() || "",
         piso: formPiso.trim() || "",
+        torre: formTorre.trim() || "",
         observaciones: formObservaciones.trim() || ""
       });
 
@@ -797,6 +802,7 @@ export default function Clientes() {
       zona: "",
       calle: "",
       numero: "",
+      torre: "",
       piso: "",
       depto: "",
       clienteProblematico: false,
@@ -858,6 +864,7 @@ export default function Clientes() {
       zona: "",
       calle: "",
       numero: "",
+      torre: "",
       piso: "",
       depto: "",
       clienteProblematico: false,
@@ -879,6 +886,7 @@ export default function Clientes() {
       zona: cliente.zona || "",
       calle: cliente.calle || "",
       numero: cliente.numero || "",
+      torre: cliente.torre || "",
       piso: cliente.piso || "",
       depto: cliente.depto || "",
       clienteProblematico: cliente.clienteProblematico,
@@ -1116,7 +1124,7 @@ export default function Clientes() {
                 <MapPin className="w-4 h-4 text-indigo-500" />
                 1. Domicilio de Retiro
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                     Calle y Número
@@ -1138,6 +1146,18 @@ export default function Clientes() {
                     value={formCiudad}
                     onChange={(e) => setFormCiudad(e.target.value)}
                     placeholder="Ej. Córdoba"
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                    Torre
+                  </label>
+                  <input
+                    type="text"
+                    value={formTorre}
+                    onChange={(e) => setFormTorre(e.target.value)}
+                    placeholder="Ej. A o 1"
                     className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
                 </div>
@@ -1834,6 +1854,9 @@ export default function Clientes() {
                   <span className="font-bold text-gray-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     {[
                       c.calle ? `${c.calle} ${c.numero || ""}` : "",
+                      c.torre ? `Torre ${c.torre}` : "",
+                      c.piso ? `Piso ${c.piso}` : "",
+                      c.depto ? `Depto ${c.depto}` : "",
                       c.barrio ? `B° ${c.barrio}` : "",
                       c.localidad || ""
                     ].filter(Boolean).join(", ") || "Domicilio no registrado"}
@@ -2072,8 +2095,8 @@ export default function Clientes() {
               </div>
 
               {/* Address detail */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="col-span-2 md:col-span-3">
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                <div className="col-span-3 md:col-span-2">
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
                     Calle
                   </label>
@@ -2093,27 +2116,35 @@ export default function Clientes() {
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm"
                   />
                 </div>
-                <div className="flex gap-2">
-                  <div className="w-1/2">
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                      Piso
-                    </label>
-                    <input
-                      type="text"
-                      {...register("piso")}
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm"
-                    />
-                  </div>
-                  <div className="w-1/2">
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                      Depto
-                    </label>
-                    <input
-                      type="text"
-                      {...register("depto")}
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                    Torre
+                  </label>
+                  <input
+                    type="text"
+                    {...register("torre")}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                    Piso
+                  </label>
+                  <input
+                    type="text"
+                    {...register("piso")}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                    Depto
+                  </label>
+                  <input
+                    type="text"
+                    {...register("depto")}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm"
+                  />
                 </div>
               </div>
 

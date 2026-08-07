@@ -53,6 +53,7 @@ export interface Cliente {
   zona?: string;
   calle?: string;
   numero?: string;
+  torre?: string;
   piso?: string;
   depto?: string;
   clienteProblematico: boolean;

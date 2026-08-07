@@ -36,6 +36,7 @@ const mapToFrontendCliente = (c: any): Cliente => ({
   zona: c.zona || "",
   calle: c.calle || "",
   numero: c.numero || "",
+  torre: c.torre || "",
   piso: c.piso || "",
   depto: c.depto || "",
   clienteProblematico: !!c.cliente_problematico,
@@ -57,6 +58,7 @@ const mapToDbCliente = (c: Partial<Cliente>): any => {
   if (c.zona !== undefined) db.zona = c.zona;
   if (c.calle !== undefined) db.calle = c.calle;
   if (c.numero !== undefined) db.numero = c.numero;
+  if (c.torre !== undefined) db.torre = c.torre;
   if (c.piso !== undefined) db.piso = c.piso;
   if (c.depto !== undefined) db.depto = c.depto;
   if (c.clienteProblematico !== undefined) db.cliente_problematico = c.clienteProblematico;

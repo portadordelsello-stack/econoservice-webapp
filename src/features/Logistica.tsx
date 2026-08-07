@@ -616,6 +616,7 @@ export default function Logistica() {
 
                     const addressStr = [
                       client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+                      client.torre ? `Torre ${client.torre}` : "",
                       client.piso ? `Piso ${client.piso}` : "",
                       client.depto ? `Depto ${client.depto}` : "",
                       client.barrio ? `Barrio ${client.barrio}` : "",
@@ -1108,6 +1109,7 @@ export default function Logistica() {
                     const numero = client.numero || "";
                     const piso = client.piso || "";
                     const depto = client.depto || "";
+                    const torre = client.torre || "";
                     const localidad = client.localidad || "Santa Fe";
                     const horaDesde = srv.horaEntregaDesde || "";
                     const horaHasta = srv.horaEntregaHasta || "";
@@ -1145,6 +1147,7 @@ export default function Logistica() {
                                 <span class="dashed-field">${horaHasta}</span>
                               </span>
                               <span class="hora-group">
+                                ${torre ? `<span class="receipt-label">Torre</span><span class="dashed-field-sm">${torre}</span>` : ""}
                                 <span class="receipt-label">Piso</span>
                                 <span class="dashed-field-sm">${piso}</span>
                                 <span class="receipt-label">Dpto.</span>
@@ -1296,6 +1299,7 @@ export default function Logistica() {
                         const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
                         const clientAddress = [
                           client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+                          client.torre ? `Torre ${client.torre}` : "",
                           client.piso ? `Piso ${client.piso}` : "",
                           client.depto ? `Depto ${client.depto}` : "",
                           client.localidad ? `${client.localidad}` : ""
@@ -1422,9 +1426,9 @@ export default function Logistica() {
                             const client = clientMap.get(srv.clienteId);
                             if (!client) return null;
 
-                            const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
                             const clientAddress = [
                               client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+                              client.torre ? `Torre ${client.torre}` : "",
                               client.piso ? `Piso ${client.piso}` : "",
                               client.depto ? `Depto ${client.depto}` : "",
                               client.localidad ? `${client.localidad}` : ""
@@ -1566,6 +1570,7 @@ export default function Logistica() {
 
                         const clientAddress = [
                           client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+                          client.torre ? `Torre ${client.torre}` : "",
                           client.piso ? `Piso ${client.piso}` : "",
                           client.depto ? `Depto ${client.depto}` : "",
                           client.localidad ? `${client.localidad}` : ""
@@ -1806,6 +1811,7 @@ export default function Logistica() {
 
         const addressStr = [
           client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
+          client.torre ? `Torre ${client.torre}` : "",
           client.piso ? `Piso ${client.piso}` : "",
           client.depto ? `Depto ${client.depto}` : "",
           client.barrio ? `Barrio ${client.barrio}` : "",
