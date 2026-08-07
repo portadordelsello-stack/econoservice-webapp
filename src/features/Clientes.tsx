@@ -142,6 +142,7 @@ export default function Clientes() {
   const [formNumero, setFormNumero] = useState("");
   const [formCiudad, setFormCiudad] = useState("");
   const [formDepto, setFormDepto] = useState("");
+  const [formPiso, setFormPiso] = useState("");
   const [formMarca, setFormMarca] = useState("");
   const [formModelo, setFormModelo] = useState("");
   const [formFechaRetiro, setFormFechaRetiro] = useState("");
@@ -299,6 +300,7 @@ export default function Clientes() {
     setFormNumero("");
     setFormCiudad("");
     setFormDepto("");
+    setFormPiso("");
     setFormMarca("");
     setFormModelo("");
     setFormFechaRetiro("");
@@ -399,6 +401,7 @@ export default function Clientes() {
         numero,
         localidad: formCiudad.trim() || "",
         depto: formDepto.trim() || "",
+        piso: formPiso.trim() || "",
         clienteProblematico: false,
         observaciones: formObservaciones.trim() || ""
       });
@@ -482,6 +485,7 @@ export default function Clientes() {
       setFormNumero(c.numero || "");
       setFormCiudad(c.localidad || "");
       setFormDepto(c.depto || "");
+      setFormPiso(c.piso || "");
       setFormObservaciones(c.observaciones || "");
 
       // Initialize associated equipment and service states to empty
@@ -642,6 +646,7 @@ export default function Clientes() {
         numero,
         localidad: formCiudad.trim() || "",
         depto: formDepto.trim() || "",
+        piso: formPiso.trim() || "",
         observaciones: formObservaciones.trim() || ""
       });
 
@@ -1111,8 +1116,8 @@ export default function Clientes() {
                 <MapPin className="w-4 h-4 text-indigo-500" />
                 1. Domicilio de Retiro
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                     Calle y Número
                   </label>
@@ -1138,13 +1143,25 @@ export default function Clientes() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                    Dpto. / Piso / Of.
+                    Piso
+                  </label>
+                  <input
+                    type="text"
+                    value={formPiso}
+                    onChange={(e) => setFormPiso(e.target.value)}
+                    placeholder="Ej. 3"
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                    Dpto
                   </label>
                   <input
                     type="text"
                     value={formDepto}
                     onChange={(e) => setFormDepto(e.target.value)}
-                    placeholder="Ej. 2B o N/A"
+                    placeholder="Ej. B"
                     className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
                 </div>
