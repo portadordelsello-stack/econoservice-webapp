@@ -379,8 +379,6 @@ export default function Clientes() {
         }
       }
       
-      const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
-
       let calle = formCalle.trim();
       let numero = formNumero.trim();
       const numMatch = calle.match(/(.*?)\s+(\d+[\w\s/-]*)$/);
@@ -388,6 +386,10 @@ export default function Clientes() {
         calle = numMatch[1].trim();
         numero = numMatch[2].trim();
       }
+
+      const clientName = formNombreApellido.trim() || 
+        ((calle && numero) ? `${calle} ${numero}` : 
+        (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N"));
 
       // 1. Create client
       const clienteId = await ClientesService.create({
@@ -620,8 +622,6 @@ export default function Clientes() {
         });
       }
 
-      const clientName = formNombreApellido.trim() || (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N");
-
       let calle = formCalle.trim();
       let numero = formNumero.trim();
       const numMatch = calle.match(/(.*?)\s+(\d+[\w\s/-]*)$/);
@@ -629,6 +629,10 @@ export default function Clientes() {
         calle = numMatch[1].trim();
         numero = numMatch[2].trim();
       }
+
+      const clientName = formNombreApellido.trim() || 
+        ((calle && numero) ? `${calle} ${numero}` : 
+        (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N"));
 
       // 2. Update client details
       await ClientesService.update(editingId, {
@@ -882,7 +886,11 @@ export default function Clientes() {
     try {
       const finalData = { ...data };
       if (!finalData.nombreApellido || finalData.nombreApellido.trim() === "") {
-        finalData.nombreApellido = finalData.telCel?.trim() ? `Cel: ${finalData.telCel.trim()}` : "Cliente S/N";
+        if (finalData.calle?.trim() && finalData.numero?.trim()) {
+          finalData.nombreApellido = `${finalData.calle.trim()} ${finalData.numero.trim()}`;
+        } else {
+          finalData.nombreApellido = finalData.telCel?.trim() ? `Cel: ${finalData.telCel.trim()}` : "Cliente S/N";
+        }
       }
       if (editingCliente && editingCliente.id) {
         await ClientesService.update(editingCliente.id, finalData);
