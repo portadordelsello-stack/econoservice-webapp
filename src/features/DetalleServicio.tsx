@@ -118,9 +118,9 @@ export default function DetalleServicio() {
   const [editRepuestosComprar, setEditRepuestosComprar] = useState("");
   const [editRepuestosComprados, setEditRepuestosComprados] = useState("");
   
-  // Budget values
   const [editPresupuesto, setEditPresupuesto] = useState(0);
   const [editPresupuestoTexto, setEditPresupuestoTexto] = useState("");
+  const [editServiciosConvenidos, setEditServiciosConvenidos] = useState("");
   
   // Toggles
   const [editAcepta, setEditAcepta] = useState(false);
@@ -169,7 +169,8 @@ export default function DetalleServicio() {
       setEditRepuestosComprar(serv.repuestosComprar || "");
       setEditRepuestosComprados(serv.repuestosComprados || "");
       setEditPresupuesto(serv.presupuesto || 0);
-      setEditPresupuestoTexto(serv.presupuestoTexto || serv.serviciosConvenidos || "");
+      setEditPresupuestoTexto(serv.presupuestoTexto || "");
+      setEditServiciosConvenidos(serv.serviciosConvenidos || "");
       setEditAcepta(serv.acepta || false);
       setEditRechazaDevolver(serv.rechazaDevolver || false);
       setEditGarantia(serv.garantia || false);
@@ -341,7 +342,7 @@ export default function DetalleServicio() {
           repuestosComprados: editRepuestosComprados,
           presupuesto: Number(editPresupuesto) || 0,
           presupuestoTexto: editPresupuestoTexto,
-          serviciosConvenidos: editPresupuestoTexto,
+          serviciosConvenidos: editServiciosConvenidos,
           acepta: editAcepta,
           rechazaDevolver: editRechazaDevolver,
           garantia: editGarantia,
@@ -849,10 +850,24 @@ export default function DetalleServicio() {
                 Servicios Convenidos <span className="text-red-500">*</span>
               </label>
               <textarea
-                value={editPresupuestoTexto}
-                onChange={(e) => setEditPresupuestoTexto(e.target.value)}
+                value={editServiciosConvenidos}
+                onChange={(e) => setEditServiciosConvenidos(e.target.value)}
                 placeholder="Escriba los servicios convenidos con el cliente..."
                 rows={3}
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
+              />
+            </div>
+
+            {/* Presupuesto (Text-only) */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                Presupuesto
+              </label>
+              <input
+                type="text"
+                value={editPresupuestoTexto}
+                onChange={(e) => setEditPresupuestoTexto(e.target.value)}
+                placeholder="Ej. $45000, A convenir, Sin cargo..."
                 className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
               />
             </div>
