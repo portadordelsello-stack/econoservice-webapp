@@ -47,8 +47,31 @@ export default function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+  const [dateFilteredClientIds, setDateFilteredClientIds] = useState<string[] | null>(null);
+  const [loadingDateFilter, setLoadingDateFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    const fetchClientsForDate = async () => {
+      if (!selectedDate) {
+        setDateFilteredClientIds(null);
+        return;
+      }
+      setLoadingDateFilter(true);
+      try {
+        const ids = await ServiciosService.getClientIdsByFechaIngreso(selectedDate);
+        setDateFilteredClientIds(ids);
+      } catch (err) {
+        console.error("Error fetching client IDs for date:", err);
+        setDateFilteredClientIds([]);
+      } finally {
+        setLoadingDateFilter(false);
+      }
+    };
+    
+    fetchClientsForDate();
+  }, [selectedDate]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -988,17 +1011,7 @@ export default function Clientes() {
   // Filter clients locally
   const filteredClientes = clientes.filter(c => {
     if (selectedDate) {
-      if (!c.createdAt) return false;
-      try {
-        const date = new Date(c.createdAt);
-        if (isNaN(date.getTime())) return false;
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, "0");
-        const dd = String(date.getDate()).padStart(2, "0");
-        if (`${yyyy}-${mm}-${dd}` !== selectedDate) return false;
-      } catch {
-        return false;
-      }
+      if (!dateFilteredClientIds || !dateFilteredClientIds.includes(c.id!)) return false;
     }
 
     const term = searchTerm.toLowerCase().trim();
@@ -2134,7 +2147,7 @@ export default function Clientes() {
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="bg-transparent text-sm font-semibold focus:outline-none border-none text-slate-700 dark:text-gray-200 w-[115px] cursor-pointer scheme-light dark:scheme-dark"
               />
-              {selectedDate && (
+              {selectedDate && !loadingDateFilter && (
                 <button
                   onClick={() => setSelectedDate("")}
                   className="ml-1.5 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-gray-700 text-slate-400 hover:text-slate-600 dark:hover:text-gray-250 transition-colors shrink-0"
@@ -2142,6 +2155,9 @@ export default function Clientes() {
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
+              )}
+              {loadingDateFilter && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500 ml-1.5 shrink-0" />
               )}
             </div>
           </div>

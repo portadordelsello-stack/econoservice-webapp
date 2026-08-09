@@ -396,6 +396,16 @@ export const ServiciosService = {
     return (data || []).map(mapToFrontendServicio);
   },
 
+  async getClientIdsByFechaIngreso(dateStr: string): Promise<string[]> {
+    const { data, error } = await supabase
+      .from("servicios")
+      .select("cliente_id")
+      .gte("fecha_ingreso", `${dateStr}T00:00:00.000Z`)
+      .lte("fecha_ingreso", `${dateStr}T23:59:59.999Z`);
+    if (error) throw error;
+    return Array.from(new Set((data || []).map(d => d.cliente_id).filter(Boolean)));
+  },
+
   async search(term: string): Promise<Servicio[]> {
     const termClean = term.trim();
     if (!termClean) return this.getAll(10);
