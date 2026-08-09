@@ -46,11 +46,34 @@ export default function Clientes() {
   const { navigate, selectedId } = useNavigation();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<Cliente[] | null>(null);
+  const [loadingSearch, setLoadingSearch] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [dateFilteredClientIds, setDateFilteredClientIds] = useState<string[] | null>(null);
   const [loadingDateFilter, setLoadingDateFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Server-side search with debounce
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setLoadingSearch(true);
+      try {
+        const results = await ClientesService.search(searchTerm.trim());
+        setSearchResults(results);
+      } catch (err) {
+        console.error("Error searching clientes:", err);
+        setSearchResults([]);
+      } finally {
+        setLoadingSearch(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     const fetchClientsForDate = async () => {
@@ -1008,24 +1031,13 @@ export default function Clientes() {
     return "000000";
   };
 
-  // Filter clients locally
-  const filteredClientes = clientes.filter(c => {
+  // Use server-side search results when searching, otherwise use all loaded clientes filtered by date
+  const baseList = searchResults !== null ? searchResults : clientes;
+  const filteredClientes = baseList.filter(c => {
     if (selectedDate) {
       if (!dateFilteredClientIds || !dateFilteredClientIds.includes(c.id!)) return false;
     }
-
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
-    
-    const formattedId = formatClienteId(c);
-    const idMatches = formattedId.includes(term);
-    const phoneMatches = [c.telCel, c.telFijo, c.telCelBis, c.telCelOtro]
-      .some(phone => phone && phone.includes(searchTerm));
-    const addressStr = [c.calle, c.numero, c.barrio, c.localidad, c.zona].filter(Boolean).join(" ").toLowerCase();
-    const addressMatches = addressStr.includes(term);
-    const nameMatches = c.nombreApellido ? c.nombreApellido.toLowerCase().includes(term) : false;
-      
-    return idMatches || phoneMatches || addressMatches || nameMatches;
+    return true;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredClientes.length / itemsPerPage));
@@ -2128,7 +2140,10 @@ export default function Clientes() {
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
           {/* Search Input */}
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
+            {loadingSearch
+              ? <Loader2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-indigo-500 animate-spin" />
+              : <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
+            }
             <input
               type="text"
               placeholder="Buscar servicio por dirección, ID o teléfono..."

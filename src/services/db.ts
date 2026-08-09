@@ -68,31 +68,73 @@ const mapToDbCliente = (c: Partial<Cliente>): any => {
 
 export const ClientesService = {
   async getAll(limitCount?: number): Promise<Cliente[]> {
-    let query = supabase.from("clientes").select("*");
     if (limitCount) {
-      query = query.order("numero_cliente", { ascending: false }).limit(limitCount);
-    } else {
-      query = query.order("nombre_apellido", { ascending: true });
+      const { data, error } = await supabase.from("clientes").select("*").order("numero_cliente", { ascending: false }).limit(limitCount);
+      if (error) throw error;
+      return (data || []).map(mapToFrontendCliente);
     }
-    const { data, error } = await query;
-    if (error) throw error;
-    return (data || []).map(mapToFrontendCliente);
+    // Paginate to fetch ALL rows (Supabase REST caps at 1000 per request)
+    const PAGE_SIZE = 1000;
+    let allRows: any[] = [];
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase.from("clientes").select("*").order("nombre_apellido", { ascending: true }).range(from, from + PAGE_SIZE - 1);
+      if (error) throw error;
+      allRows = allRows.concat(data || []);
+      if (!data || data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
+    return allRows.map(mapToFrontendCliente);
   },
 
   async search(term: string): Promise<Cliente[]> {
     const termClean = term.trim();
     if (!termClean) return this.getAll(10);
 
-    let query = supabase.from("clientes").select("*");
-    if (/^\d+$/.test(termClean)) {
-      query = query.or(`numero_cliente.eq.${termClean},tel_cel.eq.${termClean}`);
-    } else {
-      query = query.ilike("nombre_apellido", `%${termClean}%`);
+    // Pure phone number: exact match
+    if (/^\d{6,}$/.test(termClean)) {
+      const { data, error } = await supabase.from("clientes").select("*")
+        .or(`tel_cel.ilike.%${termClean}%,tel_fijo.ilike.%${termClean}%,tel_cel_bis.ilike.%${termClean}%,tel_cel_otro.ilike.%${termClean}%`)
+        .limit(30);
+      if (error) throw error;
+      return (data || []).map(mapToFrontendCliente);
     }
 
-    const { data, error } = await query.limit(30);
+    // Numeric only (could be numero_cliente)
+    if (/^\d+$/.test(termClean)) {
+      const { data, error } = await supabase.from("clientes").select("*")
+        .or(`numero_cliente.eq.${termClean},tel_cel.ilike.%${termClean}%`)
+        .limit(30);
+      if (error) throw error;
+      return (data || []).map(mapToFrontendCliente);
+    }
+
+    // Text: search by nombre_apellido, calle and number combined
+    // Split term into parts to match across separate calle+numero fields
+    const parts = termClean.split(/\s+/);
+    // Build OR filter: nombre_apellido ilike, calle ilike each part, number matches
+    const orFilters: string[] = [
+      `nombre_apellido.ilike.%${termClean}%`,
+      `calle.ilike.%${termClean}%`,
+    ];
+    // If there are multiple words, try matching first part in calle and last part in numero
+    if (parts.length >= 2) {
+      // Add individual word matches on calle
+      parts.forEach(p => {
+        if (p.length > 2) orFilters.push(`calle.ilike.%${p}%`);
+      });
+    }
+    const { data, error } = await supabase.from("clientes").select("*")
+      .or(orFilters.join(","))
+      .limit(50);
     if (error) throw error;
-    return (data || []).map(mapToFrontendCliente);
+    const mapped = (data || []).map(mapToFrontendCliente);
+    // Filter client-side to also handle combined "calle numero" searches
+    return mapped.filter(c => {
+      const addr = [c.calle, c.numero, c.barrio, c.localidad, c.zona].filter(Boolean).join(" ").toLowerCase();
+      return addr.includes(termClean.toLowerCase()) ||
+        (c.nombreApellido || "").toLowerCase().includes(termClean.toLowerCase());
+    });
   },
 
   async getById(id: string): Promise<Cliente | null> {
