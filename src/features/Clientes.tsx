@@ -1021,10 +1021,11 @@ export default function Clientes() {
     const idMatches = formattedId.includes(term);
     const phoneMatches = [c.telCel, c.telFijo, c.telCelBis, c.telCelOtro]
       .some(phone => phone && phone.includes(searchTerm));
-    const addressMatches = [c.calle, c.numero, c.barrio, c.localidad, c.zona]
-      .some(field => field && field.toLowerCase().includes(term));
+    const addressStr = [c.calle, c.numero, c.barrio, c.localidad, c.zona].filter(Boolean).join(" ").toLowerCase();
+    const addressMatches = addressStr.includes(term);
+    const nameMatches = c.nombreApellido ? c.nombreApellido.toLowerCase().includes(term) : false;
       
-    return idMatches || phoneMatches || addressMatches;
+    return idMatches || phoneMatches || addressMatches || nameMatches;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredClientes.length / itemsPerPage));
