@@ -1775,11 +1775,9 @@ export default function Clientes() {
                     <span className="shrink-0 font-medium">de</span>
                     <div className="flex items-center gap-1 flex-1">
                       <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
-                        min="0"
-                        max="23"
                         placeholder="HH"
                         value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[0] : ""}
                         onChange={(e) => {
@@ -1791,11 +1789,9 @@ export default function Clientes() {
                       />
                       <span className="font-bold text-gray-400">:</span>
                       <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
-                        min="0"
-                        max="59"
                         placeholder="MM"
                         value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[1] : ""}
                         onChange={(e) => {
@@ -1809,11 +1805,9 @@ export default function Clientes() {
                     <span className="shrink-0 font-medium">hasta</span>
                     <div className="flex items-center gap-1 flex-1">
                       <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
-                        min="0"
-                        max="23"
                         placeholder="HH"
                         value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[0] : ""}
                         onChange={(e) => {
@@ -1825,11 +1819,9 @@ export default function Clientes() {
                       />
                       <span className="font-bold text-gray-400">:</span>
                       <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
-                        min="0"
-                        max="59"
                         placeholder="MM"
                         value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[1] : ""}
                         onChange={(e) => {
