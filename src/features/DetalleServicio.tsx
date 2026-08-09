@@ -678,7 +678,7 @@ export default function DetalleServicio() {
             {/* Referencias Internas */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-                Referencias Internas <span className="text-slate-400 lowercase font-semibold">(opcional)</span>
+                Reseña Interna Servicios
               </label>
               <textarea
                 value={editNotasInternas}
