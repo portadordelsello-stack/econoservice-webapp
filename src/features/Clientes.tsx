@@ -1656,40 +1656,57 @@ export default function Clientes() {
                             <div className="p-3.5 border-t border-slate-200/50 dark:border-gray-850 bg-white dark:bg-gray-900/40 text-xs space-y-2.5">
                               <div>
                                 <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
-                                  Problema reportado:
+                                  Problema reportado (Cliente):
                                 </span>
                                 <p className="text-slate-800 dark:text-gray-200 font-medium whitespace-pre-line">
                                   {srv.desperfectoUsuario || "No especificado"}
                                 </p>
                               </div>
-                              {srv.diagnostico && (
+                              {srv.notasInternas && (
                                 <div>
                                   <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
-                                    Diagnóstico Técnico:
+                                    Reseña Interna Servicios:
                                   </span>
-                                  <p className="text-slate-700 dark:text-gray-300 font-medium whitespace-pre-line">
-                                    {srv.diagnostico}
+                                  <p className="text-slate-800 dark:text-gray-200 font-medium whitespace-pre-line bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 rounded-lg p-2">
+                                    {srv.notasInternas}
                                   </p>
                                 </div>
                               )}
-                              {srv.serviciosConvenidos && (
+                              {(srv.serviciosRequeridos || srv.diagnostico) && (
                                 <div>
                                   <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
-                                    Servicios Convenidos:
+                                    Servicios Requeridos / Diagnóstico Técnico:
                                   </span>
-                                  <p className="text-slate-700 dark:text-gray-300 font-medium whitespace-pre-line">
-                                    {srv.serviciosConvenidos}
+                                  <p className="text-slate-700 dark:text-gray-300 font-medium whitespace-pre-line bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-2">
+                                    {[srv.serviciosRequeridos, srv.diagnostico].filter(Boolean).join("\n— ")}
                                   </p>
                                 </div>
                               )}
-                              {(srv.presupuestoTexto || srv.presupuesto) && (
-                                <div>
-                                  <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
-                                    Presupuesto:
+                              {profile?.rol === "superadmin" && (
+                                <div className="pt-2.5 border-t border-slate-150 dark:border-gray-800 space-y-2.5">
+                                  <span className="block font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider text-[9px]">
+                                    Panel de servicios convenidos
                                   </span>
-                                  <p className="text-emerald-600 dark:text-emerald-400 font-bold">
-                                    {srv.presupuestoTexto || `$${srv.presupuesto}`}
-                                  </p>
+                                  {srv.serviciosConvenidos && (
+                                    <div>
+                                      <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
+                                        Servicios Convenidos:
+                                      </span>
+                                      <p className="text-slate-700 dark:text-gray-300 font-medium whitespace-pre-line">
+                                        {srv.serviciosConvenidos}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {(srv.presupuestoTexto || srv.presupuesto) && (
+                                    <div>
+                                      <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
+                                        Presupuesto:
+                                      </span>
+                                      <p className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                        {srv.presupuestoTexto || `$${srv.presupuesto}`}
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               {srv.fotosDrive && srv.fotosDrive.length > 0 && (
