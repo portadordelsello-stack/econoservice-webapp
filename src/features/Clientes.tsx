@@ -190,8 +190,10 @@ export default function Clientes() {
   const [equipoModalModelo, setEquipoModalModelo] = useState("");
   const [equipoModalDesperfecto, setEquipoModalDesperfecto] = useState("");
   const [equipoModalFecha, setEquipoModalFecha] = useState("");
-  const [equipoModalHoraDesde, setEquipoModalHoraDesde] = useState("");
-  const [equipoModalHoraHasta, setEquipoModalHoraHasta] = useState("");
+  const [equipoModalHoraDesdeHH, setEquipoModalHoraDesdeHH] = useState("");
+  const [equipoModalHoraDesdeMM, setEquipoModalHoraDesdeMM] = useState("");
+  const [equipoModalHoraHastaHH, setEquipoModalHoraHastaHH] = useState("");
+  const [equipoModalHoraHastaMM, setEquipoModalHoraHastaMM] = useState("");
   const [equipoModalPhotos, setEquipoModalPhotos] = useState<{ id: string; name: string; url: string }[]>([]);
   const [allServices, setAllServices] = useState<Servicio[]>([]);
   const [showNewWorkOrderForm, setShowNewWorkOrderForm] = useState(false);
@@ -1263,8 +1265,10 @@ export default function Clientes() {
                     setEquipoModalModelo("");
                     setEquipoModalDesperfecto("");
                     setEquipoModalFecha("");
-                    setEquipoModalHoraDesde("");
-                    setEquipoModalHoraHasta("");
+                    setEquipoModalHoraDesdeHH("");
+                    setEquipoModalHoraDesdeMM("");
+                    setEquipoModalHoraHastaHH("");
+                    setEquipoModalHoraHastaMM("");
                     setEquipoModalPhotos([]);
                     setShowNewWorkOrderForm(true);
                     setExpandedHistoryServiceId(null);
@@ -1300,16 +1304,20 @@ export default function Clientes() {
                           setEquipoModalDesperfecto(eq.newDesperfecto || "");
                           const parsed = parseFechaRetiro(eq.newFechaRetiro || "");
                           setEquipoModalFecha(parsed.date);
-                          setEquipoModalHoraDesde(parsed.desde);
-                          setEquipoModalHoraHasta(parsed.hasta);
+                          setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+                          setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+                          setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+                          setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
                           setEquipoModalPhotos(eq.newFotosDrive || []);
                           setShowNewWorkOrderForm(!!eq.newDesperfecto);
                         } else {
                           setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
                           const parsed = parseFechaRetiro(eq.fechaRetiro || "");
                           setEquipoModalFecha(parsed.date);
-                          setEquipoModalHoraDesde(parsed.desde);
-                          setEquipoModalHoraHasta(parsed.hasta);
+                          setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+                          setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+                          setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+                          setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
                           setEquipoModalPhotos(eq.fotosDrive || []);
                           setShowNewWorkOrderForm(true);
                         }
@@ -1574,8 +1582,10 @@ export default function Clientes() {
                   onClick={() => {
                     setEquipoModalDesperfecto("");
                     setEquipoModalFecha("");
-                    setEquipoModalHoraDesde("");
-                    setEquipoModalHoraHasta("");
+                    setEquipoModalHoraDesdeHH("");
+                    setEquipoModalHoraDesdeMM("");
+                    setEquipoModalHoraHastaHH("");
+                    setEquipoModalHoraHastaMM("");
                     setEquipoModalPhotos([]);
                     setShowNewWorkOrderForm(true);
                   }}
@@ -1728,8 +1738,10 @@ export default function Clientes() {
                     onClick={() => {
                       setEquipoModalDesperfecto("");
                       setEquipoModalFecha("");
-                      setEquipoModalHoraDesde("");
-                      setEquipoModalHoraHasta("");
+                      setEquipoModalHoraDesdeHH("");
+                      setEquipoModalHoraDesdeMM("");
+                      setEquipoModalHoraHastaHH("");
+                      setEquipoModalHoraHastaMM("");
                       setEquipoModalPhotos([]);
                       setShowNewWorkOrderForm(false);
                     }}
@@ -1779,12 +1791,8 @@ export default function Clientes() {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         placeholder="HH"
-                        value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[0] : ""}
-                        onChange={(e) => {
-                          const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
-                          const mm = equipoModalHoraDesde ? (equipoModalHoraDesde.split(":")[1] || "00") : "00";
-                          setEquipoModalHoraDesde(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
-                        }}
+                        value={equipoModalHoraDesdeHH}
+                        onChange={(e) => setEquipoModalHoraDesdeHH(e.target.value.replace(/\D/g, ""))}
                         className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
                       />
                       <span className="font-bold text-gray-400">:</span>
@@ -1793,12 +1801,8 @@ export default function Clientes() {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         placeholder="MM"
-                        value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[1] : ""}
-                        onChange={(e) => {
-                          const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
-                          const hh = equipoModalHoraDesde ? (equipoModalHoraDesde.split(":")[0] || "00") : "00";
-                          setEquipoModalHoraDesde(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
-                        }}
+                        value={equipoModalHoraDesdeMM}
+                        onChange={(e) => setEquipoModalHoraDesdeMM(e.target.value.replace(/\D/g, ""))}
                         className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
                       />
                     </div>
@@ -1809,12 +1813,8 @@ export default function Clientes() {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         placeholder="HH"
-                        value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[0] : ""}
-                        onChange={(e) => {
-                          const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
-                          const mm = equipoModalHoraHasta ? (equipoModalHoraHasta.split(":")[1] || "00") : "00";
-                          setEquipoModalHoraHasta(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
-                        }}
+                        value={equipoModalHoraHastaHH}
+                        onChange={(e) => setEquipoModalHoraHastaHH(e.target.value.replace(/\D/g, ""))}
                         className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
                       />
                       <span className="font-bold text-gray-400">:</span>
@@ -1823,12 +1823,8 @@ export default function Clientes() {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         placeholder="MM"
-                        value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[1] : ""}
-                        onChange={(e) => {
-                          const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
-                          const hh = equipoModalHoraHasta ? (equipoModalHoraHasta.split(":")[0] || "00") : "00";
-                          setEquipoModalHoraHasta(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
-                        }}
+                        value={equipoModalHoraHastaMM}
+                        onChange={(e) => setEquipoModalHoraHastaMM(e.target.value.replace(/\D/g, ""))}
                         className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
                       />
                     </div>
@@ -1982,6 +1978,16 @@ export default function Clientes() {
                 const brand = parts[0] || "Genérico";
                 const model = parts.slice(1).join(" ") || "-";
                 
+                const formatTimePart = (hh: string, mm: string) => {
+                  if (!hh.trim() && !mm.trim()) return "";
+                  const paddedHH = hh.trim() ? hh.trim().padStart(2, "0") : "00";
+                  const paddedMM = mm.trim() ? mm.trim().padStart(2, "0") : "00";
+                  return `${paddedHH}:${paddedMM}`;
+                };
+
+                const horaDesde = formatTimePart(equipoModalHoraDesdeHH, equipoModalHoraDesdeMM);
+                const horaHasta = formatTimePart(equipoModalHoraHastaHH, equipoModalHoraHastaMM);
+
                 const newEq: any = {
                   tipo: equipoModalTipo,
                   marca: brand,
@@ -1990,12 +1996,12 @@ export default function Clientes() {
 
                 if (isNewEquipment) {
                   newEq.desperfectoUsuario = equipoModalDesperfecto.trim();
-                  newEq.fechaRetiro = formatFechaRetiro(equipoModalFecha, equipoModalHoraDesde, equipoModalHoraHasta);
+                  newEq.fechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
                   newEq.fotosDrive = equipoModalPhotos;
                 } else {
                   if (showNewWorkOrderForm) {
                     newEq.newDesperfecto = equipoModalDesperfecto.trim();
-                    newEq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, equipoModalHoraDesde, equipoModalHoraHasta);
+                    newEq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
                     newEq.newFotosDrive = equipoModalPhotos;
                   } else {
                     newEq.newDesperfecto = undefined;
