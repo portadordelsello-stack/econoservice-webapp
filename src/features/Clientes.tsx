@@ -176,6 +176,9 @@ export default function Clientes() {
     desperfectoUsuario: string;
     fechaRetiro: string;
     fotosDrive: { id: string; name: string; url: string }[];
+    newDesperfecto?: string;
+    newFechaRetiro?: string;
+    newFotosDrive?: { id: string; name: string; url: string }[];
   }[]>([]);
   const [deletedEquipoIds, setDeletedEquipoIds] = useState<string[]>([]);
 
@@ -190,6 +193,9 @@ export default function Clientes() {
   const [equipoModalHoraDesde, setEquipoModalHoraDesde] = useState("");
   const [equipoModalHoraHasta, setEquipoModalHoraHasta] = useState("");
   const [equipoModalPhotos, setEquipoModalPhotos] = useState<{ id: string; name: string; url: string }[]>([]);
+  const [allServices, setAllServices] = useState<Servicio[]>([]);
+  const [showNewWorkOrderForm, setShowNewWorkOrderForm] = useState(false);
+  const [expandedHistoryServiceId, setExpandedHistoryServiceId] = useState<string | null>(null);
 
   const parseFechaRetiro = (fechaRetiroStr: string) => {
     if (!fechaRetiroStr) {
@@ -272,7 +278,7 @@ export default function Clientes() {
       // Save immediately to Firestore if editing an existing equipment's service order in the modal
       if (currentSubView === "equipo-form" && equipoModalIndex !== null && editingId) {
         const eq = formEquipos[equipoModalIndex];
-        if (eq && eq.id) {
+        if (eq && eq.id && !showNewWorkOrderForm) {
           const services = await ServiciosService.getAll();
           const srv = services.find(s => s.clienteId === editingId && s.equipoId === eq.id);
           if (srv && srv.id) {
@@ -512,6 +518,7 @@ export default function Clientes() {
         
         // Fetch all services to match the fotosDrive of each equipment
         const allServices = await ServiciosService.getAll();
+        setAllServices(allServices);
         
         const mappedEquipos = equipments.map(eq => {
           // Find services for this client and this specific equipment
@@ -700,12 +707,6 @@ export default function Clientes() {
 
       // 4. Process remaining equipments
       for (const eq of finalEquipos) {
-        const infoLogisticaFull = [
-          eq.fechaRetiro && eq.fechaRetiro.trim() ? `Retiro acordado: ${eq.fechaRetiro.trim()}` : "",
-          formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
-          selectedNS ? `Config: ${selectedNS}` : ""
-        ].filter(Boolean).join(" | ");
-
         if (eq.id) {
           // Existing equipment: update details
           await EquiposService.update(eq.id, {
@@ -714,20 +715,62 @@ export default function Clientes() {
             modelo: eq.modelo.trim() || "Genérico"
           });
 
-          // Update corresponding service order if it exists
+          // Propagate brand/model corrections to all services for this equipment
           const eqServices = allServices.filter(s => s.clienteId === editingId && s.equipoId === eq.id);
-          if (eqServices.length > 0) {
-            const srv = eqServices[0];
+          for (const srv of eqServices) {
             await ServiciosService.update(srv.id!, {
               aparato: eq.tipo || "Lavarropas",
-              marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
-              desperfectoUsuario: eq.desperfectoUsuario || "No especificado",
-              infoLogistica: infoLogisticaFull,
-              fotosDrive: eq.fotosDrive || []
+              marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim()
             }, profile?.uid || "system", profile?.nombre || "Usuario");
+          }
+
+          // If there is a pending new work order, create it!
+          if (eq.newDesperfecto) {
+            const newLogisticaFull = [
+              eq.newFechaRetiro && eq.newFechaRetiro.trim() ? `Retiro acordado: ${eq.newFechaRetiro.trim()}` : "",
+              formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
+              selectedNS ? `Config: ${selectedNS}` : ""
+            ].filter(Boolean).join(" | ");
+
+            const newServId = await ServiciosService.create({
+              clienteId: editingId,
+              equipoId: eq.id,
+              fechaIngreso: new Date(),
+              aparato: eq.tipo || "Lavarropas",
+              marcaModelo: `${eq.marca.trim()} ${eq.modelo.trim()}`.trim(),
+              desperfectoUsuario: eq.newDesperfecto,
+              infoLogistica: newLogisticaFull,
+              notasInternas: formObservaciones.trim() || "",
+              acepta: false,
+              rechazaDevolver: false,
+              garantia: false,
+              esReclamoGarantia: false,
+              ingresoTaller: false,
+              pasaStock: false,
+              entregado: false,
+              terminado: false,
+              factura: false,
+              contado: false,
+              fotosDrive: eq.newFotosDrive || [],
+              createdBy: profile?.uid || "system"
+            }, profile?.uid || "system", profile?.nombre || "Usuario");
+
+            // Notify Logistica for new work order
+            await NotificationsService.create({
+              targetRole: "logistica",
+              title: "Nueva Orden de Trabajo (Aparato Existente)",
+              message: `Se registró una nueva orden de trabajo (${eq.marca} ${eq.modelo}) para el cliente ${formNombreApellido}.`,
+              serviceId: newServId
+            });
           }
         } else {
           // New equipment added in this editing session
+          const infoLogisticaFull = [
+            eq.fechaRetiro && eq.fechaRetiro.trim() ? `Retiro acordado: ${eq.fechaRetiro.trim()}` : "",
+            formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
+            selectedNS ? `Config: ${selectedNS}` : ""
+          ].filter(Boolean).join(" | ");
+
           const newEqId = await EquiposService.create({
             clienteId: editingId,
             tipo: eq.tipo || "Lavarropas",
@@ -1219,7 +1262,12 @@ export default function Clientes() {
                     setEquipoModalMarca("");
                     setEquipoModalModelo("");
                     setEquipoModalDesperfecto("");
+                    setEquipoModalFecha("");
+                    setEquipoModalHoraDesde("");
+                    setEquipoModalHoraHasta("");
                     setEquipoModalPhotos([]);
+                    setShowNewWorkOrderForm(true);
+                    setExpandedHistoryServiceId(null);
                     setCurrentSubView("equipo-form");
                   }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
@@ -1247,12 +1295,26 @@ export default function Clientes() {
                           : (eq.marca || eq.modelo || "");
                         setEquipoModalMarca(combined);
                         setEquipoModalModelo("");
-                        setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
-                        const parsed = parseFechaRetiro(eq.fechaRetiro || "");
-                        setEquipoModalFecha(parsed.date);
-                        setEquipoModalHoraDesde(parsed.desde);
-                        setEquipoModalHoraHasta(parsed.hasta);
-                        setEquipoModalPhotos(eq.fotosDrive || []);
+                        
+                        if (eq.id) {
+                          setEquipoModalDesperfecto(eq.newDesperfecto || "");
+                          const parsed = parseFechaRetiro(eq.newFechaRetiro || "");
+                          setEquipoModalFecha(parsed.date);
+                          setEquipoModalHoraDesde(parsed.desde);
+                          setEquipoModalHoraHasta(parsed.hasta);
+                          setEquipoModalPhotos(eq.newFotosDrive || []);
+                          setShowNewWorkOrderForm(!!eq.newDesperfecto);
+                        } else {
+                          setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
+                          const parsed = parseFechaRetiro(eq.fechaRetiro || "");
+                          setEquipoModalFecha(parsed.date);
+                          setEquipoModalHoraDesde(parsed.desde);
+                          setEquipoModalHoraHasta(parsed.hasta);
+                          setEquipoModalPhotos(eq.fotosDrive || []);
+                          setShowNewWorkOrderForm(true);
+                        }
+                        
+                        setExpandedHistoryServiceId(null);
                         setCurrentSubView("equipo-form");
                       }}
                       className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-855 rounded-2xl border border-gray-150 dark:border-gray-800/80 hover:border-indigo-500/50 dark:hover:border-indigo-900/60 hover:bg-white dark:hover:bg-gray-900/40 hover:shadow-xs transition-all cursor-pointer group"
@@ -1497,187 +1559,364 @@ export default function Clientes() {
                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                />
              </div>
-            
-            <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                Desperfecto Usuario (Lo que el cliente dice del problema)
-              </label>
-              <textarea
-                rows={3}
-                value={equipoModalDesperfecto}
-                onChange={(e) => setEquipoModalDesperfecto(e.target.value)}
-                placeholder="Ej. El lavarropas no desagota y hace ruido al centrifugar."
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-              />
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                  Fecha de Retiro
-                </label>
-                <input
-                  type="date"
-                  value={equipoModalFecha}
-                  onChange={(e) => setEquipoModalFecha(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer"
-                />
+          {/* History list for existing equipment */}
+          {isEditMode && !showNewWorkOrderForm && (
+            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Wrench className="w-4 h-4 text-indigo-500" />
+                  Historial de Órdenes de Trabajo
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEquipoModalDesperfecto("");
+                    setEquipoModalFecha("");
+                    setEquipoModalHoraDesde("");
+                    setEquipoModalHoraHasta("");
+                    setEquipoModalPhotos([]);
+                    setShowNewWorkOrderForm(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Nueva Orden de Trabajo
+                </button>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                  Horario de Retiro
-                </label>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <span className="shrink-0 font-medium">de</span>
-                  {/* DESDE: HH:MM numeric inputs */}
-                  <div className="flex items-center gap-1 flex-1">
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      min="0"
-                      max="23"
-                      placeholder="HH"
-                      value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[0] : ""}
-                      onChange={(e) => {
-                        const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
-                        const mm = equipoModalHoraDesde ? (equipoModalHoraDesde.split(":")[1] || "00") : "00";
-                        setEquipoModalHoraDesde(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
-                      }}
-                      className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
-                    <span className="font-bold text-gray-400">:</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      min="0"
-                      max="59"
-                      placeholder="MM"
-                      value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[1] : ""}
-                      onChange={(e) => {
-                        const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
-                        const hh = equipoModalHoraDesde ? (equipoModalHoraDesde.split(":")[0] || "00") : "00";
-                        setEquipoModalHoraDesde(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
-                      }}
-                      className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
+
+              {(() => {
+                const currentEqId = formEquipos[equipoModalIndex!]?.id;
+                const eqServices = allServices
+                  .filter(s => s.equipoId === currentEqId)
+                  .sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return dateB - dateA;
+                  });
+
+                if (eqServices.length === 0) {
+                  return (
+                    <p className="text-xs text-slate-400 py-2 italic text-center">
+                      No hay órdenes de trabajo previas para este equipo.
+                    </p>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2">
+                    {eqServices.map((srv) => {
+                      const isExpanded = expandedHistoryServiceId === srv.id;
+                      const serviceDateStr = srv.createdAt 
+                        ? new Date(srv.createdAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) 
+                        : "Sin fecha";
+                      return (
+                        <div
+                          key={srv.id}
+                          className="bg-slate-50 dark:bg-gray-855 border border-slate-200/60 dark:border-gray-800 rounded-xl overflow-hidden transition-all duration-200"
+                        >
+                          <div
+                            onClick={() => setExpandedHistoryServiceId(isExpanded ? null : srv.id!)}
+                            className="flex items-center justify-between p-3.5 cursor-pointer hover:bg-slate-100/50 dark:hover:bg-gray-800/40 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
+                                O.T. #{srv.numeroServicio || "S/N"}
+                              </span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-gray-850 text-slate-600 dark:text-gray-300">
+                                {serviceDateStr}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                srv.estado === "ENTREGADO"
+                                  ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
+                                  : srv.estado === "TERMINADO"
+                                  ? "bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400"
+                                  : "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400"
+                              }`}>
+                                {getEstadoLabel(srv.estado)}
+                              </span>
+                              <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                            </div>
+                          </div>
+
+                          {isExpanded && (
+                            <div className="p-3.5 border-t border-slate-200/50 dark:border-gray-850 bg-white dark:bg-gray-900/40 text-xs space-y-2.5">
+                              <div>
+                                <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
+                                  Problema reportado:
+                                </span>
+                                <p className="text-slate-800 dark:text-gray-200 font-medium whitespace-pre-line">
+                                  {srv.desperfectoUsuario || "No especificado"}
+                                </p>
+                              </div>
+                              {srv.diagnostico && (
+                                <div>
+                                  <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
+                                    Diagnóstico Técnico:
+                                  </span>
+                                  <p className="text-slate-700 dark:text-gray-300 font-medium whitespace-pre-line">
+                                    {srv.diagnostico}
+                                  </p>
+                                </div>
+                              )}
+                              {srv.serviciosConvenidos && (
+                                <div>
+                                  <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
+                                    Servicios Convenidos:
+                                  </span>
+                                  <p className="text-slate-700 dark:text-gray-300 font-medium whitespace-pre-line">
+                                    {srv.serviciosConvenidos}
+                                  </p>
+                                </div>
+                              )}
+                              {(srv.presupuestoTexto || srv.presupuesto) && (
+                                <div>
+                                  <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-0.5">
+                                    Presupuesto:
+                                  </span>
+                                  <p className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                    {srv.presupuestoTexto || `$${srv.presupuesto}`}
+                                  </p>
+                                </div>
+                              )}
+                              {srv.fotosDrive && srv.fotosDrive.length > 0 && (
+                                <div>
+                                  <span className="block font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider text-[9px] mb-1">
+                                    Fotos de Respaldo:
+                                  </span>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    {srv.fotosDrive.map((photo: any) => (
+                                      <a
+                                        key={photo.id}
+                                        href={photo.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-10 h-10 rounded-lg border border-indigo-150 dark:border-indigo-900/35 bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-indigo-500 transition-all block"
+                                        title={photo.name}
+                                      >
+                                        <ImageIcon className="w-5 h-5 text-indigo-400" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <span className="shrink-0 font-medium">hasta</span>
-                  {/* HASTA: HH:MM numeric inputs */}
-                  <div className="flex items-center gap-1 flex-1">
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      min="0"
-                      max="23"
-                      placeholder="HH"
-                      value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[0] : ""}
-                      onChange={(e) => {
-                        const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
-                        const mm = equipoModalHoraHasta ? (equipoModalHoraHasta.split(":")[1] || "00") : "00";
-                        setEquipoModalHoraHasta(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
-                      }}
-                      className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
-                    <span className="font-bold text-gray-400">:</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      min="0"
-                      max="59"
-                      placeholder="MM"
-                      value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[1] : ""}
-                      onChange={(e) => {
-                        const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
-                        const hh = equipoModalHoraHasta ? (equipoModalHoraHasta.split(":")[0] || "00") : "00";
-                        setEquipoModalHoraHasta(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
-                      }}
-                      className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                    />
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
-          </div>
+          )}
 
-          {/* Photo Upload */}
-          <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Fotos de Respaldo
-            </label>
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Hidden file input */}
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) await uploadFileToDrive(file);
-                  e.target.value = "";
-                }}
-              />
-              
-              {/* Upload button */}
-              <button
-                type="button"
-                onClick={handleConnectAndUpload}
-                disabled={uploadingPhoto || connectingDrive}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
-              >
-                {connectingDrive ? (
-                  <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Conectando Drive...</>
-                ) : uploadingPhoto ? (
-                  <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Subiendo...</>
-                ) : (
-                  <><Upload className="w-4 h-4" /> {driveToken ? "Subir Foto" : "Conectar Drive y Subir"}</>
-                )}
-              </button>
-
-              {/* Photos list */}
-              {equipoModalPhotos.map((photo) => (
-                <div key={photo.id} className="relative group shrink-0 animate-scale-up">
-                  <a
-                    href={photo.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-14 h-14 rounded-xl border border-indigo-150 dark:border-indigo-900/35 bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center overflow-hidden group-hover:ring-2 group-hover:ring-indigo-500 transition-all block"
-                    title={photo.name}
-                  >
-                    <ImageIcon className="w-6 h-6 text-indigo-400" />
-                  </a>
+          {/* New Work Order/Initial service form */}
+          {(!isEditMode || showNewWorkOrderForm) && (
+            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-indigo-500" />
+                  {isEditMode ? "Nueva Orden de Trabajo" : "Detalles del Servicio Inicial"}
+                </h3>
+                {isEditMode && (
                   <button
                     type="button"
                     onClick={() => {
-                      setEquipoModalPhotos(prev => prev.filter(p => p.id !== photo.id));
+                      setEquipoModalDesperfecto("");
+                      setEquipoModalFecha("");
+                      setEquipoModalHoraDesde("");
+                      setEquipoModalHoraHasta("");
+                      setEquipoModalPhotos([]);
+                      setShowNewWorkOrderForm(false);
                     }}
-                    className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-0.5 shadow-md hover:scale-110 active:scale-95 transition-all cursor-pointer"
-                    title="Eliminar Foto"
+                    className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
+                    Cancelar Nueva Orden
                   </button>
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
 
-            {uploadError && (
-              <p className="text-xs text-red-500 dark:text-red-400 mt-2 flex items-center gap-1 animate-pulse">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                {uploadError}
-              </p>
-            )}
-            {!driveFolderId && (
-              <p className="text-xs text-amber-500 dark:text-amber-400 mt-2 flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                Configurá el ID de carpeta de Drive en <strong>Ajustes</strong> para habilitar la subida de fotos.
-              </p>
-            )}
-          </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                  Desperfecto Usuario (Lo que el cliente dice del problema) *
+                </label>
+                <textarea
+                  rows={3}
+                  value={equipoModalDesperfecto}
+                  onChange={(e) => setEquipoModalDesperfecto(e.target.value)}
+                  placeholder="Ej. El lavarropas no desagota y hace ruido al centrifugar."
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                    Fecha de Retiro
+                  </label>
+                  <input
+                    type="date"
+                    value={equipoModalFecha}
+                    onChange={(e) => setEquipoModalFecha(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                    Horario de Retiro
+                  </label>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <span className="shrink-0 font-medium">de</span>
+                    <div className="flex items-center gap-1 flex-1">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min="0"
+                        max="23"
+                        placeholder="HH"
+                        value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[0] : ""}
+                        onChange={(e) => {
+                          const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          const mm = equipoModalHoraDesde ? (equipoModalHoraDesde.split(":")[1] || "00") : "00";
+                          setEquipoModalHoraDesde(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
+                        }}
+                        className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                      <span className="font-bold text-gray-400">:</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min="0"
+                        max="59"
+                        placeholder="MM"
+                        value={equipoModalHoraDesde ? equipoModalHoraDesde.split(":")[1] : ""}
+                        onChange={(e) => {
+                          const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          const hh = equipoModalHoraDesde ? (equipoModalHoraDesde.split(":")[0] || "00") : "00";
+                          setEquipoModalHoraDesde(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
+                        }}
+                        className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                    </div>
+                    <span className="shrink-0 font-medium">hasta</span>
+                    <div className="flex items-center gap-1 flex-1">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min="0"
+                        max="23"
+                        placeholder="HH"
+                        value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[0] : ""}
+                        onChange={(e) => {
+                          const hh = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          const mm = equipoModalHoraHasta ? (equipoModalHoraHasta.split(":")[1] || "00") : "00";
+                          setEquipoModalHoraHasta(hh ? `${hh.padStart(2, "0")}:${mm}` : "");
+                        }}
+                        className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                      <span className="font-bold text-gray-400">:</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min="0"
+                        max="59"
+                        placeholder="MM"
+                        value={equipoModalHoraHasta ? equipoModalHoraHasta.split(":")[1] : ""}
+                        onChange={(e) => {
+                          const mm = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          const hh = equipoModalHoraHasta ? (equipoModalHoraHasta.split(":")[0] || "00") : "00";
+                          setEquipoModalHoraHasta(mm ? `${hh}:${mm.padStart(2, "0")}` : hh ? `${hh}:` : "");
+                        }}
+                        className="w-14 px-2 py-2 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Photo Upload */}
+              <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Fotos de Respaldo
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) await uploadFileToDrive(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={handleConnectAndUpload}
+                    disabled={uploadingPhoto || connectingDrive}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
+                  >
+                    {connectingDrive ? (
+                      <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Conectando Drive...</>
+                    ) : uploadingPhoto ? (
+                      <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Subiendo...</>
+                    ) : (
+                      <><Upload className="w-4 h-4" /> {driveToken ? "Subir Foto" : "Conectar Drive y Subir"}</>
+                    )}
+                  </button>
+
+                  {equipoModalPhotos.map((photo) => (
+                    <div key={photo.id} className="relative group shrink-0 animate-scale-up">
+                      <a
+                        href={photo.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-14 h-14 rounded-xl border border-indigo-150 dark:border-indigo-900/35 bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center overflow-hidden group-hover:ring-2 group-hover:ring-indigo-500 transition-all block"
+                        title={photo.name}
+                      >
+                        <ImageIcon className="w-6 h-6 text-indigo-400" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEquipoModalPhotos(prev => prev.filter(p => p.id !== photo.id));
+                        }}
+                        className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-0.5 shadow-md hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                        title="Eliminar Foto"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {uploadError && (
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-2 flex items-center gap-1 animate-pulse">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    {uploadError}
+                  </p>
+                )}
+                {!driveFolderId && (
+                  <p className="text-xs text-amber-500 dark:text-amber-400 mt-2 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Configurá el ID de carpeta de Drive en <strong>Ajustes</strong> para habilitar la subida de fotos.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Form Actions */}
           <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
@@ -1723,18 +1962,27 @@ export default function Clientes() {
             <button
               type="button"
               onClick={() => {
+                const isNewEquipment = equipoModalIndex === null;
+
                 if (!isAdmin && !equipoModalMarca.trim()) {
                   alert("Por favor, complete Marca y Modelo.");
                   return;
                 }
-                if (profile?.rol === "logistica") {
-                  if (!equipoModalDesperfecto.trim()) {
-                    alert("Para usuarios de logística, el desperfecto del usuario es obligatorio.");
+
+                if (isNewEquipment || showNewWorkOrderForm) {
+                  if (!isAdmin && !equipoModalDesperfecto.trim()) {
+                    alert("Por favor, complete el desperfecto del usuario.");
                     return;
                   }
-                  if (!equipoModalPhotos || equipoModalPhotos.length === 0) {
-                    alert("Para usuarios de logística, debe subir al menos una foto de respaldo.");
-                    return;
+                  if (profile?.rol === "logistica") {
+                    if (!equipoModalDesperfecto.trim()) {
+                      alert("Para usuarios de logística, el desperfecto del usuario es obligatorio.");
+                      return;
+                    }
+                    if (!equipoModalPhotos || equipoModalPhotos.length === 0) {
+                      alert("Para usuarios de logística, debe subir al menos una foto de respaldo.");
+                      return;
+                    }
                   }
                 }
                 
@@ -1742,14 +1990,27 @@ export default function Clientes() {
                 const brand = parts[0] || "Genérico";
                 const model = parts.slice(1).join(" ") || "-";
                 
-                const newEq = {
+                const newEq: any = {
                   tipo: equipoModalTipo,
                   marca: brand,
-                  modelo: model,
-                  desperfectoUsuario: equipoModalDesperfecto.trim(),
-                  fechaRetiro: formatFechaRetiro(equipoModalFecha, equipoModalHoraDesde, equipoModalHoraHasta),
-                  fotosDrive: equipoModalPhotos
+                  modelo: model
                 };
+
+                if (isNewEquipment) {
+                  newEq.desperfectoUsuario = equipoModalDesperfecto.trim();
+                  newEq.fechaRetiro = formatFechaRetiro(equipoModalFecha, equipoModalHoraDesde, equipoModalHoraHasta);
+                  newEq.fotosDrive = equipoModalPhotos;
+                } else {
+                  if (showNewWorkOrderForm) {
+                    newEq.newDesperfecto = equipoModalDesperfecto.trim();
+                    newEq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, equipoModalHoraDesde, equipoModalHoraHasta);
+                    newEq.newFotosDrive = equipoModalPhotos;
+                  } else {
+                    newEq.newDesperfecto = undefined;
+                    newEq.newFechaRetiro = undefined;
+                    newEq.newFotosDrive = undefined;
+                  }
+                }
                 
                 if (equipoModalIndex !== null) {
                   setFormEquipos(prev => {
