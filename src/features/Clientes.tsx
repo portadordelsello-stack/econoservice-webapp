@@ -517,13 +517,13 @@ export default function Clientes() {
         // Fetch all equipments of the client
         const equipments = await EquiposService.getByCliente(c.id);
         
-        // Fetch all services to match the fotosDrive of each equipment
-        const allServices = await ServiciosService.getAll();
-        setAllServices(allServices);
+        // Fetch only services of this client
+        const clientServices = await ServiciosService.getByCliente(c.id);
+        setAllServices(clientServices);
         
         const mappedEquipos = equipments.map(eq => {
-          // Find services for this client and this specific equipment
-          const eqServices = allServices.filter(s => s.clienteId === c.id && s.equipoId === eq.id);
+          // Find services for this specific equipment
+          const eqServices = clientServices.filter(s => s.equipoId === eq.id);
           const fotosDrive = eqServices.length > 0 ? (eqServices[0].fotosDrive || []) : [];
           const desperfectoUsuario = eqServices.length > 0 ? (eqServices[0].desperfectoUsuario || "") : "";
           
@@ -562,9 +562,9 @@ export default function Clientes() {
           setFormMarca(eq.marca || "");
           setFormModelo(eq.modelo || "");
 
-          const clientServices = allServices.filter(s => s.clienteId === c.id && s.equipoId === eq.id);
-          if (clientServices.length > 0) {
-            const srv = clientServices[0];
+          const activeEqServices = clientServices.filter(s => s.equipoId === eq.id);
+          if (activeEqServices.length > 0) {
+            const srv = activeEqServices[0];
             setEditingServicioId(srv.id || null);
             setFormDesperfectoUsuario(srv.desperfectoUsuario || "");
 
@@ -615,9 +615,9 @@ export default function Clientes() {
       setFormError("");
 
       // 1. Process deletions FIRST so deleted equipments & services are removed regardless of remaining count
-      const allServices = await ServiciosService.getAll();
+      const clientServices = await ServiciosService.getByCliente(editingId);
       for (const delId of deletedEquipoIds) {
-        const eqServices = allServices.filter(s => s.clienteId === editingId && s.equipoId === delId);
+        const eqServices = clientServices.filter(s => s.equipoId === delId);
         for (const srv of eqServices) {
           if (srv.id) {
             await ServiciosService.delete(srv.id);
@@ -816,6 +816,10 @@ export default function Clientes() {
 
       setFormSuccess(true);
       loadClientes();
+      if (editingId) {
+        const clientServices = await ServiciosService.getByCliente(editingId);
+        setAllServices(clientServices);
+      }
     } catch (err: any) {
       console.error("Error editing custom client & service:", err);
       setFormError("Hubo un error al actualizar el cliente. Intente nuevamente.");

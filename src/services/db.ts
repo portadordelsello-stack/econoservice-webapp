@@ -381,12 +381,17 @@ const mapToDbServicio = (s: Partial<Servicio>): any => {
   if (s.fotosDrive !== undefined) db.fotos_drive = s.fotosDrive;
   return db;
 };
-
 export const ServiciosService = {
   async getAll(limitCount?: number): Promise<Servicio[]> {
     let query = supabase.from("servicios").select("*").order("numero_servicio", { ascending: false });
     if (limitCount) query = query.limit(limitCount);
     const { data, error } = await query;
+    if (error) throw error;
+    return (data || []).map(mapToFrontendServicio);
+  },
+
+  async getByCliente(clienteId: string): Promise<Servicio[]> {
+    const { data, error } = await supabase.from("servicios").select("*").eq("cliente_id", clienteId).order("numero_servicio", { ascending: false });
     if (error) throw error;
     return (data || []).map(mapToFrontendServicio);
   },
