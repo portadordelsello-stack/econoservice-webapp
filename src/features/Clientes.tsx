@@ -29,7 +29,8 @@ import {
   MessageSquare,
   ChevronLeft,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Loader2
 } from "lucide-react";
 
 const getWhatsAppUrl = (phone?: string) => {
