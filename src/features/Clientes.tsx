@@ -492,8 +492,7 @@ export default function Clientes() {
       // Set client states
       setFormNombreApellido(c.nombreApellido || "");
       setFormTelCel(c.telCel || "");
-      const fullCalle = [c.calle, c.numero].filter(Boolean).join(" ");
-      setFormCalle(fullCalle);
+      setFormCalle(c.calle || "");
       setFormNumero(c.numero || "");
       setFormCiudad(c.localidad || "");
       setFormDepto(c.depto || "");
@@ -1184,16 +1183,28 @@ export default function Clientes() {
                 <MapPin className="w-4 h-4 text-indigo-500" />
                 1. Domicilio de Retiro
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                <div className="sm:col-span-2 md:col-span-2">
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                    Calle y Número
+                    Calle
                   </label>
                   <input
                     type="text"
                     value={formCalle}
                     onChange={(e) => setFormCalle(e.target.value)}
-                    placeholder="Ej. Av. Siempreviva 742"
+                    placeholder="Ej. Av. Siempreviva"
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                    Número
+                  </label>
+                  <input
+                    type="text"
+                    value={formNumero}
+                    onChange={(e) => setFormNumero(e.target.value)}
+                    placeholder="Ej. 742"
                     className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
                 </div>
