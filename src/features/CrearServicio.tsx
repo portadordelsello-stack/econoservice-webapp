@@ -275,14 +275,18 @@ export default function CrearServicio() {
 
   const handleCreateInlineEquipo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClienteId || !inlineEquipoTipo.trim() || !inlineEquipoMarca.trim() || !inlineEquipoModelo.trim()) return;
+    if (!selectedClienteId || !inlineEquipoTipo.trim() || !inlineEquipoMarca.trim()) return;
 
     try {
+      const parts = inlineEquipoMarca.trim().split(/\s+/);
+      const brand = parts[0] || "Genérico";
+      const model = parts.slice(1).join(" ") || "-";
+
       const newEqId = await EquiposService.create({
         clienteId: selectedClienteId,
         tipo: inlineEquipoTipo,
-        marca: inlineEquipoMarca,
-        modelo: inlineEquipoModelo
+        marca: brand,
+        modelo: model
       });
 
       // Re-load and auto-select
@@ -462,7 +466,7 @@ export default function CrearServicio() {
                 <span className="block text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
                   Rápido: Registrar Equipo para este Cliente
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     type="text"
                     placeholder="Tipo (Lavarropas, etc) *"
@@ -472,16 +476,9 @@ export default function CrearServicio() {
                   />
                   <input
                     type="text"
-                    placeholder="Marca *"
+                    placeholder="Marca y Modelo *"
                     value={inlineEquipoMarca}
                     onChange={(e) => setInlineEquipoMarca(e.target.value)}
-                    className="px-3 py-1.5 text-xs bg-white dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Modelo *"
-                    value={inlineEquipoModelo}
-                    onChange={(e) => setInlineEquipoModelo(e.target.value)}
                     className="px-3 py-1.5 text-xs bg-white dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg"
                   />
                 </div>

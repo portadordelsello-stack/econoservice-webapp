@@ -1242,8 +1242,11 @@ export default function Clientes() {
                         setEquipmentSourceSubView(currentSubView as "nuevo" | "editar");
                         setEquipoModalIndex(idx);
                         setEquipoModalTipo(eq.tipo || "Lavarropas");
-                        setEquipoModalMarca(eq.marca);
-                        setEquipoModalModelo(eq.modelo);
+                        const combined = eq.marca && eq.modelo && eq.modelo !== "-" && eq.modelo !== "Genérico"
+                          ? `${eq.marca} ${eq.modelo}`.trim()
+                          : (eq.marca || eq.modelo || "");
+                        setEquipoModalMarca(combined);
+                        setEquipoModalModelo("");
                         setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
                         const parsed = parseFechaRetiro(eq.fechaRetiro || "");
                         setEquipoModalFecha(parsed.date);
@@ -1482,32 +1485,18 @@ export default function Clientes() {
               </select>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                  Marca {isAdmin ? "(opcional)" : "*"}
-                </label>
-                <input
-                  type="text"
-                  value={equipoModalMarca}
-                  onChange={(e) => setEquipoModalMarca(e.target.value)}
-                  placeholder="Ej. Samsung, Whirlpool"
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                  Modelo {isAdmin ? "(opcional)" : "*"}
-                </label>
-                <input
-                  type="text"
-                  value={equipoModalModelo}
-                  onChange={(e) => setEquipoModalModelo(e.target.value)}
-                  placeholder="Ej. Active DualWash"
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                />
-              </div>
-            </div>
+             <div>
+               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                 Marca y Modelo {isAdmin ? "(opcional)" : "*"}
+               </label>
+               <input
+                 type="text"
+                 value={equipoModalMarca}
+                 onChange={(e) => setEquipoModalMarca(e.target.value)}
+                 placeholder="Ej. Samsung Active DualWash"
+                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+               />
+             </div>
             
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
@@ -1727,14 +1716,14 @@ export default function Clientes() {
                     setCurrentSubView("menu");
                   }
                 }}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-blue-600/10 cursor-pointer active:scale-95"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-blue-600/10 cursor-pointer active:scale-95"
               >
                 CANCELAR
               </button>
             <button
               type="button"
               onClick={() => {
-                if (!isAdmin && (!equipoModalMarca.trim() || !equipoModalModelo.trim())) {
+                if (!isAdmin && !equipoModalMarca.trim()) {
                   alert("Por favor, complete Marca y Modelo.");
                   return;
                 }
@@ -1748,10 +1737,15 @@ export default function Clientes() {
                     return;
                   }
                 }
+                
+                const parts = equipoModalMarca.trim().split(/\s+/);
+                const brand = parts[0] || "Genérico";
+                const model = parts.slice(1).join(" ") || "-";
+                
                 const newEq = {
                   tipo: equipoModalTipo,
-                  marca: equipoModalMarca.trim() || "Genérico",
-                  modelo: equipoModalModelo.trim() || "Genérico",
+                  marca: brand,
+                  modelo: model,
                   desperfectoUsuario: equipoModalDesperfecto.trim(),
                   fechaRetiro: formatFechaRetiro(equipoModalFecha, equipoModalHoraDesde, equipoModalHoraHasta),
                   fotosDrive: equipoModalPhotos
