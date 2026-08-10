@@ -244,6 +244,7 @@ export default function Clientes() {
   const [equipoModalPhotos, setEquipoModalPhotos] = useState<{ id: string; name: string; url: string }[]>([]);
   const [allServices, setAllServices] = useState<Servicio[]>([]);
   const [showNewWorkOrderForm, setShowNewWorkOrderForm] = useState(false);
+  const [modalIsEditingActiveOrder, setModalIsEditingActiveOrder] = useState(false);
   const [expandedHistoryServiceId, setExpandedHistoryServiceId] = useState<string | null>(null);
 
   const parseFechaRetiro = (fechaRetiroStr: string) => {
@@ -879,7 +880,7 @@ export default function Clientes() {
             return dateB - dateA;
           });
 
-          if (sortedServices.length > 0 && sortedServices[0].ingresoTaller === false) {
+          if (sortedServices.length > 0) {
             const activeSrv = sortedServices[0];
             const infoLogisticaFull = [
               eq.fechaRetiro && eq.fechaRetiro.trim() ? `Retiro acordado: ${eq.fechaRetiro.trim()}` : "",
@@ -1423,6 +1424,7 @@ export default function Clientes() {
                   type="button"
                   onClick={() => {
                     setEquipmentSourceSubView(currentSubView as "nuevo" | "editar");
+                    setModalIsEditingActiveOrder(true);
                     setEquipoModalIndex(null);
                     setEquipoModalTipo("Lavarropas");
                     setEquipoModalMarca("");
@@ -1467,6 +1469,7 @@ export default function Clientes() {
                         if (eq.id) {
                           if (eq.ingresoTaller === false) {
                             // Active order pending pickup: edit it directly!
+                            setModalIsEditingActiveOrder(true);
                             setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
                             const parsed = parseFechaRetiro(eq.fechaRetiro || "");
                             setEquipoModalFecha(parsed.date);
@@ -1478,6 +1481,7 @@ export default function Clientes() {
                             setShowNewWorkOrderForm(true);
                           } else {
                             // Equipment already picked up or done: show history list
+                            setModalIsEditingActiveOrder(false);
                             setEquipoModalDesperfecto(eq.newDesperfecto || "");
                             const parsed = parseFechaRetiro(eq.newFechaRetiro || "");
                             setEquipoModalFecha(parsed.date);
@@ -1489,6 +1493,7 @@ export default function Clientes() {
                             setShowNewWorkOrderForm(!!eq.newDesperfecto);
                           }
                         } else {
+                          setModalIsEditingActiveOrder(true);
                           setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
                           const parsed = parseFechaRetiro(eq.fechaRetiro || "");
                           setEquipoModalFecha(parsed.date);
@@ -1758,6 +1763,7 @@ export default function Clientes() {
                 <button
                   type="button"
                   onClick={() => {
+                    setModalIsEditingActiveOrder(false); // Creating a new O.T.
                     setEquipoModalDesperfecto("");
                     setEquipoModalFecha("");
                     setEquipoModalHoraDesdeHH("");
@@ -1797,7 +1803,7 @@ export default function Clientes() {
                     {eqServices.map((srv, idx) => {
                       const isExpanded = expandedHistoryServiceId === srv.id;
                       const isLastOrder = idx === 0;
-                      const canEditOrder = isLastOrder && srv.ingresoTaller === false && (profile?.rol === "superadmin" || profile?.rol === "logistica");
+                      const canEditOrder = isLastOrder && (profile?.rol === "superadmin" || profile?.rol === "admin" || profile?.rol === "logistica");
                       
                       let serviceDateStr = "Sin fecha";
                       const dateToUse = srv.fechaIngreso || srv.createdAt;
@@ -1834,6 +1840,7 @@ export default function Clientes() {
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    setModalIsEditingActiveOrder(true); // Editing active order
                                     const eq = formEquipos[equipoModalIndex!];
                                     if (eq) {
                                       setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
@@ -1972,6 +1979,7 @@ export default function Clientes() {
                                   <button
                                     type="button"
                                     onClick={() => {
+                                      setModalIsEditingActiveOrder(true);
                                       const eq = formEquipos[equipoModalIndex!];
                                       if (eq) {
                                         setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
@@ -2281,28 +2289,25 @@ export default function Clientes() {
                   modelo: model
                 };
 
-                if (isNewEquipment || !formEquipos[equipoModalIndex!]?.id) {
-                  newEq.desperfectoUsuario = equipoModalDesperfecto.trim();
-                  newEq.fechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
-                  newEq.fotosDrive = equipoModalPhotos;
-                } else {
-                  if (showNewWorkOrderForm) {
-                    const eq = formEquipos[equipoModalIndex!];
-                    if (eq && eq.ingresoTaller === false) {
-                      newEq.desperfectoUsuario = equipoModalDesperfecto.trim();
-                      newEq.fechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
-                      newEq.fotosDrive = equipoModalPhotos;
-                    } else {
-                      newEq.newDesperfecto = equipoModalDesperfecto.trim();
-                      newEq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
-                      newEq.newFotosDrive = equipoModalPhotos;
-                    }
-                  } else {
-                    newEq.newDesperfecto = undefined;
-                    newEq.newFechaRetiro = undefined;
-                    newEq.newFotosDrive = undefined;
-                  }
-                }
+                if (isNewEquipment || !formEquipos[equipoModalIndex!]?.id || modalIsEditingActiveOrder) {
+                   newEq.desperfectoUsuario = equipoModalDesperfecto.trim();
+                   newEq.fechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
+                   newEq.fotosDrive = equipoModalPhotos;
+                   // Clear new order properties if editing active order
+                   newEq.newDesperfecto = undefined;
+                   newEq.newFechaRetiro = undefined;
+                   newEq.newFotosDrive = undefined;
+                 } else {
+                   if (showNewWorkOrderForm) {
+                     newEq.newDesperfecto = equipoModalDesperfecto.trim();
+                     newEq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
+                     newEq.newFotosDrive = equipoModalPhotos;
+                   } else {
+                     newEq.newDesperfecto = undefined;
+                     newEq.newFechaRetiro = undefined;
+                     newEq.newFotosDrive = undefined;
+                   }
+                 }
                 
                 if (equipoModalIndex !== null) {
                   setFormEquipos(prev => {
