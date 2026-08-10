@@ -42,6 +42,14 @@ const getWhatsAppUrl = (phone?: string) => {
   return `https://wa.me/${clean}`;
 };
 
+const getTodayDateString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function Clientes() {
   const { profile } = useAuth();
   const { navigate, selectedId, navigationData } = useNavigation();
@@ -236,7 +244,7 @@ export default function Clientes() {
   const [equipoModalMarca, setEquipoModalMarca] = useState("");
   const [equipoModalModelo, setEquipoModalModelo] = useState("");
   const [equipoModalDesperfecto, setEquipoModalDesperfecto] = useState("");
-  const [equipoModalFecha, setEquipoModalFecha] = useState("");
+  const [equipoModalFecha, setEquipoModalFecha] = useState(getTodayDateString());
   const [equipoModalHoraDesdeHH, setEquipoModalHoraDesdeHH] = useState("");
   const [equipoModalHoraDesdeMM, setEquipoModalHoraDesdeMM] = useState("");
   const [equipoModalHoraHastaHH, setEquipoModalHoraHastaHH] = useState("");
@@ -381,7 +389,7 @@ export default function Clientes() {
     setEquipoModalMarca("");
     setEquipoModalModelo("");
     setEquipoModalDesperfecto("");
-    setEquipoModalFecha("");
+    setEquipoModalFecha(getTodayDateString());
     setEquipoModalHoraDesdeHH("");
     setEquipoModalHoraDesdeMM("");
     setEquipoModalHoraHastaHH("");
@@ -1430,7 +1438,7 @@ export default function Clientes() {
                     setEquipoModalMarca("");
                     setEquipoModalModelo("");
                     setEquipoModalDesperfecto("");
-                    setEquipoModalFecha("");
+                    setEquipoModalFecha(getTodayDateString());
                     setEquipoModalHoraDesdeHH("");
                     setEquipoModalHoraDesdeMM("");
                     setEquipoModalHoraHastaHH("");
@@ -1765,7 +1773,7 @@ export default function Clientes() {
                   onClick={() => {
                     setModalIsEditingActiveOrder(false); // Creating a new O.T.
                     setEquipoModalDesperfecto("");
-                    setEquipoModalFecha("");
+                    setEquipoModalFecha(getTodayDateString());
                     setEquipoModalHoraDesdeHH("");
                     setEquipoModalHoraDesdeMM("");
                     setEquipoModalHoraHastaHH("");
