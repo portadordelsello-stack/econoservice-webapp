@@ -1306,7 +1306,7 @@ export default function Logistica() {
                         ].filter(Boolean).join(", ");
 
                         const isChecked = isAdmin && selectedReceipts.includes(srv.id);
-                        const maxReached = selectedReceipts.length >= 5 && !isChecked;
+                        const maxReached = selectedReceipts.length >= 30 && !isChecked;
 
                         return (
                           <div
@@ -1435,7 +1435,7 @@ export default function Logistica() {
                             ].filter(Boolean).join(", ");
 
                             const isChecked = selectedReceipts.includes(srv.id);
-                            const maxReached = selectedReceipts.length >= 5 && !isChecked;
+                            const maxReached = selectedReceipts.length >= 30 && !isChecked;
                             const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
 
                             return (
@@ -1471,7 +1471,7 @@ export default function Logistica() {
                                         }
                                       }}
                                       className="w-4/5 h-4 rounded border-slate-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                      title={maxReached ? "Máximo 5 clientes" : ""}
+                                      title={maxReached ? "Máximo 30 clientes" : ""}
                                     />
                                   </td>
                                 )}
@@ -1539,11 +1539,11 @@ export default function Logistica() {
                       </table>
                     </div>
 
-                    {/* Warning when 5 selected */}
-                    {selectedReceipts.length === 5 && (
+                    {/* Warning when 30 selected */}
+                    {selectedReceipts.length === 30 && (
                       <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl text-xs font-semibold text-amber-700 dark:text-amber-400">
                         <AlertTriangle className="w-4 h-4 shrink-0" />
-                        <span>Límite alcanzado: máximo 5 recibos por vez. Desmarca alguno para elegir otro.</span>
+                        <span>Límite alcanzado: máximo 30 recibos por vez. Desmarca alguno para elegir otro.</span>
                       </div>
                     )}
                   </>
