@@ -459,7 +459,6 @@ export default function DetalleServicio() {
         await syncRepuestosToStock(editRepuestosComprados);
       }
 
-      await loadServiceDetails();
       alert("¡Cambios guardados con éxito!");
       navigate(navigationData?.fromView || "servicios");
     } catch (err) {
