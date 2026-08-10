@@ -774,6 +774,28 @@ export default function Clientes() {
             }, profile?.uid || "system", profile?.nombre || "Usuario");
           }
 
+          // If the equipment has an active service order pending pickup (ingresoTaller === false), update its desperfecto and logistics info
+          const sortedServices = eqServices.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
+
+          if (sortedServices.length > 0 && sortedServices[0].ingresoTaller === false) {
+            const activeSrv = sortedServices[0];
+            const infoLogisticaFull = [
+              eq.fechaRetiro && eq.fechaRetiro.trim() ? `Retiro acordado: ${eq.fechaRetiro.trim()}` : "",
+              formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
+              selectedNS ? `Config: ${selectedNS}` : ""
+            ].filter(Boolean).join(" | ");
+
+            await ServiciosService.update(activeSrv.id!, {
+              desperfectoUsuario: eq.desperfectoUsuario || "No especificado",
+              infoLogistica: infoLogisticaFull,
+              fotosDrive: eq.fotosDrive || []
+            }, profile?.uid || "system", profile?.nombre || "Usuario");
+          }
+
           // If there is a pending new work order, create it!
           if (eq.newDesperfecto) {
             const newLogisticaFull = [
@@ -1345,15 +1367,29 @@ export default function Clientes() {
                         setEquipoModalModelo("");
                         
                         if (eq.id) {
-                          setEquipoModalDesperfecto(eq.newDesperfecto || "");
-                          const parsed = parseFechaRetiro(eq.newFechaRetiro || "");
-                          setEquipoModalFecha(parsed.date);
-                          setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
-                          setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
-                          setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
-                          setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
-                          setEquipoModalPhotos(eq.newFotosDrive || []);
-                          setShowNewWorkOrderForm(!!eq.newDesperfecto);
+                          if (eq.ingresoTaller === false) {
+                            // Active order pending pickup: edit it directly!
+                            setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
+                            const parsed = parseFechaRetiro(eq.fechaRetiro || "");
+                            setEquipoModalFecha(parsed.date);
+                            setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+                            setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+                            setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+                            setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
+                            setEquipoModalPhotos(eq.fotosDrive || []);
+                            setShowNewWorkOrderForm(true);
+                          } else {
+                            // Equipment already picked up or done: show history list
+                            setEquipoModalDesperfecto(eq.newDesperfecto || "");
+                            const parsed = parseFechaRetiro(eq.newFechaRetiro || "");
+                            setEquipoModalFecha(parsed.date);
+                            setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+                            setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+                            setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+                            setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
+                            setEquipoModalPhotos(eq.newFotosDrive || []);
+                            setShowNewWorkOrderForm(!!eq.newDesperfecto);
+                          }
                         } else {
                           setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
                           const parsed = parseFechaRetiro(eq.fechaRetiro || "");
@@ -1663,7 +1699,7 @@ export default function Clientes() {
                     {eqServices.map((srv, idx) => {
                       const isExpanded = expandedHistoryServiceId === srv.id;
                       const isLastOrder = idx === 0;
-                      const canEditOrder = isLastOrder && srv.estado !== "ENTREGADO" && (profile?.rol === "superadmin" || profile?.rol === "logistica");
+                      const canEditOrder = isLastOrder && srv.ingresoTaller === false && (profile?.rol === "superadmin" || profile?.rol === "logistica");
                       
                       let serviceDateStr = "Sin fecha";
                       const dateToUse = srv.fechaIngreso || srv.createdAt;
@@ -1700,7 +1736,18 @@ export default function Clientes() {
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigate("detalle-servicio", srv.id, { fromView: "clientes" });
+                                    const eq = formEquipos[equipoModalIndex!];
+                                    if (eq) {
+                                      setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
+                                      const parsed = parseFechaRetiro(eq.fechaRetiro || "");
+                                      setEquipoModalFecha(parsed.date);
+                                      setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+                                      setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+                                      setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+                                      setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
+                                      setEquipoModalPhotos(eq.fotosDrive || []);
+                                      setShowNewWorkOrderForm(true);
+                                    }
                                   }}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-600 dark:hover:bg-indigo-600 hover:text-white text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 text-[9px] font-extrabold rounded-lg transition-all cursor-pointer mr-1"
                                 >
@@ -1803,7 +1850,20 @@ export default function Clientes() {
                                 <div className="pt-2.5 border-t border-slate-150 dark:border-gray-800 flex justify-end">
                                   <button
                                     type="button"
-                                    onClick={() => navigate("detalle-servicio", srv.id, { fromView: "clientes" })}
+                                    onClick={() => {
+                                      const eq = formEquipos[equipoModalIndex!];
+                                      if (eq) {
+                                        setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
+                                        const parsed = parseFechaRetiro(eq.fechaRetiro || "");
+                                        setEquipoModalFecha(parsed.date);
+                                        setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+                                        setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+                                        setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+                                        setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
+                                        setEquipoModalPhotos(eq.fotosDrive || []);
+                                        setShowNewWorkOrderForm(true);
+                                      }
+                                    }}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-extrabold shadow-sm hover:shadow active:scale-95 cursor-pointer uppercase"
                                   >
                                     <Edit2 className="w-3.5 h-3.5" />
@@ -2065,6 +2125,14 @@ export default function Clientes() {
                       alert("Para usuarios de logística, el desperfecto del usuario es obligatorio.");
                       return;
                     }
+                    if (!equipoModalFecha) {
+                      alert("Para usuarios de logística, la fecha de retiro es obligatoria.");
+                      return;
+                    }
+                    if (!equipoModalHoraDesdeHH || !equipoModalHoraHastaHH) {
+                      alert("Para usuarios de logística, el horario de retiro es obligatorio.");
+                      return;
+                    }
                     if (!equipoModalPhotos || equipoModalPhotos.length === 0) {
                       alert("Para usuarios de logística, debe subir al menos una foto de respaldo.");
                       return;
@@ -2098,9 +2166,16 @@ export default function Clientes() {
                   newEq.fotosDrive = equipoModalPhotos;
                 } else {
                   if (showNewWorkOrderForm) {
-                    newEq.newDesperfecto = equipoModalDesperfecto.trim();
-                    newEq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
-                    newEq.newFotosDrive = equipoModalPhotos;
+                    const eq = formEquipos[equipoModalIndex!];
+                    if (eq && eq.ingresoTaller === false) {
+                      newEq.desperfectoUsuario = equipoModalDesperfecto.trim();
+                      newEq.fechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
+                      newEq.fotosDrive = equipoModalPhotos;
+                    } else {
+                      newEq.newDesperfecto = equipoModalDesperfecto.trim();
+                      newEq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
+                      newEq.newFotosDrive = equipoModalPhotos;
+                    }
                   } else {
                     newEq.newDesperfecto = undefined;
                     newEq.newFechaRetiro = undefined;
