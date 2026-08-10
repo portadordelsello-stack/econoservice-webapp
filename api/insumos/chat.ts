@@ -57,13 +57,17 @@ INSTRUCCIONES:
 3. Presenta una respuesta detallada e idealmente agrupa los repuestos necesarios (por ejemplo: "2 bombas para el modelo Drean Excellent, 3 rulemanes para el modelo Philco PHLF6510B2").
 4. Si te preguntan cosas específicas sobre un aparato, un número de orden, o el stock, responde con precisión usando la información proveída.
 5. Mantén tus respuestas concisas, profesionales y enfocadas en la acción de compra o stock del taller.`;
-
-    const chatHistory = messages.map((m: any) => ({
+    let chatHistory = messages.map((m: any) => ({
       role: m.role === "assistant" ? "model" : m.role,
       parts: [{ text: m.content }]
     }));
 
-    // Separate the last user message from the rest of the history
+    // Ensure first message in history is from user
+    const firstUserIdx = chatHistory.findIndex(m => m.role === "user");
+    if (firstUserIdx !== -1) {
+      chatHistory = chatHistory.slice(firstUserIdx);
+    }
+
     const lastUserMessage = chatHistory[chatHistory.length - 1];
     const previousHistory = chatHistory.slice(0, -1);
 
