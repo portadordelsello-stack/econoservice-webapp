@@ -423,20 +423,42 @@ export default function Clientes() {
 
         for (let i = 0; i < finalEquipos.length; i++) {
           const eq = finalEquipos[i];
-          if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
-            setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-            setFormSaving(false);
-            return;
-          }
-          if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
-            setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-            setFormSaving(false);
-            return;
-          }
-          if (!eq.fechaRetiro || !eq.fechaRetiro.trim()) {
-            setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-            setFormSaving(false);
-            return;
+          const isNewEq = !eq.id;
+          const isPendingPickup = eq.id && eq.ingresoTaller === false;
+          const isCreatingNewOrder = eq.id && eq.newDesperfecto !== undefined;
+
+          if (isNewEq || isPendingPickup) {
+            if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
+              setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+            if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
+              setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+            if (!eq.fechaRetiro || !eq.fechaRetiro.trim()) {
+              setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+          } else if (isCreatingNewOrder) {
+            if (!eq.newDesperfecto || !eq.newDesperfecto.trim()) {
+              setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+            if (!eq.newFotosDrive || eq.newFotosDrive.length === 0) {
+              setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+            if (!eq.newFechaRetiro || !eq.newFechaRetiro.trim()) {
+              setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
           }
         }
       }
@@ -730,20 +752,42 @@ export default function Clientes() {
 
         for (let i = 0; i < finalEquipos.length; i++) {
           const eq = finalEquipos[i];
-          if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
-            setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-            setFormSaving(false);
-            return;
-          }
-          if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
-            setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-            setFormSaving(false);
-            return;
-          }
-          if (!eq.fechaRetiro || !eq.fechaRetiro.trim()) {
-            setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-            setFormSaving(false);
-            return;
+          const isNewEq = !eq.id;
+          const isPendingPickup = eq.id && eq.ingresoTaller === false;
+          const isCreatingNewOrder = eq.id && eq.newDesperfecto !== undefined;
+
+          if (isNewEq || isPendingPickup) {
+            if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
+              setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+            if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
+              setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+            if (!eq.fechaRetiro || !eq.fechaRetiro.trim()) {
+              setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+          } else if (isCreatingNewOrder) {
+            if (!eq.newDesperfecto || !eq.newDesperfecto.trim()) {
+              setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+            if (!eq.newFotosDrive || eq.newFotosDrive.length === 0) {
+              setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
+            if (!eq.newFechaRetiro || !eq.newFechaRetiro.trim()) {
+              setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
+              setFormSaving(false);
+              return;
+            }
           }
         }
       }
@@ -2183,7 +2227,7 @@ export default function Clientes() {
                   modelo: model
                 };
 
-                if (isNewEquipment) {
+                if (isNewEquipment || !formEquipos[equipoModalIndex!]?.id) {
                   newEq.desperfectoUsuario = equipoModalDesperfecto.trim();
                   newEq.fechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
                   newEq.fotosDrive = equipoModalPhotos;
