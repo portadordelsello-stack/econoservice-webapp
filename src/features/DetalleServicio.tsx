@@ -1014,14 +1014,59 @@ export default function DetalleServicio() {
             
             {profile?.rol === "tecnico" ? (
               <>
+                {/* 1. If RECIBIDO, show DIAGNOSTICADO */}
+                {servicio.estado === "RECIBIDO" && (
+                  <button
+                    type="button"
+                    disabled={submitting || isSaveDisabled}
+                    onClick={async () => {
+                      setEditEstado("EN_ESPERA");
+                      setTimeout(() => handleSave("EN_ESPERA", false, "Técnico guardó el diagnóstico y marcó como DIAGNOSTICADO"), 100);
+                    }}
+                    className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Guardando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>DIAGNOSTICADO</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* 2. If ACEPTADO, show TERMINADO */}
+                {servicio.estado === "ACEPTADO" && (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => handleTerminado()}
+                    className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Guardando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>TERMINADO</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* 3. Guardar button is always available for technician */}
                 <button
                   type="button"
                   disabled={submitting || isSaveDisabled}
-                  onClick={async () => {
-                    setEditEstado("EN_ESPERA");
-                    setTimeout(() => handleSave("EN_ESPERA", false, "Técnico guardó el diagnóstico y marcó como DIAGNOSTICADO"), 100);
-                  }}
-                  className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                  onClick={() => handleSave()}
+                  className="inline-flex items-center justify-center gap-2 h-10 px-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   {submitting ? (
                     <>
@@ -1030,34 +1075,63 @@ export default function DetalleServicio() {
                     </>
                   ) : (
                     <>
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>DIAGNOSTICADO</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => handleTerminado()}
-                  className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Guardando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span>TERMINADO</span>
+                      <Save className="w-3.5 h-3.5" />
+                      <span>Guardar</span>
                     </>
                   )}
                 </button>
               </>
             ) : (
               <>
-                {isAdmin && editEstado !== "ACEPTADO" && editEstado !== "EN_REPARACION" && editEstado !== "LISTO_PARA_ENTREGA" && editEstado !== "ENTREGADO" && (
+                {/* Admin/Superadmin confirm and reject buttons */}
+                {isAdmin && servicio.estado === "EN_ESPERA" && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={submitting || isSaveDisabled}
+                      onClick={async () => {
+                        await handleSave("ACEPTADO", false, "Administrador confirmó la reparación");
+                      }}
+                      className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer uppercase"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Guardando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          <span>Confirmar Reparación</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={submitting || isSaveDisabled}
+                      onClick={async () => {
+                        await handleSave("RECHAZADO", false, "Administrador rechazó la reparación");
+                      }}
+                      className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-red-600 hover:bg-red-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer uppercase"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Guardando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>Rechazar</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+
+                {/* Confirm repair option if not in EN_ESPERA but in eligible state */}
+                {isAdmin && servicio.estado !== "EN_ESPERA" && editEstado !== "ACEPTADO" && editEstado !== "EN_REPARACION" && editEstado !== "LISTO_PARA_ENTREGA" && editEstado !== "ENTREGADO" && (
                   <button
                     type="button"
                     disabled={submitting || isSaveDisabled}
