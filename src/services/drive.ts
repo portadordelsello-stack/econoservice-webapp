@@ -41,7 +41,7 @@ export const DriveService = {
   // Authorize specifically with Google Drive scope
   async connect(): Promise<string> {
     const provider = new GoogleAuthProvider();
-    provider.addScope("https://www.googleapis.com/auth/drive.file");
+    provider.addScope("https://www.googleapis.com/auth/drive");
     // Ensure we ask for authorization permissions and allow account selection
     provider.setCustomParameters({ prompt: "select_account" });
     
