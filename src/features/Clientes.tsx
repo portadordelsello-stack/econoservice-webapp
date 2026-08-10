@@ -1749,10 +1749,33 @@ export default function Clientes() {
                                       setShowNewWorkOrderForm(true);
                                     }
                                   }}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-600 dark:hover:bg-indigo-600 hover:text-white text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 text-[9px] font-extrabold rounded-lg transition-all cursor-pointer mr-1"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-55 dark:bg-indigo-950/40 hover:bg-indigo-600 dark:hover:bg-indigo-600 hover:text-white text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 text-[9px] font-extrabold rounded-lg transition-all cursor-pointer mr-1"
                                 >
                                   <Edit2 className="w-3 h-3" />
                                   <span>EDITAR</span>
+                                </button>
+                              )}
+                              {(profile?.rol === "superadmin" || profile?.rol === "admin") && srv.id && (
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm("¿Está seguro que desea eliminar esta orden de trabajo? Esta acción eliminará permanentemente la orden y todos sus registros asociados.")) {
+                                      try {
+                                        await ServiciosService.delete(srv.id!);
+                                        setAllServices(prev => prev.filter(s => s.id !== srv.id));
+                                        alert("Orden de trabajo eliminada correctamente.");
+                                      } catch (err: any) {
+                                        console.error("Error deleting service order:", err);
+                                        alert("Error al intentar eliminar la orden de trabajo.");
+                                      }
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-red-950/40 hover:bg-red-650 dark:hover:bg-red-650 hover:text-white text-red-700 dark:text-red-300 border border-red-100 dark:border-red-900/30 text-[9px] font-extrabold rounded-lg transition-all cursor-pointer mr-1"
+                                  title="Eliminar Orden"
+                                >
+                                  <Trash className="w-3 h-3" />
+                                  <span>ELIMINAR</span>
                                 </button>
                               )}
                               <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
@@ -2067,7 +2090,7 @@ export default function Clientes() {
           {/* Form Actions */}
           <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
             <div>
-              {isEditMode && (
+              {isEditMode && (profile?.rol === "superadmin" || profile?.rol === "admin") && (
                 <button
                   type="button"
                   onClick={() => {

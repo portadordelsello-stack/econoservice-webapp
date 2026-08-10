@@ -560,11 +560,32 @@ export const ServiciosService = {
 
   async delete(id: string): Promise<void> {
     const original = await this.getById(id);
-    if (original && original.equipoId) {
-      await supabase.from("equipos").delete().eq("id", original.equipoId);
+    if (!original) return;
+
+    // 1. Delete budget items & budget
+    const { data: budget } = await supabase.from("presupuestos").select("id").eq("servicio_id", id).maybeSingle();
+    if (budget && budget.id) {
+      await supabase.from("presupuesto_items").delete().eq("presupuesto_id", budget.id);
+      await supabase.from("presupuestos").delete().eq("id", budget.id);
     }
-    const { error } = await supabase.from("servicios").delete().eq("id", id);
-    if (error) throw error;
+
+    // 2. Delete history logs referencing the service
+    await supabase.from("historial").delete().eq("servicio_id", id);
+
+    // 3. Delete notifications referencing the service
+    await supabase.from("notifications").delete().eq("service_id", id);
+
+    // 4. Delete the service itself
+    const { error: srvError } = await supabase.from("servicios").delete().eq("id", id);
+    if (srvError) throw srvError;
+
+    // 5. Delete the associated equipment if it doesn't have any other services remaining
+    if (original.equipoId) {
+      const { data: otherServices } = await supabase.from("servicios").select("id").eq("equipo_id", original.equipoId);
+      if (!otherServices || otherServices.length === 0) {
+        await supabase.from("equipos").delete().eq("id", original.equipoId);
+      }
+    }
   },
 
   // Historial Table operations
