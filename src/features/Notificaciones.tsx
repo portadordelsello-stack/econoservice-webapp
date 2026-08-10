@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
-import { NotificationsService, toDate } from "../services/db";
+import { NotificationsService, ServiciosService, toDate } from "../services/db";
 import { AppNotification } from "../types";
 import { 
   Bell, 
@@ -83,6 +83,15 @@ export default function Notificaciones() {
       await NotificationsService.markAsRead(notif.id, user.uid);
     }
     if (notif.serviceId) {
+      try {
+        const srv = await ServiciosService.getById(notif.serviceId);
+        if (srv && srv.clienteId && user.rol === "logistica") {
+          navigate("clientes", srv.clienteId, { autoOpenEquipoId: srv.equipoId });
+          return;
+        }
+      } catch (err) {
+        console.error("Error redirecting from notification click:", err);
+      }
       navigate("detalle-servicio", notif.serviceId);
     }
   };

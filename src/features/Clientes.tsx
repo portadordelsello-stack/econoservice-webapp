@@ -44,7 +44,7 @@ const getWhatsAppUrl = (phone?: string) => {
 
 export default function Clientes() {
   const { profile } = useAuth();
-  const { navigate, selectedId } = useNavigation();
+  const { navigate, selectedId, navigationData } = useNavigation();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Cliente[] | null>(null);
@@ -677,7 +677,52 @@ export default function Clientes() {
         }
       }
 
-      setCurrentSubView("editar");
+      // Auto-open equipment modal if requested via navigationData
+      const autoOpenId = navigationData?.autoOpenEquipoId;
+      if (autoOpenId) {
+        const autoIdx = mappedEquipos.findIndex(eq => eq.id === autoOpenId);
+        if (autoIdx !== -1) {
+          const autoEq = mappedEquipos[autoIdx];
+          setEquipmentSourceSubView("editar");
+          setEquipoModalIndex(autoIdx);
+          setEquipoModalTipo(autoEq.tipo || "Lavarropas");
+          const combined = autoEq.marca && autoEq.modelo && autoEq.modelo !== "-" && autoEq.modelo !== "Genérico"
+            ? `${autoEq.marca} ${autoEq.modelo}`.trim()
+            : (autoEq.marca || autoEq.modelo || "");
+          setEquipoModalMarca(combined);
+          setEquipoModalModelo("");
+          
+          if (autoEq.id) {
+            if (autoEq.ingresoTaller === false) {
+              setEquipoModalDesperfecto(autoEq.desperfectoUsuario || "");
+              const parsed = parseFechaRetiro(autoEq.fechaRetiro || "");
+              setEquipoModalFecha(parsed.date);
+              setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+              setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+              setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+              setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
+              setEquipoModalPhotos(autoEq.fotosDrive || []);
+              setShowNewWorkOrderForm(true);
+            } else {
+              setEquipoModalDesperfecto(autoEq.newDesperfecto || "");
+              const parsed = parseFechaRetiro(autoEq.newFechaRetiro || "");
+              setEquipoModalFecha(parsed.date);
+              setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+              setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+              setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+              setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
+              setEquipoModalPhotos(autoEq.newFotosDrive || []);
+              setShowNewWorkOrderForm(!!autoEq.newDesperfecto);
+            }
+          }
+          setExpandedHistoryServiceId(null);
+          setCurrentSubView("equipo-form");
+        } else {
+          setCurrentSubView("editar");
+        }
+      } else {
+        setCurrentSubView("editar");
+      }
     } catch (err) {
       console.error("Error loading client data for editing:", err);
       setFormError("Error al cargar los datos del cliente.");
