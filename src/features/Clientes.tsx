@@ -1338,13 +1338,20 @@ export default function Clientes() {
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                     Ciudad / Localidad
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={formCiudad}
                     onChange={(e) => setFormCiudad(e.target.value)}
-                    placeholder="Ej. Córdoba"
                     className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
+                  >
+                    <option value="">Seleccione una localidad...</option>
+                    <option value="Santa Fe">Santa Fe</option>
+                    <option value="Santo Tomé">Santo Tomé</option>
+                    <option value="Sauce">Sauce</option>
+                    <option value="Colastiné Norte">Colastiné Norte</option>
+                    <option value="Rincon">Rincon</option>
+                    <option value="Recreo">Recreo</option>
+                    <option value="Colastiné Sur">Colastiné Sur</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
