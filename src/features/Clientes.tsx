@@ -422,12 +422,11 @@ export default function Clientes() {
         return;
       }
 
-      // Validation for logistics users
+      // Validation warning for logistics users
       if (profile?.rol === "logistica") {
+        const warnings: string[] = [];
         if (!formNS1 && !formNS2 && !formNS3) {
-          setFormError("Para usuarios de logística, debe seleccionar al menos una de las Opciones Logísticas (NS1, NS2, NS3).");
-          setFormSaving(false);
-          return;
+          warnings.push("Debe seleccionar al menos una de las Opciones Logísticas (NS1, NS2, NS3)");
         }
 
         for (let i = 0; i < finalEquipos.length; i++) {
@@ -437,38 +436,32 @@ export default function Clientes() {
           const isCreatingNewOrder = eq.id && eq.newDesperfecto !== undefined;
 
           if (isNewEq || isPendingPickup) {
+            const eqLabel = `${eq.tipo || eq.marca || "Equipo"} #${i + 1}`;
             if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
-              setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Falta desperfecto del usuario para ${eqLabel}`);
             }
             if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
-              setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Faltan fotos de respaldo para ${eqLabel}`);
             }
             if (!eq.fechaRetiro || !eq.fechaRetiro.trim()) {
-              setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Falta fecha y horario de retiro para ${eqLabel}`);
             }
           } else if (isCreatingNewOrder) {
+            const eqLabel = `${eq.tipo || eq.marca || "Equipo"} #${i + 1}`;
             if (!eq.newDesperfecto || !eq.newDesperfecto.trim()) {
-              setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Falta desperfecto del usuario para la nueva orden de ${eqLabel}`);
             }
             if (!eq.newFotosDrive || eq.newFotosDrive.length === 0) {
-              setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Faltan fotos de respaldo para la nueva orden de ${eqLabel}`);
             }
             if (!eq.newFechaRetiro || !eq.newFechaRetiro.trim()) {
-              setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Falta fecha y horario de retiro para la nueva orden de ${eqLabel}`);
             }
           }
+        }
+
+        if (warnings.length > 0) {
+          alert(`Atención Logística:\n\nFaltan completar algunos datos requeridos:\n- ${warnings.join("\n- ")}\n\nEl pedido se guardará de todas formas.`);
         }
       }
       
@@ -805,12 +798,11 @@ export default function Clientes() {
         return;
       }
 
-      // Validation for logistics users
+      // Validation warning for logistics users
       if (profile?.rol === "logistica") {
+        const warnings: string[] = [];
         if (!formNS1 && !formNS2 && !formNS3) {
-          setFormError("Para usuarios de logística, debe seleccionar al menos una de las Opciones Logísticas (NS1, NS2, NS3).");
-          setFormSaving(false);
-          return;
+          warnings.push("Debe seleccionar al menos una de las Opciones Logísticas (NS1, NS2, NS3)");
         }
 
         for (let i = 0; i < finalEquipos.length; i++) {
@@ -820,38 +812,32 @@ export default function Clientes() {
           const isCreatingNewOrder = eq.id && eq.newDesperfecto !== undefined;
 
           if (isNewEq || isPendingPickup) {
+            const eqLabel = `${eq.tipo || eq.marca || "Equipo"} #${i + 1}`;
             if (!eq.desperfectoUsuario || !eq.desperfectoUsuario.trim()) {
-              setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Falta desperfecto del usuario para ${eqLabel}`);
             }
             if (!eq.fotosDrive || eq.fotosDrive.length === 0) {
-              setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Faltan fotos de respaldo para ${eqLabel}`);
             }
             if (!eq.fechaRetiro || !eq.fechaRetiro.trim()) {
-              setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Falta fecha y horario de retiro para ${eqLabel}`);
             }
           } else if (isCreatingNewOrder) {
+            const eqLabel = `${eq.tipo || eq.marca || "Equipo"} #${i + 1}`;
             if (!eq.newDesperfecto || !eq.newDesperfecto.trim()) {
-              setFormError(`El desperfecto del usuario es obligatorio para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Falta desperfecto del usuario para la nueva orden de ${eqLabel}`);
             }
             if (!eq.newFotosDrive || eq.newFotosDrive.length === 0) {
-              setFormError(`Debe subir al menos una foto de respaldo para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Faltan fotos de respaldo para la nueva orden de ${eqLabel}`);
             }
             if (!eq.newFechaRetiro || !eq.newFechaRetiro.trim()) {
-              setFormError(`La fecha y horario de retiro son obligatorios para el equipo #${i + 1} (${eq.tipo || eq.marca} ${eq.modelo}).`);
-              setFormSaving(false);
-              return;
+              warnings.push(`Falta fecha y horario de retiro para la nueva orden de ${eqLabel}`);
             }
           }
+        }
+
+        if (warnings.length > 0) {
+          alert(`Atención Logística:\n\nFaltan completar algunos datos requeridos:\n- ${warnings.join("\n- ")}\n\nEl pedido se actualizará de todas formas.`);
         }
       }
 
@@ -2245,21 +2231,13 @@ export default function Clientes() {
                     return;
                   }
                   if (profile?.rol === "logistica") {
-                    if (!equipoModalDesperfecto.trim()) {
-                      alert("Para usuarios de logística, el desperfecto del usuario es obligatorio.");
-                      return;
-                    }
-                    if (!equipoModalFecha) {
-                      alert("Para usuarios de logística, la fecha de retiro es obligatoria.");
-                      return;
-                    }
-                    if (!equipoModalHoraDesdeHH || !equipoModalHoraHastaHH) {
-                      alert("Para usuarios de logística, el horario de retiro es obligatorio.");
-                      return;
-                    }
-                    if (!equipoModalPhotos || equipoModalPhotos.length === 0) {
-                      alert("Para usuarios de logística, debe subir al menos una foto de respaldo.");
-                      return;
+                    const missing = [];
+                    if (!equipoModalDesperfecto.trim()) missing.push("desperfecto del usuario");
+                    if (!equipoModalFecha) missing.push("fecha de retiro");
+                    if (!equipoModalHoraDesdeHH || !equipoModalHoraHastaHH) missing.push("horario de retiro");
+                    if (!equipoModalPhotos || equipoModalPhotos.length === 0) missing.push("fotos de respaldo");
+                    if (missing.length > 0) {
+                      alert(`Aviso de Logística: Faltan completar los siguientes campos: ${missing.join(", ")}. Se permitirá guardar de todas formas.`);
                     }
                   }
                 }
