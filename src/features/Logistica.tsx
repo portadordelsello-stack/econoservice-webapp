@@ -228,13 +228,15 @@ export default function Logistica() {
     if (c.id) clientMap.set(c.id, c);
   });
 
-  // Extract all services that have scheduled withdrawals
+  // Extract all services that have scheduled withdrawals and are not yet in the workshop
   const servicesWithWithdrawals = servicios
     .map(s => {
       const parsed = parseInfoLogistica(s.infoLogistica);
       return parsed ? { ...s, withdrawal: parsed } : null;
     })
-    .filter((s): s is (Servicio & { withdrawal: { fechaRetiroStr: string; notasRetiro: string } }) => s !== null);
+    .filter((s): s is (Servicio & { withdrawal: { fechaRetiroStr: string; notasRetiro: string } }) => 
+      s !== null && s.ingresoTaller === false
+    );
 
   // Divide into today's withdrawals and other days' (Agenda)
   const todayWithdrawals = servicesWithWithdrawals.filter(s => {
