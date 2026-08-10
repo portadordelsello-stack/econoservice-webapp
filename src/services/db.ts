@@ -100,11 +100,11 @@ export const ClientesService = {
       return (data || []).map(mapToFrontendCliente);
     }
 
-    // Numeric only (could be numero_cliente)
+    // Numeric only (could be numero_cliente, tel_cel, or street number)
     if (/^\d+$/.test(termClean)) {
       const { data, error } = await supabase.from("clientes").select("*")
-        .or(`numero_cliente.eq.${termClean},tel_cel.ilike.%${termClean}%`)
-        .limit(30);
+        .or(`numero_cliente.eq.${termClean},tel_cel.ilike.%${termClean}%,numero.ilike.%${termClean}%,tel_fijo.ilike.%${termClean}%`)
+        .limit(50);
       if (error) throw error;
       return (data || []).map(mapToFrontendCliente);
     }
