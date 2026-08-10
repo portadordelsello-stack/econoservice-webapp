@@ -594,13 +594,21 @@ export default function Clientes() {
         
         const mappedEquipos = equipments.map(eq => {
           // Find services for this specific equipment
-          const eqServices = clientServices.filter(s => s.equipoId === eq.id);
-          const fotosDrive = eqServices.length > 0 ? (eqServices[0].fotosDrive || []) : [];
-          const desperfectoUsuario = eqServices.length > 0 ? (eqServices[0].desperfectoUsuario || "") : "";
+          const eqServices = clientServices.filter(s => s.equipoId === eq.id)
+            .sort((a, b) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return dateB - dateA;
+            });
+
+          const latestSrv = eqServices.length > 0 ? eqServices[0] : null;
+          const fotosDrive = latestSrv ? (latestSrv.fotosDrive || []) : [];
+          const desperfectoUsuario = latestSrv ? (latestSrv.desperfectoUsuario || "") : "";
+          const ingresoTaller = latestSrv ? (latestSrv.ingresoTaller || false) : false;
           
           let fechaRetiro = "";
-          if (eqServices.length > 0) {
-            const logistica = eqServices[0].infoLogistica || "";
+          if (latestSrv) {
+            const logistica = latestSrv.infoLogistica || "";
             const parts = logistica.split(" | ");
             parts.forEach(part => {
               if (part.startsWith("Retiro acordado: ")) {
@@ -620,7 +628,8 @@ export default function Clientes() {
             modelo: eq.modelo || "",
             desperfectoUsuario,
             fotosDrive,
-            fechaRetiro
+            fechaRetiro,
+            ingresoTaller: ingresoTaller !== false
           };
         });
         
