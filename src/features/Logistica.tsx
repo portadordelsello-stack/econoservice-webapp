@@ -1436,6 +1436,7 @@ export default function Logistica() {
 
                             const isChecked = selectedReceipts.includes(srv.id);
                             const maxReached = selectedReceipts.length >= 5 && !isChecked;
+                            const isDespachado = srv.estado === "ENTREGA_EN_PROGRESO";
 
                             return (
                               <tr
