@@ -1660,8 +1660,11 @@ export default function Clientes() {
 
                 return (
                   <div className="space-y-2">
-                    {eqServices.map((srv) => {
+                    {eqServices.map((srv, idx) => {
                       const isExpanded = expandedHistoryServiceId === srv.id;
+                      const isLastOrder = idx === 0;
+                      const canEditOrder = isLastOrder && srv.estado !== "ENTREGADO" && (profile?.rol === "superadmin" || profile?.rol === "logistica");
+                      
                       let serviceDateStr = "Sin fecha";
                       const dateToUse = srv.fechaIngreso || srv.createdAt;
                       if (dateToUse) {
@@ -1692,6 +1695,19 @@ export default function Clientes() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
+                              {canEditOrder && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate("detalle-servicio", srv.id, { fromView: "clientes" });
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-600 dark:hover:bg-indigo-600 hover:text-white text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 text-[9px] font-extrabold rounded-lg transition-all cursor-pointer mr-1"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                  <span>EDITAR</span>
+                                </button>
+                              )}
                               <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
                                 srv.estado === "ENTREGADO"
                                   ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
@@ -1781,6 +1797,18 @@ export default function Clientes() {
                                       </a>
                                     ))}
                                   </div>
+                                </div>
+                              )}
+                              {canEditOrder && (
+                                <div className="pt-2.5 border-t border-slate-150 dark:border-gray-800 flex justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => navigate("detalle-servicio", srv.id, { fromView: "clientes" })}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-extrabold shadow-sm hover:shadow active:scale-95 cursor-pointer uppercase"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                    <span>Editar Orden de Trabajo</span>
+                                  </button>
                                 </div>
                               )}
                             </div>

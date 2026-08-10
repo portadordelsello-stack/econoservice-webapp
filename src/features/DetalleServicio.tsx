@@ -137,6 +137,12 @@ export default function DetalleServicio() {
   // Notes
   const [editNotasInternas, setEditNotasInternas] = useState("");
 
+  // Logistics fields
+  const [editCitaEntrega, setEditCitaEntrega] = useState("");
+  const [editHoraEntregaDesde, setEditHoraEntregaDesde] = useState("");
+  const [editHoraEntregaHasta, setEditHoraEntregaHasta] = useState("");
+  const [editInfoLogistica, setEditInfoLogistica] = useState("");
+
   // File Upload states
   const [filesList, setFilesList] = useState<{ name: string; url: string }[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -182,6 +188,24 @@ export default function DetalleServicio() {
       setEditFactura(serv.factura || false);
       setEditContado(serv.contado || false);
       setEditNotasInternas(serv.notasInternas || "");
+
+      // Sync logistics fields
+      let formattedCita = "";
+      if (serv.citaEntrega) {
+        try {
+          const d = new Date(serv.citaEntrega);
+          if (!isNaN(d.getTime())) {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const dd = String(d.getDate()).padStart(2, "0");
+            formattedCita = `${yyyy}-${mm}-${dd}`;
+          }
+        } catch {}
+      }
+      setEditCitaEntrega(formattedCita);
+      setEditHoraEntregaDesde(serv.horaEntregaDesde || "");
+      setEditHoraEntregaHasta(serv.horaEntregaHasta || "");
+      setEditInfoLogistica(serv.infoLogistica || "");
 
       // If pre-loaded client/equipo are available, use them right away
       if (navigationData?.cliente) setCliente(navigationData.cliente as Cliente);
@@ -352,7 +376,11 @@ export default function DetalleServicio() {
           terminado: isReparacionTerminada,
           entregado: editEntregado,
           factura: editFactura,
-          contado: editContado
+          contado: editContado,
+          citaEntrega: editCitaEntrega ? new Date(`${editCitaEntrega}T12:00:00`) : null,
+          horaEntregaDesde: editHoraEntregaDesde,
+          horaEntregaHasta: editHoraEntregaHasta,
+          infoLogistica: editInfoLogistica
         };
 
         if (finalState === "ACEPTADO" || finalState === "LISTO_PARA_ENTREGA" || editAcepta) {
@@ -425,7 +453,7 @@ export default function DetalleServicio() {
 
       await loadServiceDetails();
       alert("¡Cambios guardados con éxito!");
-      navigate("servicios");
+      navigate(navigationData?.fromView || "servicios");
     } catch (err) {
       console.error("Error saving changes:", err);
       alert("Error al guardar cambios.");
@@ -487,7 +515,7 @@ export default function DetalleServicio() {
       }
 
       alert("¡Reparación marcada como TERMINADA!");
-      navigate("servicios");
+      navigate(navigationData?.fromView || "servicios");
     } catch (err) {
       console.error("Error al marcar como terminado:", err);
       alert("Error al marcar como terminado: " + (err instanceof Error ? err.message : String(err)));
@@ -541,7 +569,12 @@ export default function DetalleServicio() {
     cliente.localidad || "Santo Tomé"
   ].filter(Boolean).join(", ") : "Sin Domicilio";
 
-  const isSaveDisabled = profile?.rol === "tecnico" ? (!editDiagnostico.trim()) : false;
+  const isSaveDisabled = 
+    profile?.rol === "tecnico" 
+      ? (!editDiagnostico.trim()) 
+      : profile?.rol === "logistica"
+        ? (!editCitaEntrega || !editHoraEntregaDesde.trim() || !editHoraEntregaHasta.trim() || !editInfoLogistica.trim())
+        : false;
 
   return (
     <div className="space-y-6 animate-fade-in font-sans pb-10">
@@ -550,7 +583,7 @@ export default function DetalleServicio() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-150 dark:border-gray-800 pb-5">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate("servicios")}
+            onClick={() => navigate(navigationData?.fromView || "servicios")}
             className="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer shrink-0 active:scale-95 group"
           >
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
@@ -812,6 +845,84 @@ export default function DetalleServicio() {
           </div>
         )}
 
+        {/* Row 3.5: Logística / Entrega (Cita & Horarios) */}
+        {profile?.rol !== "tecnico" && (
+          <div className="border-t border-slate-150 dark:border-gray-800/80 pt-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 dark:text-gray-300 flex items-center gap-1.5">
+                <span>Planificación de Entrega / Logística</span>
+                {profile?.rol === "logistica" && (
+                  <span className="text-[9px] font-extrabold text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/30 px-2 py-0.5 rounded tracking-wide uppercase">
+                    Obligatorio
+                  </span>
+                )}
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Fecha de Entrega */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                  Fecha de Entrega {profile?.rol === "logistica" && <span className="text-red-500 font-extrabold">*</span>}
+                </label>
+                <input
+                  type="date"
+                  value={editCitaEntrega}
+                  onChange={(e) => setEditCitaEntrega(e.target.value)}
+                  disabled={isConsulta}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer"
+                />
+              </div>
+
+              {/* Hora Desde */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                  Horario Desde (HH:MM) {profile?.rol === "logistica" && <span className="text-red-500 font-extrabold">*</span>}
+                </label>
+                <input
+                  type="text"
+                  value={editHoraEntregaDesde}
+                  onChange={(e) => setEditHoraEntregaDesde(e.target.value.replace(/[^\d:]/g, ""))}
+                  placeholder="Ej: 09:00"
+                  disabled={isConsulta}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                />
+              </div>
+
+              {/* Hora Hasta */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                  Horario Hasta (HH:MM) {profile?.rol === "logistica" && <span className="text-red-500 font-extrabold">*</span>}
+                </label>
+                <input
+                  type="text"
+                  value={editHoraEntregaHasta}
+                  onChange={(e) => setEditHoraEntregaHasta(e.target.value.replace(/[^\d:]/g, ""))}
+                  placeholder="Ej: 12:00"
+                  disabled={isConsulta}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Info Logística */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                Observaciones de Logística / Envío {profile?.rol === "logistica" && <span className="text-red-500 font-extrabold">*</span>}
+              </label>
+              <textarea
+                value={editInfoLogistica}
+                onChange={(e) => setEditInfoLogistica(e.target.value)}
+                placeholder="Indique indicaciones del reparto, observaciones, etc."
+                rows={2}
+                disabled={isConsulta}
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Row 4: Admin Panel (Presupuesto & Convenios) */}
         {isAdmin && (
           <div className="border-t border-slate-150 dark:border-gray-800/80 pt-5 space-y-4">
@@ -890,7 +1001,7 @@ export default function DetalleServicio() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate("servicios")}
+              onClick={() => navigate(navigationData?.fromView || "servicios")}
               className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer"
             >
               Cancelar
