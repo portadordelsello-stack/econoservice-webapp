@@ -1691,7 +1691,7 @@ export default function Clientes() {
                 <option value="Lavarropas">Lavarropas</option>
                 <option value="Lavavajillas">Lavavajillas</option>
                 <option value="Microondas">Microondas</option>
-                <option value="Lavarropa Centrifugo">Lavarropa Centrifugo</option>
+                <option value="Secarropas Centrifugo">Secarropas Centrifugo</option>
                 <option value="Lavarropas Calor">Lavarropas Calor</option>
                 <option value="Ventilador">Ventilador</option>
               </select>
