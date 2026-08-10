@@ -381,8 +381,10 @@ export default function Clientes() {
     setEquipoModalModelo("");
     setEquipoModalDesperfecto("");
     setEquipoModalFecha("");
-    setEquipoModalHoraDesde("");
-    setEquipoModalHoraHasta("");
+    setEquipoModalHoraDesdeHH("");
+    setEquipoModalHoraDesdeMM("");
+    setEquipoModalHoraHastaHH("");
+    setEquipoModalHoraHastaMM("");
     setEquipoModalPhotos([]);
   };
 
