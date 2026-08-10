@@ -278,12 +278,12 @@ export default function Logistica() {
   // Divide into today's withdrawals and other days' (Agenda)
   const todayWithdrawals = servicesWithWithdrawals.filter(s => {
     const datePart = s.withdrawal.fechaRetiroStr.split("T")[0];
-    return datePart === todayStr;
+    return datePart <= todayStr;
   });
 
   const otherWithdrawals = servicesWithWithdrawals.filter(s => {
     const datePart = s.withdrawal.fechaRetiroStr.split("T")[0];
-    return datePart !== todayStr;
+    return datePart > todayStr;
   });
 
   // Filter other withdrawals by selectedDate and searchQuery
@@ -652,6 +652,7 @@ export default function Logistica() {
                     if (!client) return null;
 
                     const isRetirado = group.isRetirado;
+                    const isOverdue = !isRetirado && group.withdrawal.fechaRetiroStr.split("T")[0] < todayStr;
 
                     const addressStr = [
                       client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
@@ -670,27 +671,42 @@ export default function Logistica() {
                     return (
                       <div 
                         key={group.id}
-                        className={`bg-gradient-to-br border-2 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 relative overflow-hidden transition-all duration-300 ${
+                        className={`border-2 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 relative overflow-hidden transition-all duration-300 ${
                           isRetirado
-                            ? "from-emerald-50/40 via-white to-white dark:from-emerald-950/10 dark:via-gray-900 dark:to-gray-900 border-emerald-200/80 dark:border-emerald-900/40"
-                            : "from-amber-50/40 via-white to-white dark:from-amber-950/10 dark:via-gray-900 dark:to-gray-900 border-amber-200/80 dark:border-amber-900/40"
+                            ? "bg-gradient-to-br from-emerald-50/40 via-white to-white dark:from-emerald-950/10 dark:via-gray-900 dark:to-gray-900 border-emerald-200/80 dark:border-emerald-900/40"
+                            : isOverdue
+                              ? "animate-neon-pulse border-red-500/80 bg-red-500/[0.03] dark:bg-red-950/[0.05]"
+                              : "bg-gradient-to-br from-amber-50/40 via-white to-white dark:from-amber-950/10 dark:via-gray-900 dark:to-gray-900 border-amber-200/80 dark:border-amber-900/40"
                         }`}
                       >
                         {/* Left highlight band */}
-                        <div className={`absolute top-0 left-0 bottom-0 w-1.5 transition-colors duration-300 ${isRetirado ? "bg-emerald-500" : "bg-amber-500"}`}></div>
+                        <div className={`absolute top-0 left-0 bottom-0 w-1.5 transition-colors duration-300 ${
+                          isRetirado 
+                            ? "bg-emerald-500" 
+                            : isOverdue
+                              ? "bg-red-600 animate-pulse"
+                              : "bg-amber-500"
+                        }`}></div>
 
                         {/* Top bar with time and status */}
                         <div className="flex flex-wrap items-center justify-between gap-2.5 pl-2">
                           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-mono text-xs sm:text-sm font-bold transition-colors duration-300 ${
                             isRetirado
                               ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400"
-                              : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400"
+                              : isOverdue
+                                ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border border-red-200/50"
+                                : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400"
                           }`}>
                             <Clock className="w-4 h-4 shrink-0" />
                             <span>{formatTimeStr(group.withdrawal.fechaRetiroStr)}</span>
                             {isRetirado && (
                               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/40">
                                 En Taller
+                              </span>
+                            )}
+                            {isOverdue && (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-red-600 text-white border border-red-500 animate-pulse">
+                                Retiro Atrasado ({formatSpanishDate(group.withdrawal.fechaRetiroStr.split("T")[0])})
                               </span>
                             )}
                             {isAdmin && (
