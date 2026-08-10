@@ -584,6 +584,36 @@ export default function Servicios() {
 
                   {/* Right hand side action indicator */}
                   <div className="flex items-center gap-3 self-end md:self-auto">
+                    {activeTab === "recibidos" && (
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (window.confirm("¿Marcar este equipo como Entregado? Desaparecerá del Taller y pasará a Entregados en Logística.")) {
+                            try {
+                              const userUid = profile?.uid || user?.uid || "taller";
+                              const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Taller";
+                              await ServiciosService.update(
+                                srv.id!, 
+                                { entregado: true, estado: "ENTREGADO", ingresoTaller: false }, 
+                                userUid, 
+                                userNombre, 
+                                "Limpieza manual: Marcado como entregado desde Taller"
+                              );
+                              await loadAllData();
+                            } catch (err) {
+                              console.error("Error marking delivered:", err);
+                              alert("Error al marcar como entregado.");
+                            }
+                          }
+                        }}
+                        className="p-1.5 px-3 text-emerald-600 hover:text-emerald-700 bg-emerald-50/60 dark:bg-emerald-950/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-950/40 rounded-lg transition-all cursor-pointer border border-emerald-100/40 dark:border-emerald-900/20 flex items-center justify-center hover:scale-105 active:scale-95 text-xs font-bold gap-1.5"
+                        title="Marcar como Entregado"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="hidden sm:inline">Entregado</span>
+                      </button>
+                    )}
                     {isAdmin && (
                       <button
                         type="button"
@@ -591,7 +621,7 @@ export default function Servicios() {
                           e.stopPropagation();
                           if (window.confirm("¿Está seguro que desea eliminar esta orden de servicio del taller? Esta acción no se puede deshacer.")) {
                             try {
-                              await ServiciosService.delete(srv.id);
+                              await ServiciosService.delete(srv.id!);
                               await loadAllData();
                             } catch (err) {
                               console.error("Error deleting service:", err);
