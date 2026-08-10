@@ -1183,7 +1183,7 @@ export default function Clientes() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Panel de Servicios
+            Panel de Pedidos
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Seleccione una de las siguientes opciones para continuar.
@@ -1193,7 +1193,7 @@ export default function Clientes() {
         {/* Option Cards */}
         <div className={`grid grid-cols-1 ${profile?.rol === "logistica" ? "max-w-2xl" : "md:grid-cols-2 max-w-4xl"} mx-auto pt-6 gap-6`}>
           
-          {/* Card: Nuevo Servicio */}
+          {/* Card: Nuevo Pedido */}
           {profile?.rol !== "logistica" && (
             <button 
               type="button"
@@ -1209,10 +1209,10 @@ export default function Clientes() {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    Nuevo Servicio
+                    Nuevo Pedido
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                    Registra un nuevo servicio junto con los datos de su domicilio, su equipo, la fecha de retiro acordada, desperfecto reportado y observaciones de cobro de forma manual y directa.
+                    Registra un nuevo pedido junto con los datos de su domicilio, su equipo, la fecha de retiro acordada, desperfecto reportado y observaciones de cobro de forma manual y directa.
                   </p>
                 </div>
               </div>
@@ -1223,7 +1223,7 @@ export default function Clientes() {
             </button>
           )}
 
-          {/* Card: Lista de Servicios */}
+          {/* Card: Pedidos */}
           <button 
             type="button"
             onClick={() => {
@@ -1237,10 +1237,10 @@ export default function Clientes() {
               </div>
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                  Lista de Servicios
+                  Pedidos
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Explora la lista completa de servicios registrados, realiza búsquedas por dirección, nombre o teléfono, y visualiza el historial de equipos y servicios de cada registro.
+                  Explora la lista completa de pedidos registrados, realiza búsquedas por dirección, nombre o teléfono, y visualiza el historial de equipos y servicios de cada registro.
                 </p>
               </div>
             </div>
@@ -1271,12 +1271,12 @@ export default function Clientes() {
               <span>{isEditMode ? "Volver a la lista" : "Volver al panel"}</span>
             </button>
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white pt-2">
-              {isEditMode ? "Editar Servicio" : "Ingresar Nuevo Servicio"}
+              {isEditMode ? "Editar Pedido" : "Ingresar Nuevo Pedido"}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {isEditMode 
-                ? "Modifique los campos correspondientes para actualizar la ficha del servicio, su equipo y los datos del servicio."
-                : "Complete el formulario para registrar el servicio, su equipo y los datos del retiro acordado."
+                ? "Modifique los campos correspondientes para actualizar la ficha del pedido, su equipo y los datos del pedido."
+                : "Complete el formulario para registrar el pedido, su equipo y los datos del retiro acordado."
               }
             </p>
           </div>
@@ -1289,12 +1289,12 @@ export default function Clientes() {
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {isEditMode ? "¡Servicio Actualizado con Éxito!" : "¡Servicio Registrado con Éxito!"}
+                {isEditMode ? "¡Pedido Actualizado con Éxito!" : "¡Pedido Registrado con Éxito!"}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                 {isEditMode 
-                  ? "La información del servicio, su equipo y los datos del servicio han sido actualizados de forma correcta."
-                  : <>El servicio con teléfono <strong>{formTelCel || "S/N"}</strong> se ha guardado en la base de datos junto con su equipo y orden de servicio inicial.</>
+                  ? "La información del pedido, su equipo y los datos del pedido han sido actualizados de forma correcta."
+                  : <>El pedido con teléfono <strong>{formTelCel || "S/N"}</strong> se ha guardado en la base de datos junto con su equipo y orden de servicio inicial.</>
                 }
               </p>
             </div>
@@ -1307,7 +1307,7 @@ export default function Clientes() {
                   }}
                   className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md cursor-pointer transition-colors"
                 >
-                  Ingresar Otro Servicio
+                  Ingresar Otro Pedido
                 </button>
               )}
               <button
@@ -1317,7 +1317,7 @@ export default function Clientes() {
                 }}
                 className={`w-full sm:w-auto px-5 py-2.5 ${isEditMode ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md' : 'bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-855 text-gray-700 dark:text-gray-300'} font-semibold text-sm rounded-xl cursor-pointer transition-colors`}
               >
-                Ir a la Lista de Servicios
+                Ir a Pedidos
               </button>
             </div>
           </div>
@@ -2355,10 +2355,10 @@ export default function Clientes() {
           </button>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-              Lista de Servicios
+              Pedidos
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Gestión y hojas de servicio de todos los servicios registrados.
+              Gestión y hojas de pedidos de todos los registros.
             </p>
           </div>
         </div>
@@ -2371,7 +2371,7 @@ export default function Clientes() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
-            Nuevo Servicio
+            Nuevo Pedido
           </button>
         )}
       </div>
@@ -2387,7 +2387,7 @@ export default function Clientes() {
             }
             <input
               type="text"
-              placeholder="Buscar servicio por dirección, ID o teléfono..."
+              placeholder="Buscar pedido por dirección, ID o teléfono..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
