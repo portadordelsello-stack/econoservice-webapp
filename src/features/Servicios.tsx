@@ -120,7 +120,7 @@ export default function Servicios() {
     setLoading(true);
     try {
       const [srvList, clList, eqList] = await Promise.all([
-        ServiciosService.getAll(),
+        ServiciosService.getActive(),
         ClientesService.getAll(),
         EquiposService.getAll()
       ]);
