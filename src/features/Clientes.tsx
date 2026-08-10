@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ClienteSchema } from "../schemas";
 import { ClientesService, EquiposService, ServiciosService, NotificationsService, toDate } from "../services/db";
-import { DriveService } from "../services/drive";
+import { StorageService } from "../services/storage";
 import { Cliente, Equipo, Servicio, getEstadoLabel } from "../types";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigation } from "../providers/NavigationProvider";
@@ -287,35 +287,13 @@ export default function Clientes() {
     return date;
   };
 
-  useEffect(() => {
-    const token = DriveService.getAccessToken();
-    if (token) setDriveToken(token);
-    DriveService.getFolderId().then(id => setDriveFolderId(id || "")).catch(() => {});
-  }, []);
-
-  // Step 1 - button click: connect if needed, then open picker
-  const handleConnectAndUpload = async () => {
+  // Step 1 - button click: open picker directly
+  const handleConnectAndUpload = () => {
     setUploadError(null);
-    let token = driveToken || DriveService.getAccessToken();
-    if (!token) {
-      try {
-        setConnectingDrive(true);
-        token = await DriveService.connect();
-        setDriveToken(token);
-      } catch (err: any) {
-        console.error("Error connecting to Drive:", err);
-        setUploadError("No se pudo conectar a Google Drive. Intentá de nuevo.");
-        setConnectingDrive(false);
-        return;
-      } finally {
-        setConnectingDrive(false);
-      }
-    }
-    // Token OK → open file picker
     photoInputRef.current?.click();
   };
 
-  // Step 2 - file selected: upload to Drive
+  // Step 2 - file selected: upload to Firebase Storage
   const uploadFileToDrive = async (file: File) => {
     setUploadingPhoto(true);
     setUploadError(null);
@@ -324,7 +302,7 @@ export default function Clientes() {
       const direccion = [formCalle.trim(), formNumero.trim()].filter(Boolean).join("_");
       const dirClean = direccion.replace(/[^a-zA-Z0-9_\-áéíóúÁÉÍÓÚüÜñÑ]/g, "_").replace(/_+/g, "_");
       const filename = `equipo_${dirClean || "sin_dir"}_${Date.now()}.${ext}`;
-      const result = await DriveService.uploadPhoto(file, filename);
+      const result = await StorageService.uploadPhoto(file, filename);
       const newPhoto = { id: result.id, name: result.name, url: result.url };
       
       if (currentSubView === "equipo-form") {
@@ -352,11 +330,7 @@ export default function Clientes() {
       }
     } catch (err: any) {
       console.error("Error uploading photo:", err);
-      setUploadError(err.message || "Error al subir la foto a Google Drive.");
-      if (err.message && (err.message.includes("403") || err.message.includes("401"))) {
-        setDriveToken(null);
-        DriveService.clearAccessToken();
-      }
+      setUploadError(err.message || "Error al subir la foto a Firebase Storage.");
     } finally {
       setUploadingPhoto(false);
     }
@@ -2125,15 +2099,13 @@ export default function Clientes() {
                   <button
                     type="button"
                     onClick={handleConnectAndUpload}
-                    disabled={uploadingPhoto || connectingDrive}
+                    disabled={uploadingPhoto}
                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
                   >
-                    {connectingDrive ? (
-                      <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Conectando Drive...</>
-                    ) : uploadingPhoto ? (
+                    {uploadingPhoto ? (
                       <><span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin inline-block"></span> Subiendo...</>
                     ) : (
-                      <><Upload className="w-4 h-4" /> {driveToken ? "Subir Foto" : "Conectar Drive y Subir"}</>
+                      <><Upload className="w-4 h-4" /> Subir Foto</>
                     )}
                   </button>
 
