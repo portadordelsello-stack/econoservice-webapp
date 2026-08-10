@@ -438,6 +438,12 @@ export const ServiciosService = {
     return (data || []).map(mapToFrontendServicio);
   },
 
+  async getActive(): Promise<Servicio[]> {
+    const { data, error } = await supabase.from("servicios").select("*").neq("estado", "ENTREGADO").order("numero_servicio", { ascending: false });
+    if (error) throw error;
+    return (data || []).map(mapToFrontendServicio);
+  },
+
   async getClientIdsByFechaIngreso(dateStr: string): Promise<string[]> {
     const { data, error } = await supabase
       .from("servicios")

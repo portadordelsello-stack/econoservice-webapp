@@ -16,6 +16,7 @@ import TrackingCliente from "./features/TrackingCliente";
 import Insumos from "./features/Insumos";
 import Notificaciones from "./features/Notificaciones";
 import LandingPage from "./features/LandingPage";
+import Agente from "./features/Agente";
 import { NotificationsCenter } from "./components/NotificationsCenter";
 import { BrandingService } from "./services/branding";
 import { BrandingConfig } from "./types";
@@ -39,7 +40,8 @@ import {
   Truck,
   Settings,
   Package,
-  Bell
+  Bell,
+  Sparkles
 } from "lucide-react";
 
 function MainLayout() {
@@ -79,6 +81,7 @@ function MainLayout() {
     { view: "logistica", label: "Logística", icon: Truck, roles: ["superadmin", "administracion", "logistica", "admin", "recepcion", "consulta"] },
     { view: "insumos", label: "Insumos", icon: Package, roles: ["superadmin", "administracion", "admin", "recepcion", "consulta"] },
     { view: "notificaciones", label: "Notificaciones", icon: Bell, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
+    { view: "agente", label: "Agente", icon: Sparkles, roles: ["superadmin", "administracion", "tecnico", "logistica", "admin", "recepcion", "consulta"] },
     { view: "usuarios", label: "Ajustes", icon: Settings, roles: ["superadmin", "administracion", "admin"] }
   ];
 
@@ -333,6 +336,7 @@ function MainLayout() {
         {currentView === "usuarios" && <Usuarios />}
         {currentView === "notificaciones" && <Notificaciones />}
         {currentView === "tracker" && <Logistica initialSubView="tracker" />}
+        {currentView === "agente" && <Agente />}
       </main>
 
     </div>
