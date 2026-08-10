@@ -774,7 +774,7 @@ export default function Logistica() {
                             <div className="p-3 bg-amber-500/10 border border-amber-300/30 text-amber-850 dark:text-amber-300 text-xs rounded-xl flex items-start gap-2.5">
                               <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
                               <div>
-                                <span className="font-extrabold uppercase text-[9px] tracking-wider text-amber-600 dark:text-amber-400 block">Indicaciones especiales</span>
+                                <span className="font-extrabold uppercase text-[9px] tracking-wider text-amber-600 dark:text-amber-400 block">Info Logistica</span>
                                 <p className="mt-0.5 font-medium leading-relaxed">{group.withdrawal.notasRetiro}</p>
                               </div>
                             </div>
