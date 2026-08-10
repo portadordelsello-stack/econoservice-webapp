@@ -947,20 +947,18 @@ export default function Usuarios() {
               </div>
               <div className="space-y-1.5">
                 <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                  Configuración de Google Drive
+                  Almacenamiento de Fotos
                   <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-indigo-600 dark:text-indigo-400" />
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Configura el ID de la carpeta de Google Drive donde se almacenarán automáticamente las fotos tomadas por el personal de logística al realizar las entregas.
+                  Estado y configuración del almacenamiento seguro de fotos de equipos en la nube de Supabase.
                 </p>
               </div>
             </div>
             <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400">
-              <span>Configurar almacenamiento</span>
-              <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                folderId ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300" : "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300"
-              }`}>
-                {folderId ? "Configurado" : "Pendiente"}
+              <span>Ver estado</span>
+              <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300">
+                Activo
               </span>
             </div>
           </div>

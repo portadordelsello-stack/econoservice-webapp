@@ -2140,12 +2140,6 @@ export default function Clientes() {
                     {uploadError}
                   </p>
                 )}
-                {!driveFolderId && (
-                  <p className="text-xs text-amber-500 dark:text-amber-400 mt-2 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    Configurá el ID de carpeta de Drive en <strong>Ajustes</strong> para habilitar la subida de fotos.
-                  </p>
-                )}
               </div>
             </div>
           )}
