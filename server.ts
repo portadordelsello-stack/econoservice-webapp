@@ -65,12 +65,17 @@ INSTRUCCIONES:
 4. Si te preguntan cosas específicas sobre un aparato, un número de orden, o el stock, responde con precisión usando la información proveída.
 5. Mantén tus respuestas concisas, profesionales y enfocadas en la acción de compra o stock del taller.`;
 
-    const chatHistory = messages.map((m: any) => ({
+    let chatHistory = messages.map((m: any) => ({
       role: m.role === "assistant" ? "model" : m.role,
       parts: [{ text: m.content }]
     }));
 
-    // Separate the last user message from the rest of the history
+    // Ensure first message in history is from user
+    const firstUserIdx = chatHistory.findIndex(m => m.role === "user");
+    if (firstUserIdx !== -1) {
+      chatHistory = chatHistory.slice(firstUserIdx);
+    }
+
     const lastUserMessage = chatHistory[chatHistory.length - 1];
     const previousHistory = chatHistory.slice(0, -1);
 
@@ -153,10 +158,16 @@ INSTRUCCIONES DE COMPORTAMIENTO:
 5. Si te preguntan por un cliente o equipo en particular, busca en los campos de la dirección, nombre, marca o modelo de la lista proveída.
 6. Si la pregunta del usuario es de voz o de audio (notarás que es muy directa y hablada, por ejemplo "hola que tenemos para hoy?"), responde de forma muy corta, natural y clara, idealmente en 2 o 3 oraciones sencillas, para que la síntesis de voz del navegador no resulte molesta o abrumadora.`;
 
-    const chatHistory = messages.map((m: any) => ({
+    let chatHistory = messages.map((m: any) => ({
       role: m.role === "assistant" ? "model" : m.role,
       parts: [{ text: m.content }]
     }));
+
+    // Ensure first message in history is from user
+    const firstUserIdx = chatHistory.findIndex(m => m.role === "user");
+    if (firstUserIdx !== -1) {
+      chatHistory = chatHistory.slice(firstUserIdx);
+    }
 
     const lastUserMessage = chatHistory[chatHistory.length - 1];
     const previousHistory = chatHistory.slice(0, -1);
@@ -250,7 +261,7 @@ EJEMPLO DE ESQUEMA DE SALIDA ESPERADO:
 }`;
 
     const response = await activeAi.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
