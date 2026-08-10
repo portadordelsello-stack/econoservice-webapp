@@ -208,18 +208,43 @@ export default function Logistica() {
   };
 
   // Helper to extract withdrawal info
-  const parseInfoLogistica = (info?: string) => {
-    if (!info) return null;
+  const parseInfoLogistica = (info?: string, fallbackDate?: string | Date) => {
     let fechaRetiroStr = "";
     let notasRetiro = "";
-    const parts = info.split(" | ");
-    parts.forEach(part => {
-      if (part.startsWith("Retiro acordado: ")) {
-        fechaRetiroStr = part.replace("Retiro acordado: ", "");
-      } else if (part.startsWith("Notas retiro: ")) {
-        notasRetiro = part.replace("Notas retiro: ", "");
+    if (info) {
+      const parts = info.split(" | ");
+      parts.forEach(part => {
+        if (part.startsWith("Retiro acordado: ")) {
+          fechaRetiroStr = part.replace("Retiro acordado: ", "");
+        } else if (part.startsWith("Notas retiro: ")) {
+          notasRetiro = part.replace("Notas retiro: ", "");
+        }
+      });
+    }
+
+    // Fallback: search for YYYY-MM-DD pattern anywhere in infoLogistica if fechaRetiroStr is still empty
+    if (!fechaRetiroStr && info) {
+      const dateMatch = info.match(/\b\d{4}-\d{2}-\d{2}\b/);
+      if (dateMatch) {
+        fechaRetiroStr = dateMatch[0];
       }
-    });
+    }
+
+    // Final fallback: use creation / entry date formatted as YYYY-MM-DD
+    if (!fechaRetiroStr && fallbackDate) {
+      try {
+        const d = new Date(fallbackDate);
+        if (!isNaN(d.getTime())) {
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          fechaRetiroStr = `${year}-${month}-${day}`;
+        }
+      } catch (e) {
+        console.error("Error formatting fallback date:", e);
+      }
+    }
+
     if (!fechaRetiroStr) return null;
     return { fechaRetiroStr, notasRetiro };
   };
@@ -243,7 +268,7 @@ export default function Logistica() {
   // Extract all services that have scheduled withdrawals and are not yet in the workshop
   const servicesWithWithdrawals = servicios
     .map(s => {
-      const parsed = parseInfoLogistica(s.infoLogistica);
+      const parsed = parseInfoLogistica(s.infoLogistica, s.fechaIngreso || s.createdAt);
       return parsed ? { ...s, withdrawal: parsed } : null;
     })
     .filter((s): s is (Servicio & { withdrawal: { fechaRetiroStr: string; notasRetiro: string } }) => 
