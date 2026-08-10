@@ -42,8 +42,8 @@ export const DriveService = {
   async connect(): Promise<string> {
     const provider = new GoogleAuthProvider();
     provider.addScope("https://www.googleapis.com/auth/drive.file");
-    // Ensure we ask for authorization permissions
-    provider.setCustomParameters({ prompt: "consent" });
+    // Ensure we ask for authorization permissions and allow account selection
+    provider.setCustomParameters({ prompt: "select_account" });
     
     try {
       const result = await signInWithPopup(auth, provider);
@@ -108,7 +108,20 @@ export const DriveService = {
     if (!response.ok) {
       const errText = await response.text();
       console.error("Google Drive API Error Response:", errText);
-      throw new Error(`Error en API de Google Drive: ${response.statusText} (${response.status})`);
+      let errorMsg = `Error en API de Google Drive: ${response.statusText} (${response.status})`;
+      try {
+        const parsed = JSON.parse(errText);
+        if (parsed.error && parsed.error.message) {
+          const detail = parsed.error.message;
+          errorMsg = `Error de Google Drive (${response.status}): ${detail}`;
+          if (response.status === 403) {
+            errorMsg += ". Por favor asegúrate de haber iniciado sesión en Google con la cuenta que tiene permisos de edición sobre la carpeta de Google Drive configurada, y que dicha carpeta exista.";
+          }
+        }
+      } catch (e) {
+        // use default errorMsg
+      }
+      throw new Error(errorMsg);
     }
 
     const data = await response.json();

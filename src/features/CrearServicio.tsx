@@ -88,6 +88,10 @@ export default function CrearServicio() {
     } catch (err: any) {
       console.error("Error uploading to Google Drive:", err);
       setUploadError(err.message || "Error al subir la foto a Google Drive.");
+      if (err.message && (err.message.includes("403") || err.message.includes("401"))) {
+        setDriveToken(null);
+        DriveService.clearAccessToken();
+      }
     } finally {
       setUploadingPhoto(false);
     }

@@ -353,6 +353,10 @@ export default function Clientes() {
     } catch (err: any) {
       console.error("Error uploading photo:", err);
       setUploadError(err.message || "Error al subir la foto a Google Drive.");
+      if (err.message && (err.message.includes("403") || err.message.includes("401"))) {
+        setDriveToken(null);
+        DriveService.clearAccessToken();
+      }
     } finally {
       setUploadingPhoto(false);
     }
