@@ -158,11 +158,7 @@ export default function DetalleServicio() {
     try {
       setLoading(true);
 
-      // Use pre-loaded data from navigation if available (instant render)
-      let serv = (navigationData?.servicio as Servicio) || null;
-      if (!serv) {
-        serv = await ServiciosService.getById(selectedId);
-      }
+      const serv = await ServiciosService.getById(selectedId);
       if (!serv) {
         navigate("servicios");
         return;
