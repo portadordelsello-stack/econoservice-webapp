@@ -760,7 +760,7 @@ export default function DetalleServicio() {
         </div>
 
         {/* Row 3: Fotos de Respaldo & Documentos */}
-        {profile?.rol !== "tecnico" && (
+        {
           <div className="border-t border-slate-150 dark:border-gray-800/80 pt-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -770,7 +770,7 @@ export default function DetalleServicio() {
                 </h4>
               </div>
 
-              {!isConsulta && (
+              {!isConsulta && profile?.rol !== "tecnico" && (
                 <div className="relative">
                   <input
                     type="file"
@@ -846,7 +846,7 @@ export default function DetalleServicio() {
               </div>
             )}
           </div>
-        )}
+        }
 
         {/* Row 3.5: Logística / Entrega (Cita & Horarios) */}
         {profile?.rol !== "tecnico" && (
