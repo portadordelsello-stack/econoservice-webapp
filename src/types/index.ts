@@ -97,6 +97,7 @@ export interface Servicio {
   diagnostico?: string;
   presupuesto?: number;
   presupuestoTexto?: string;
+  presupuestado?: boolean;
   acepta: boolean;
   rechazaDevolver: boolean;
   garantia: boolean;

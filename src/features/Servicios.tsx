@@ -94,6 +94,7 @@ export default function Servicios() {
   // UI state
   const [activeTab, setActiveTab] = useState<"recibidos" | "espera" | "aceptados" | "rechazados" | "terminados" | "todos">("recibidos");
   const [searchTerm, setSearchTerm] = useState("");
+  const [presupuestoFilter, setPresupuestoFilter] = useState<"todos" | "presupuestado" | "no_presupuestado">("todos");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Pagination states
@@ -165,6 +166,11 @@ export default function Servicios() {
       list = recibidosList;
     } else if (activeTab === "espera") {
       list = esperaList;
+      if (presupuestoFilter === "presupuestado") {
+        list = list.filter(s => s.presupuestado === true);
+      } else if (presupuestoFilter === "no_presupuestado") {
+        list = list.filter(s => s.presupuestado !== true);
+      }
     } else if (activeTab === "aceptados") {
       list = aceptadosList;
     } else if (activeTab === "rechazados") {
@@ -469,16 +475,29 @@ export default function Servicios() {
             </button>
           </div>
 
-          {/* Search Input */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Buscar por ID, Cliente, Equipo o Servicio..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-gray-855 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200/50 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-            />
+          {/* Search Input & Budget Filter */}
+          <div className="flex items-center gap-2.5 flex-1 max-w-lg">
+            {activeTab === "espera" && (
+              <select
+                value={presupuestoFilter}
+                onChange={(e) => setPresupuestoFilter(e.target.value as any)}
+                className="px-3 py-2 bg-slate-50 dark:bg-gray-855 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-200/50 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer shrink-0"
+              >
+                <option value="todos">Ver: Todos</option>
+                <option value="presupuestado">Ver: Presupuestados</option>
+                <option value="no_presupuestado">Ver: No Presupuestados</option>
+              </select>
+            )}
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar por ID, Cliente, Equipo o Servicio..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-gray-855 text-slate-900 dark:text-white text-xs font-medium rounded-xl border border-slate-200/50 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -549,6 +568,16 @@ export default function Servicios() {
                         <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(srv.estado)}`}>
                           {getEstadoLabel(srv.estado)}
                         </span>
+                        
+                        {srv.estado === "EN_ESPERA" && (
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider border ${
+                            srv.presupuestado 
+                              ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30" 
+                              : "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30"
+                          }`}>
+                            {srv.presupuestado ? "Presupuestado" : "No Presupuestado"}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

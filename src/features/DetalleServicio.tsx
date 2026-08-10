@@ -120,6 +120,7 @@ export default function DetalleServicio() {
   
   const [editPresupuesto, setEditPresupuesto] = useState(0);
   const [editPresupuestoTexto, setEditPresupuestoTexto] = useState("");
+  const [editPresupuestado, setEditPresupuestado] = useState(false);
   const [editServiciosConvenidos, setEditServiciosConvenidos] = useState("");
   
   // Toggles
@@ -176,6 +177,7 @@ export default function DetalleServicio() {
       setEditRepuestosComprados(serv.repuestosComprados || "");
       setEditPresupuesto(serv.presupuesto || 0);
       setEditPresupuestoTexto(serv.presupuestoTexto || "");
+      setEditPresupuestado(serv.presupuestado || false);
       setEditServiciosConvenidos(serv.serviciosConvenidos || "");
       setEditAcepta(serv.acepta || false);
       setEditRechazaDevolver(serv.rechazaDevolver || false);
@@ -366,6 +368,7 @@ export default function DetalleServicio() {
           repuestosComprados: editRepuestosComprados,
           presupuesto: Number(editPresupuesto) || 0,
           presupuestoTexto: editPresupuestoTexto,
+          presupuestado: editPresupuestado,
           serviciosConvenidos: editServiciosConvenidos,
           acepta: editAcepta,
           rechazaDevolver: editRechazaDevolver,
@@ -976,9 +979,22 @@ export default function DetalleServicio() {
 
             {/* Presupuesto (Text-only) */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-                Presupuesto
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                  Presupuesto
+                </label>
+                {isAdmin && (
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editPresupuestado}
+                      onChange={(e) => setEditPresupuestado(e.target.checked)}
+                      className="rounded border-slate-200 dark:border-gray-800 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                    />
+                    <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">¿Presupuestado?</span>
+                  </label>
+                )}
+              </div>
               <input
                 type="text"
                 value={editPresupuestoTexto}

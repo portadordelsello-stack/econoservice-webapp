@@ -354,6 +354,7 @@ const mapToFrontendServicio = (s: any): Servicio => ({
   diagnostico: s.diagnostico || "",
   presupuesto: Number(s.presupuesto || 0),
   presupuestoTexto: s.presupuesto_texto || "",
+  presupuestado: !!s.presupuestado,
   acepta: !!s.acepta,
   rechazaDevolver: !!s.rechaza_devolver,
   garantia: !!s.garantia,
@@ -397,6 +398,7 @@ const mapToDbServicio = (s: Partial<Servicio>): any => {
   if (s.diagnostico !== undefined) db.diagnostico = s.diagnostico;
   if (s.presupuesto !== undefined) db.presupuesto = s.presupuesto;
   if (s.presupuestoTexto !== undefined) db.presupuesto_texto = s.presupuestoTexto;
+  if (s.presupuestado !== undefined) db.presupuestado = s.presupuestado;
   if (s.acepta !== undefined) db.acepta = s.acepta;
   if (s.rechazaDevolver !== undefined) db.rechaza_devolver = s.rechazaDevolver;
   if (s.garantia !== undefined) db.garantia = s.garantia;
