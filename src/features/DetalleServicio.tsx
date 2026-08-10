@@ -475,24 +475,38 @@ export default function DetalleServicio() {
     if (!selectedId || !profile || !servicio) return;
     setSubmitting(true);
     try {
-      const docRef = doc(firestoreDb, "servicios", selectedId);
+      const userUid = profile.uid || "usuario";
+      const userNombre = profile.nombre || "Técnico";
 
-      // Only send fields allowed by Firestore rules for 'tecnico' role:
-      // diagnostico, notasInternas, serviciosRequeridos, serviciosConvenidos,
-      // estado, repuestosComprar, repuestosComprados, pasaStock, tecnicoId,
-      // terminado, presupuesto, presupuestoTexto, fotosDrive, updatedAt
-      await updateDoc(docRef, {
-        estado: "LISTO_PARA_ENTREGA",
+      const fieldsToUpdate = {
+        estado: "LISTO_PARA_ENTREGA" as EstadoServicio,
         terminado: true,
-        updatedAt: serverTimestamp()
-      });
+      };
+
+      if (profile?.rol === "tecnico") {
+        await ServiciosService.updateTecnico(
+          selectedId,
+          fieldsToUpdate,
+          userUid,
+          userNombre,
+          "Técnico completó la reparación y marcó como TERMINADO"
+        );
+      } else {
+        await ServiciosService.update(
+          selectedId,
+          fieldsToUpdate,
+          userUid,
+          userNombre,
+          "Técnico completó la reparación y marcó como TERMINADO"
+        );
+      }
 
       // Notify admin and logistica
       try {
         await NotificationsService.create({
           targetRole: "admin",
           title: "Reparación Terminada",
-          message: `El técnico ${profile.nombre || "Técnico"} dio por terminada la reparación del Servicio #${servicio.numeroServicio} (${servicio.aparato || "Equipo"} ${servicio.marcaModelo || ""}).`,
+          message: `El técnico ${userNombre} dio por terminada la reparación del Servicio #${servicio.numeroServicio} (${servicio.aparato || "Equipo"} ${servicio.marcaModelo || ""}).`,
           serviceId: selectedId
         });
         await NotificationsService.create({
@@ -503,20 +517,6 @@ export default function DetalleServicio() {
         });
       } catch (notifErr) {
         console.warn("No se pudo enviar notificación:", notifErr);
-      }
-
-      // Try to log to historial (non-blocking)
-      try {
-        const histRef = collection(firestoreDb, "servicios", selectedId, "historial");
-        await addDoc(histRef, {
-          fecha: serverTimestamp(),
-          usuarioId: profile.uid,
-          usuarioNombre: profile.nombre || "Técnico",
-          accion: "CAMBIO_ESTADO",
-          detalle: "Técnico completó la reparación y marcó como TERMINADO"
-        });
-      } catch (histErr) {
-        console.warn("No se pudo registrar historial:", histErr);
       }
 
       alert("¡Reparación marcada como TERMINADA!");
