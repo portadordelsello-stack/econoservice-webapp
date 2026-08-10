@@ -121,7 +121,7 @@ export default function Agente() {
   }, []);
 
   // Handle Voice Synthesis (Speaking)
-  const speakText = (text: string) => {
+  const speakText = async (text: string) => {
     if (!window.speechSynthesis || !speechEnabled) return;
     window.speechSynthesis.cancel(); // cancel any active speech
 
@@ -130,6 +130,27 @@ export default function Agente() {
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = "es-AR";
+
+    try {
+      const config = await GeminiConfigService.getConfig();
+      const allVoices = window.speechSynthesis.getVoices();
+      
+      let selectedVoice = null;
+      if (config.voiceName) {
+        selectedVoice = allVoices.find(v => v.name === config.voiceName);
+      }
+      
+      // Fallback: If no voice name config or not found, try to find any Spanish voice
+      if (!selectedVoice) {
+        selectedVoice = allVoices.find(v => v.lang.toLowerCase().startsWith("es"));
+      }
+      
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+    } catch (err) {
+      console.error("Error setting voice on utterance:", err);
+    }
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);

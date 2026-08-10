@@ -4,6 +4,7 @@ import { db } from "../lib/firebase";
 export interface GeminiConfig {
   apiKey: string;
   model: string;
+  voiceName?: string;
 }
 
 export const GeminiConfigService = {
@@ -16,6 +17,7 @@ export const GeminiConfigService = {
         return {
           apiKey: data.apiKey || "",
           model: data.model || "gemini-2.5-flash",
+          voiceName: data.voiceName || "",
         };
       }
     } catch (err) {
@@ -24,6 +26,7 @@ export const GeminiConfigService = {
     return {
       apiKey: "",
       model: "gemini-2.5-flash",
+      voiceName: "",
     };
   },
 
@@ -32,6 +35,7 @@ export const GeminiConfigService = {
     await setDoc(docRef, {
       apiKey: config.apiKey.trim(),
       model: config.model.trim(),
+      voiceName: (config.voiceName || "").trim(),
     }, { merge: true });
   }
 };

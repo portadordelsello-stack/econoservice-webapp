@@ -259,9 +259,24 @@ export default function Usuarios() {
 
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
+  const [geminiVoiceName, setGeminiVoiceName] = useState("");
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [savingGeminiConfig, setSavingGeminiConfig] = useState(false);
   const [geminiSuccessMsg, setGeminiSuccessMsg] = useState<string | null>(null);
   const [geminiErrorMsg, setGeminiErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    const updateVoices = () => {
+      const allVoices = window.speechSynthesis.getVoices();
+      const spanishVoices = allVoices.filter(v => v.lang.toLowerCase().startsWith("es"));
+      setBrowserVoices(spanishVoices);
+    };
+    updateVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
+  }, []);
 
   // Drive Config states
   const [folderId, setFolderId] = useState("");
@@ -274,6 +289,7 @@ export default function Usuarios() {
       const config = await GeminiConfigService.getConfig();
       setGeminiApiKey(config.apiKey);
       setGeminiModel(config.model || "gemini-2.5-flash");
+      setGeminiVoiceName(config.voiceName || "");
     } catch (err) {
       console.error("Error fetching Gemini config:", err);
     }
@@ -700,6 +716,7 @@ export default function Usuarios() {
       await GeminiConfigService.setConfig({
         apiKey: geminiApiKey,
         model: geminiModel,
+        voiceName: geminiVoiceName,
       });
       setGeminiSuccessMsg("Configuración de Gemini actualizada con éxito.");
     } catch (err: any) {
@@ -1508,6 +1525,28 @@ export default function Usuarios() {
                 </select>
                 <p className="text-[11px] text-gray-400 dark:text-gray-500">
                   Seleccione el modelo preferido. Gemini 2.5/3.1 Flash se recomiendan para una respuesta sumamente ágil sobre listas de stock grandes.
+                </p>
+              </div>
+
+              {/* Dropdown for Voice Select */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Voz del Asistente Virtual (Salida de Voz)
+                </label>
+                <select
+                  value={geminiVoiceName}
+                  onChange={(e) => setGeminiVoiceName(e.target.value)}
+                  className="w-full px-3.5 py-3 bg-gray-50 dark:bg-gray-850 text-gray-950 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                >
+                  <option value="">Por defecto del sistema / navegador</option>
+                  {browserVoices.map((v, idx) => (
+                    <option key={idx} value={v.name}>
+                      {v.name} ({v.lang}) {v.localService ? "[Local]" : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                  Seleccione la voz preferida para las respuestas leídas en voz alta. Se listan las voces en español de calidad premium instaladas en su navegador y sistema operativo (Google, Microsoft, etc. son completamente gratuitas).
                 </p>
               </div>
 
