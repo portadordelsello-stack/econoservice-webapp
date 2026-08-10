@@ -1475,36 +1475,23 @@ export default function Clientes() {
                         setEquipoModalModelo("");
                         
                         if (eq.id) {
-                          if (eq.ingresoTaller === false) {
-                            // Active order pending pickup: edit it directly!
-                            setModalIsEditingActiveOrder(true);
-                            setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
-                            const parsed = parseFechaRetiro(eq.fechaRetiro || "");
-                            setEquipoModalFecha(parsed.date);
-                            setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
-                            setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
-                            setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
-                            setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
-                            setEquipoModalPhotos(eq.fotosDrive || []);
-                            setShowNewWorkOrderForm(true);
-                          } else {
-                            // Equipment already picked up or done: show history list
-                            setModalIsEditingActiveOrder(false);
-                            setEquipoModalDesperfecto(eq.newDesperfecto || "");
-                            const parsed = parseFechaRetiro(eq.newFechaRetiro || "");
-                            setEquipoModalFecha(parsed.date);
-                            setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
-                            setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
-                            setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
-                            setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
-                            setEquipoModalPhotos(eq.newFotosDrive || []);
-                            setShowNewWorkOrderForm(!!eq.newDesperfecto);
-                          }
+                          // Existing equipment: always show the history list first, do not open any order form automatically
+                          setModalIsEditingActiveOrder(false);
+                          setShowNewWorkOrderForm(false);
+                          setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
+                          const parsed = parseFechaRetiro(eq.fechaRetiro || "");
+                          setEquipoModalFecha(parsed.date || getTodayDateString());
+                          setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+                          setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+                          setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+                          setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
+                          setEquipoModalPhotos(eq.fotosDrive || []);
                         } else {
+                          // New equipment: show form immediately
                           setModalIsEditingActiveOrder(true);
                           setEquipoModalDesperfecto(eq.desperfectoUsuario || "");
                           const parsed = parseFechaRetiro(eq.fechaRetiro || "");
-                          setEquipoModalFecha(parsed.date);
+                          setEquipoModalFecha(parsed.date || getTodayDateString());
                           setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
                           setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
                           setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
@@ -2025,14 +2012,14 @@ export default function Clientes() {
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-indigo-500" />
-                  {isEditMode ? "Nueva Orden de Trabajo" : "Detalles del Servicio Inicial"}
+                  {isEditMode ? (modalIsEditingActiveOrder ? "Editar Orden de Trabajo" : "Nueva Orden de Trabajo") : "Detalles del Servicio Inicial"}
                 </h3>
                 {isEditMode && (
                   <button
                     type="button"
                     onClick={() => {
                       setEquipoModalDesperfecto("");
-                      setEquipoModalFecha("");
+                      setEquipoModalFecha(getTodayDateString());
                       setEquipoModalHoraDesdeHH("");
                       setEquipoModalHoraDesdeMM("");
                       setEquipoModalHoraHastaHH("");
@@ -2043,7 +2030,7 @@ export default function Clientes() {
                     className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
-                    Cancelar Nueva Orden
+                    {modalIsEditingActiveOrder ? "Cancelar Edición" : "Cancelar Nueva Orden"}
                   </button>
                 )}
               </div>
