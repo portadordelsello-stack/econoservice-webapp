@@ -1660,9 +1660,18 @@ export default function Clientes() {
                   <div className="space-y-2">
                     {eqServices.map((srv) => {
                       const isExpanded = expandedHistoryServiceId === srv.id;
-                      const serviceDateStr = srv.createdAt 
-                        ? new Date(srv.createdAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) 
-                        : "Sin fecha";
+                      let serviceDateStr = "Sin fecha";
+                      const dateToUse = srv.fechaIngreso || srv.createdAt;
+                      if (dateToUse) {
+                        try {
+                          const isoStr = typeof dateToUse === "string" ? dateToUse : new Date(dateToUse).toISOString();
+                          const ymd = isoStr.substring(0, 10);
+                          const [y, m, d] = ymd.split("-");
+                          serviceDateStr = `${d}/${m}/${y}`;
+                        } catch {
+                          serviceDateStr = "Sin fecha";
+                        }
+                      }
                       return (
                         <div
                           key={srv.id}
