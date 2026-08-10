@@ -413,7 +413,7 @@ export default function Servicios() {
                   : "text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200"
               }`}
             >
-              Diagnosticados ({esperaList.length})
+              En Espera ({esperaList.length})
             </button>
             <button
               onClick={() => {
@@ -501,7 +501,7 @@ export default function Servicios() {
               : activeTab === "recibidos" 
                 ? "No hay nuevos equipos recibidos de logística pendientes de diagnóstico." 
                 : activeTab === "espera"
-                  ? "Aún no se han guardado órdenes en estado 'Diagnosticados'."
+                  ? "Aún no se han guardado órdenes en estado 'En Espera'."
                   : activeTab === "terminados"
                     ? "No hay órdenes de servicio en estado 'Terminados'."
                     : "No hay ningún equipo registrado en el taller."}
