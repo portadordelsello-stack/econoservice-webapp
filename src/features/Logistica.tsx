@@ -618,7 +618,7 @@ export default function Logistica() {
                 <div className="flex items-center gap-2.5">
                   <span className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping"></span>
                   <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white font-display">
-                    Retiros Pactados para Hoy
+                    Retiros Pactados para Hoy (Cantidad: {groupedTodayWithdrawals.length})
                   </h2>
                 </div>
                 <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-3 py-1.5 rounded-xl capitalize">
