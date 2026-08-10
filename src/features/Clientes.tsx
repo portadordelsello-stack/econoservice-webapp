@@ -2607,11 +2607,19 @@ export default function Clientes() {
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
                     Localidad / Ciudad
                   </label>
-                  <input
-                    type="text"
+                  <select
                     {...register("localidad")}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm"
-                  />
+                  >
+                    <option value="">Seleccione una localidad...</option>
+                    <option value="Santa Fe">Santa Fe</option>
+                    <option value="Santo Tomé">Santo Tomé</option>
+                    <option value="Sauce">Sauce</option>
+                    <option value="Colastiné Norte">Colastiné Norte</option>
+                    <option value="Rincon">Rincon</option>
+                    <option value="Recreo">Recreo</option>
+                    <option value="Colastiné Sur">Colastiné Sur</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
