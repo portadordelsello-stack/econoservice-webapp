@@ -117,6 +117,12 @@ export default function Logistica() {
           message: `Logística retiró e ingresó el equipo ${targetSrv?.aparato || ""} #${targetSrv?.numeroServicio || ""} para diagnóstico.`,
           serviceId: srvId
         });
+        // WhatsApp Notification
+        fetch("/api/whatsapp/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "pickup", serviceId: srvId })
+        }).catch(err => console.error("Error sending WhatsApp pickup notify:", err));
       }
       
       await loadData();
@@ -148,6 +154,12 @@ export default function Logistica() {
             message: `Logística retiró e ingresó el equipo ${srv.aparato || ""} #${srv.numeroServicio || ""} para diagnóstico.`,
             serviceId: srv.id!
           });
+          // WhatsApp Notification
+          fetch("/api/whatsapp/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "pickup", serviceId: srv.id })
+          }).catch(err => console.error("Error sending WhatsApp group pickup notify:", err));
         }
       }
       

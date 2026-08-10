@@ -32,12 +32,15 @@ import {
   UploadCloud,
   Database,
   Download,
-  Pencil
+  Pencil,
+  MessageSquare,
+  QrCode,
+  Loader2
 } from "lucide-react";
 
 export default function Usuarios() {
   const { profile } = useAuth();
-  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini" | "apariencia" | "importar" | "backup" | "restaurar">("menu");
+  const [activeSubView, setActiveSubView] = useState<"menu" | "usuarios" | "drive" | "gemini" | "apariencia" | "importar" | "backup" | "restaurar" | "whatsapp">("menu");
   const [exportingBackup, setExportingBackup] = useState(false);
   const [backupSuccessMsg, setBackupSuccessMsg] = useState<string | null>(null);
   const [backupErrorMsg, setBackupErrorMsg] = useState<string | null>(null);
@@ -1042,6 +1045,33 @@ export default function Usuarios() {
               </span>
             </div>
           </div>
+
+          {/* Card: WhatsApp Integración */}
+          <div 
+            onClick={() => setActiveSubView("whatsapp")}
+            className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-950/40 cursor-pointer transition-all flex flex-col justify-between"
+          >
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <MessageSquare className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  WhatsApp (beta)
+                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-indigo-600 dark:text-indigo-400" />
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Conecte su número de teléfono para enviar notificaciones automáticas redactadas por Inteligencia Artificial.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <span>Configurar WhatsApp</span>
+              <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300">
+                BETA
+              </span>
+            </div>
+          </div>
           <div 
             onClick={() => setActiveSubView("backup")}
             className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xs hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-950/40 cursor-pointer transition-all flex flex-col justify-between"
@@ -1933,6 +1963,33 @@ export default function Usuarios() {
     );
   }
 
+  if (activeSubView === "whatsapp") {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <div>
+          <button 
+            onClick={() => setActiveSubView("menu")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-indigo-700 dark:text-indigo-300 hover:text-white bg-indigo-50 hover:bg-indigo-600 dark:bg-indigo-950/60 dark:hover:bg-indigo-600 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95 group mb-2"
+          >
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span>Volver a Ajustes</span>
+          </button>
+        </div>
+        {canManageConfig ? (
+          <WhatsAppConfigSubView onClose={() => setActiveSubView("menu")} />
+        ) : (
+          <div className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl text-center space-y-4">
+            <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Acceso Restringido</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No tienes permisos para ver o modificar la configuración de WhatsApp.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (activeSubView === "importar") {
     return (
       <div className="space-y-6 animate-in fade-in duration-200">
@@ -2597,6 +2654,173 @@ export default function Usuarios() {
         </div>
       )}
 
+    </div>
+  );
+}
+
+interface WhatsAppConfigSubViewProps {
+  onClose: () => void;
+}
+
+function WhatsAppConfigSubView({ onClose }: WhatsAppConfigSubViewProps) {
+  const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
+  const [qr, setQr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const fetchStatus = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
+    try {
+      const res = await fetch("/api/whatsapp/status");
+      const data = await res.json();
+      if (res.ok) {
+        setStatus(data.status);
+        setQr(data.qr);
+      } else {
+        setErrorMsg(data.error || "No se pudo obtener el estado de WhatsApp.");
+      }
+    } catch (err: any) {
+      setErrorMsg("Error al comunicarse con el servidor.");
+    } finally {
+      if (isInitial) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus(true);
+    const interval = setInterval(() => {
+      fetchStatus(false);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch("/api/whatsapp/disconnect", { method: "POST" });
+      if (res.ok) {
+        setStatus("disconnected");
+        setQr(null);
+        alert("WhatsApp desconectado correctamente.");
+      } else {
+        const data = await res.json();
+        setErrorMsg(data.error || "No se pudo desconectar.");
+      }
+    } catch (err) {
+      setErrorMsg("Error al desconectar.");
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
+      <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-800">
+        <MessageSquare className="w-5 h-5 text-emerald-600" />
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            WhatsApp Integración (Beta)
+          </h2>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Conecte su número de WhatsApp para enviar notificaciones de retiro y diagnóstico automatizadas por un agente de IA.
+          </p>
+        </div>
+      </div>
+
+      {errorMsg && (
+        <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-12 space-y-3">
+          <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+          <p className="text-xs text-gray-500 dark:text-gray-400">Verificando conexión con WhatsApp...</p>
+        </div>
+      ) : status === "connected" ? (
+        <div className="space-y-6 text-center py-6 max-w-md mx-auto">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 mb-2">
+            <Check className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">¡Conexión Activa!</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+              El sistema se encuentra conectado a WhatsApp. El agente de IA enviará notificaciones automáticamente en los siguientes eventos:
+            </p>
+            <div className="text-left bg-slate-50 dark:bg-gray-850 p-4 rounded-xl space-y-2 text-xs font-semibold text-gray-750 dark:text-gray-300 border border-slate-200/50 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Confirmación de retiro de equipo (Logística)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Finalización de diagnóstico/presupuesto (Taller)</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <button
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-red-500/10 active:scale-95"
+            >
+              {disconnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              <span>DESCONECTAR WHATSAPP</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <QrCode className="w-4 h-4 text-emerald-500" />
+                Vincular Dispositivo
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                Escanee el código QR para autenticar y guardar la sesión en el servidor. El procedimiento es igual a WhatsApp Web:
+              </p>
+            </div>
+            
+            <ol className="list-decimal list-inside text-xs space-y-2 text-gray-600 dark:text-gray-400 pl-1 font-medium">
+              <li>Abra WhatsApp en su teléfono móvil.</li>
+              <li>Vaya a <strong className="text-gray-900 dark:text-white">Ajustes / Dispositivos vinculados</strong>.</li>
+              <li>Presione <strong className="text-gray-900 dark:text-white">Vincular un dispositivo</strong>.</li>
+              <li>Apunte la cámara al código QR de la derecha.</li>
+            </ol>
+
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-xl text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
+              <strong>Nota:</strong> Esta conexión utiliza la capa gratuita local. Se mantendrá activa en segundo plano mientras no cierre la sesión en su móvil.
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-gray-855 p-6 rounded-2xl border border-slate-200/60 dark:border-gray-800 min-h-[300px]">
+            {qr ? (
+              <div className="space-y-4 text-center">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qr)}&size=250x250`} 
+                  className="mx-auto border-4 border-white dark:border-gray-800 p-2 rounded-2xl bg-white shadow-md" 
+                  alt="WhatsApp QR Code" 
+                />
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                  Código QR Listo
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                <p className="text-xs text-gray-500 dark:text-gray-400">Generando código de vinculación...</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

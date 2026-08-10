@@ -434,8 +434,13 @@ export default function DetalleServicio() {
             message: `El técnico ${userNombre} completó/actualizó el diagnóstico del Servicio #${servicio.numeroServicio} (${servicio.aparato || "Equipo"} ${servicio.marcaModelo || ""}).`,
             serviceId: selectedId
           });
+          // WhatsApp Notification
+          fetch("/api/whatsapp/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "diagnosis", serviceId: selectedId })
+          }).catch(err => console.error("Error sending WhatsApp diagnosis notify:", err));
         }
-      } else if (profile?.rol === "admin" || profile?.rol === "superadmin") {
         if (finalState === "ACEPTADO" || finalState === "EN_REPARACION" || editAcepta) {
           await NotificationsService.create({
             targetRole: "taller",
