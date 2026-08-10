@@ -272,7 +272,7 @@ export default function Logistica() {
       return parsed ? { ...s, withdrawal: parsed } : null;
     })
     .filter((s): s is (Servicio & { withdrawal: { fechaRetiroStr: string; notasRetiro: string } }) => 
-      s !== null && s.ingresoTaller === false
+      s !== null && s.ingresoTaller === false && s.entregado !== true && s.estado !== "ENTREGADO"
     );
 
   // Divide into today's withdrawals and other days' (Agenda)
