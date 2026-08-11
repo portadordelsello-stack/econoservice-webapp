@@ -1626,11 +1626,10 @@ export default function Clientes() {
                           href={getWhatsAppUrl(formTelCel)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-[10px] font-bold transition-all shadow-xs cursor-pointer"
+                          className="inline-flex items-center justify-center w-6 h-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md transition-all shadow-xs cursor-pointer active:scale-95"
                           title="Enviar mensaje por WhatsApp"
                         >
-                          <MessageSquare className="w-3 h-3" />
-                          <span>WhatsApp</span>
+                          <MessageSquare className="w-3.5 h-3.5" />
                         </a>
                       )}
                     </div>
@@ -2627,11 +2626,10 @@ export default function Clientes() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all text-[11px] font-bold shrink-0 shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
+                      className="inline-flex items-center justify-center w-8 h-8 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all shrink-0 shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
                       title="Enviar mensaje por WhatsApp"
                     >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>WhatsApp</span>
+                      <MessageSquare className="w-4 h-4" />
                     </a>
                   </div>
                 ) : (

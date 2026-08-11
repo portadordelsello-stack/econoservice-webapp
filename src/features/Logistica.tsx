@@ -862,10 +862,10 @@ export default function Logistica() {
                                   href={getWhatsAppUrl(client.telCel)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-center gap-2 h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-emerald-500/10 cursor-pointer"
+                                  className="inline-flex items-center justify-center w-11 h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all active:scale-95 shadow-sm shadow-emerald-500/10 cursor-pointer"
+                                  title="Enviar WhatsApp"
                                 >
-                                  <MessageSquare className="w-4 h-4" />
-                                  <span>WhatsApp</span>
+                                  <MessageSquare className="w-5 h-5" />
                                 </a>
                               )}
                             </div>
@@ -2096,11 +2096,10 @@ export default function Logistica() {
                       href={getWhatsAppUrl(client.telCel)}
                       target="_blank"
                       rel="noreferrer"
-                      className="h-9 px-4 flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all border border-emerald-150 dark:border-emerald-900/30 text-xs font-bold"
+                      className="w-9 h-9 flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all border border-emerald-150 dark:border-emerald-900/30 shadow-xs active:scale-95 cursor-pointer"
                       title="Enviar WhatsApp"
                     >
                       <MessageSquare className="w-4 h-4" />
-                      <span>WhatsApp</span>
                     </a>
                   )}
                   
