@@ -339,49 +339,60 @@ export const EquiposService = {
 // ============================================================================
 // SERVICIOS MAPPERS & SERVICE
 // ============================================================================
-const mapToFrontendServicio = (s: any): Servicio => ({
-  id: s.id,
-  numeroServicio: s.numero_servicio,
-  clienteId: s.cliente_id,
-  equipoId: s.equipo_id,
-  tecnicoId: s.tecnico_id || "",
-  fechaIngreso: s.fecha_ingreso,
-  aparato: s.aparato,
-  marcaModelo: s.marca_modelo,
-  desperfectoUsuario: s.desperfecto_usuario || "No especificado",
-  serviciosRequeridos: s.servicios_requeridos || "",
-  serviciosConvenidos: s.servicios_convenidos || "",
-  diagnostico: s.diagnostico || "",
-  presupuesto: Number(s.presupuesto || 0),
-  presupuestoTexto: s.presupuesto_texto || "",
-  presupuestado: !!s.presupuestado,
-  acepta: !!s.acepta,
-  rechazaDevolver: !!s.rechaza_devolver,
-  garantia: !!s.garantia,
-  esReclamoGarantia: !!s.es_reclamo_garantia,
-  ingresoTaller: s.ingreso_taller !== false,
-  repuestosComprar: s.repuestos_comprar || "",
-  repuestosComprados: s.repuestos_comprados || "",
-  pasaStock: !!s.pasa_stock,
-  citaDia: s.cita_dia,
-  citaEntrega: s.cita_entrega,
-  horaEntregaDesde: s.hora_entrega_desde || "",
-  horaEntregaHasta: s.hora_entrega_hasta || "",
-  entregado: !!s.entregado,
-  terminado: !!s.terminado,
-  factura: !!s.factura,
-  contado: !!s.contado,
-  infoLogistica: s.info_logistica || "",
-  notasInternas: s.notas_internas || "",
-  estado: s.estado as EstadoServicio,
-  montoEfectivo: Number(s.monto_efectivo || 0),
-  montoTransferencia: Number(s.monto_transferencia || 0),
-  metodoPago: s.metodo_pago || "",
-  createdAt: s.created_at,
-  updatedAt: s.updated_at,
-  createdBy: s.created_by || "",
-  fotosDrive: s.fotos_drive || []
-});
+const mapToFrontendServicio = (s: any): Servicio => {
+  const diagStr = s.diagnostico || s.servicios_requeridos || "";
+  let diagnosticoTipo: "PREVIO" | "FINAL" | undefined = undefined;
+  if (diagStr.includes("[PREVIO]")) {
+    diagnosticoTipo = "PREVIO";
+  } else if (diagStr.includes("[FINAL]")) {
+    diagnosticoTipo = "FINAL";
+  }
+
+  return {
+    id: s.id,
+    numeroServicio: s.numero_servicio,
+    clienteId: s.cliente_id,
+    equipoId: s.equipo_id,
+    tecnicoId: s.tecnico_id || "",
+    fechaIngreso: s.fecha_ingreso,
+    aparato: s.aparato,
+    marcaModelo: s.marca_modelo,
+    desperfectoUsuario: s.desperfecto_usuario || "No especificado",
+    serviciosRequeridos: s.servicios_requeridos || "",
+    serviciosConvenidos: s.servicios_convenidos || "",
+    diagnostico: s.diagnostico || "",
+    diagnosticoTipo,
+    presupuesto: Number(s.presupuesto || 0),
+    presupuestoTexto: s.presupuesto_texto || "",
+    presupuestado: !!s.presupuestado,
+    acepta: !!s.acepta,
+    rechazaDevolver: !!s.rechaza_devolver,
+    garantia: !!s.garantia,
+    esReclamoGarantia: !!s.es_reclamo_garantia,
+    ingresoTaller: s.ingreso_taller !== false,
+    repuestosComprar: s.repuestos_comprar || "",
+    repuestosComprados: s.repuestos_comprados || "",
+    pasaStock: !!s.pasa_stock,
+    citaDia: s.cita_dia,
+    citaEntrega: s.cita_entrega,
+    horaEntregaDesde: s.hora_entrega_desde || "",
+    horaEntregaHasta: s.hora_entrega_hasta || "",
+    entregado: !!s.entregado,
+    terminado: !!s.terminado,
+    factura: !!s.factura,
+    contado: !!s.contado,
+    infoLogistica: s.info_logistica || "",
+    notasInternas: s.notas_internas || "",
+    estado: s.estado as EstadoServicio,
+    montoEfectivo: Number(s.monto_efectivo || 0),
+    montoTransferencia: Number(s.monto_transferencia || 0),
+    metodoPago: s.metodo_pago || "",
+    createdAt: s.created_at,
+    updatedAt: s.updated_at,
+    createdBy: s.created_by || "",
+    fotosDrive: s.fotos_drive || []
+  };
+};
 
 const mapToDbServicio = (s: Partial<Servicio>): any => {
   const db: any = {};

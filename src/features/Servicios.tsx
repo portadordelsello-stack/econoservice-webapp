@@ -569,6 +569,22 @@ export default function Servicios() {
                     <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(srv.estado)}`}>
                       {getEstadoLabel(srv.estado)}
                     </span>
+
+                    {/* Diagnostic Tag Badge (Previo vs Final) */}
+                    {((srv.diagnostico && srv.diagnostico.includes("[PREVIO]")) || (srv.serviciosRequeridos && srv.serviciosRequeridos.includes("[PREVIO]")) || srv.diagnosticoTipo === "PREVIO") && (
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 text-amber-700" />
+                        Diagnóstico Previo
+                      </span>
+                    )}
+
+                    {((srv.diagnostico && srv.diagnostico.includes("[FINAL]")) || (srv.serviciosRequeridos && srv.serviciosRequeridos.includes("[FINAL]")) || srv.diagnosticoTipo === "FINAL") && (
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-indigo-100 text-indigo-900 border border-indigo-300 flex items-center gap-1">
+                        <CheckCircle className="w-2.5 h-2.5 text-indigo-700" />
+                        Diagnóstico Final
+                      </span>
+                    )}
+
                     {srv.estado === "EN_ESPERA" && (
                       <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider border ${
                         srv.presupuestado 
@@ -635,8 +651,8 @@ export default function Servicios() {
                   {/* Column 4: Desperfecto */}
                   <div className="flex flex-col min-w-0">
                     <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Desperfecto</span>
-                    <span className="text-xs sm:text-sm text-slate-700 italic line-clamp-2 md:line-clamp-3 font-medium" title={srv.desperfectoUsuario}>
-                      {srv.desperfectoUsuario || "Sin desperfecto reportado"}
+                    <span className="text-xs sm:text-sm text-slate-700 italic line-clamp-2 md:line-clamp-3 font-medium" title={srv.serviciosRequeridos || srv.diagnostico || srv.desperfectoUsuario}>
+                      {(srv.serviciosRequeridos || srv.diagnostico || srv.desperfectoUsuario || "Sin desperfecto reportado").replace(/^\[(PREVIO|FINAL)\]\s*/, "")}
                     </span>
                   </div>
                 </div>

@@ -148,6 +148,10 @@ export default function DetalleServicio() {
   const [filesList, setFilesList] = useState<{ name: string; url: string }[]>([]);
   const [uploading, setUploading] = useState(false);
 
+  // Diagnostic Type states (PREVIO vs FINAL)
+  const [showDiagTypeModal, setShowDiagTypeModal] = useState(false);
+  const [editDiagnosticoTipo, setEditDiagnosticoTipo] = useState<"PREVIO" | "FINAL" | "">("");
+
   // History Modal states
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyServices, setHistoryServices] = useState<Servicio[]>([]);
@@ -168,7 +172,18 @@ export default function DetalleServicio() {
       // Sync form fields immediately
       setEditEstado(serv.estado);
       setEditTecnicoId(serv.tecnicoId || "");
-      setEditDiagnostico(serv.diagnostico || serv.serviciosRequeridos || "");
+      
+      let rawDiag = serv.diagnostico || serv.serviciosRequeridos || "";
+      let dTipo: "PREVIO" | "FINAL" | "" = serv.diagnosticoTipo || "";
+      if (rawDiag.includes("[PREVIO]")) {
+        dTipo = "PREVIO";
+        rawDiag = rawDiag.replace(/^\[PREVIO\]\s*/, "");
+      } else if (rawDiag.includes("[FINAL]")) {
+        dTipo = "FINAL";
+        rawDiag = rawDiag.replace(/^\[FINAL\]\s*/, "");
+      }
+      setEditDiagnostico(rawDiag);
+      setEditDiagnosticoTipo(dTipo);
       setEditRepuestosComprar(serv.repuestosComprar || "");
       setEditRepuestosComprados(serv.repuestosComprados || "");
       setEditPresupuesto(serv.presupuesto || 0);
@@ -329,8 +344,31 @@ export default function DetalleServicio() {
     }
   };
 
+  const handleConfirmDiagnosisType = async (type: "PREVIO" | "FINAL") => {
+    setShowDiagTypeModal(false);
+    setEditEstado("EN_ESPERA");
+    setEditDiagnosticoTipo(type);
+
+    const cleanText = editDiagnostico.replace(/^\[(PREVIO|FINAL)\]\s*/, "").trim();
+    const taggedDiag = `[${type}] ${cleanText}`;
+
+    await handleSave(
+      "EN_ESPERA", 
+      false, 
+      `Técnico guardó el diagnóstico (${type === "PREVIO" ? "Previo" : "Final"}) y pasó la orden a Espera`,
+      type,
+      taggedDiag
+    );
+  };
+
   // Action Save changes
-  const handleSave = async (targetState?: EstadoServicio, isFinished?: boolean, customAuditText?: string) => {
+  const handleSave = async (
+    targetState?: EstadoServicio, 
+    isFinished?: boolean, 
+    customAuditText?: string,
+    overrideDiagTipo?: "PREVIO" | "FINAL",
+    overrideDiagText?: string
+  ) => {
     if (!selectedId || !profile || !servicio) return;
     setSubmitting(true);
     try {
@@ -340,13 +378,19 @@ export default function DetalleServicio() {
       const finalState = isFinished ? "LISTO_PARA_ENTREGA" : (targetState || editEstado);
       const isReparacionTerminada = isFinished !== undefined ? isFinished : editTerminado;
 
+      const activeDiagTipo = overrideDiagTipo !== undefined ? overrideDiagTipo : editDiagnosticoTipo;
+      let rawText = overrideDiagText !== undefined ? overrideDiagText : editDiagnostico;
+      rawText = rawText.replace(/^\[(PREVIO|FINAL)\]\s*/, "").trim();
+
+      const formattedDiag = activeDiagTipo ? `[${activeDiagTipo}] ${rawText}` : rawText;
+
       let fieldsToUpdate: Partial<Servicio>;
 
       if (profile?.rol === "tecnico") {
         fieldsToUpdate = {
           estado: finalState,
-          diagnostico: editDiagnostico,
-          serviciosRequeridos: editDiagnostico,
+          diagnostico: formattedDiag,
+          serviciosRequeridos: formattedDiag,
           notasInternas: editNotasInternas,
           repuestosComprar: editRepuestosComprar,
           repuestosComprados: editRepuestosComprados,
@@ -357,8 +401,8 @@ export default function DetalleServicio() {
         fieldsToUpdate = {
           estado: finalState,
           tecnicoId: editTecnicoId || "",
-          diagnostico: editDiagnostico,
-          serviciosRequeridos: editDiagnostico,
+          diagnostico: formattedDiag,
+          serviciosRequeridos: formattedDiag,
           notasInternas: editNotasInternas,
           repuestosComprar: editRepuestosComprar,
           repuestosComprados: editRepuestosComprados,
@@ -729,9 +773,40 @@ export default function DetalleServicio() {
 
             {/* Servicios Requeridos */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-                Servicios Requeridos / Diagnóstico Técnico <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+                  Servicios Requeridos / Diagnóstico Técnico <span className="text-red-500">*</span>
+                </label>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={isConsulta}
+                    onClick={() => setEditDiagnosticoTipo("PREVIO")}
+                    className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+                      editDiagnosticoTipo === "PREVIO"
+                        ? "bg-amber-500 text-white border-amber-600 shadow-3xs"
+                        : "bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-750"
+                    }`}
+                  >
+                    <Clock className="w-3 h-3" />
+                    <span>Previo</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isConsulta}
+                    onClick={() => setEditDiagnosticoTipo("FINAL")}
+                    className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+                      editDiagnosticoTipo === "FINAL"
+                        ? "bg-indigo-600 text-white border-indigo-700 shadow-3xs"
+                        : "bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-750"
+                    }`}
+                  >
+                    <CheckCircle className="w-3 h-3" />
+                    <span>Final</span>
+                  </button>
+                </div>
+              </div>
               <textarea
                 value={editDiagnostico}
                 onChange={(e) => setEditDiagnostico(e.target.value)}
@@ -1030,9 +1105,12 @@ export default function DetalleServicio() {
                   <button
                     type="button"
                     disabled={submitting || isSaveDisabled}
-                    onClick={async () => {
-                      setEditEstado("EN_ESPERA");
-                      setTimeout(() => handleSave("EN_ESPERA", false, "Técnico guardó el diagnóstico y marcó como DIAGNOSTICADO"), 100);
+                    onClick={() => {
+                      if (!editDiagnostico.trim()) {
+                        alert("Por favor, escriba el diagnóstico técnico en el campo 'Servicios Requeridos / Diagnóstico Técnico' antes de presionar Diagnosticado.");
+                        return;
+                      }
+                      setShowDiagTypeModal(true);
                     }}
                     className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-gray-800 disabled:text-slate-450 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                   >
@@ -1280,6 +1358,63 @@ export default function DetalleServicio() {
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: ¿Diagnóstico previo o final? */}
+      {showDiagTypeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in select-none">
+          <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-scale-in">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-xl shrink-0">
+                <Clock className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  ¿Diagnóstico previo o final?
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                  Seleccione si la orden está en proceso de pruebas (Previo) o si es el diagnóstico definitivo (Final).
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-gray-850 rounded-xl text-xs text-slate-600 dark:text-gray-300 italic border border-slate-100 dark:border-gray-800 line-clamp-3">
+              "{editDiagnostico || "Sin texto de diagnóstico ingresado"}"
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => handleConfirmDiagnosisType("PREVIO")}
+                className="flex flex-col items-center justify-center gap-1.5 p-4 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-extrabold rounded-xl transition-all shadow-md cursor-pointer text-center"
+              >
+                <Clock className="w-6 h-6 mb-0.5" />
+                <span className="text-sm uppercase tracking-wider">Previo</span>
+                <span className="text-[10px] font-normal text-amber-100 leading-tight">En pruebas / En proceso</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleConfirmDiagnosisType("FINAL")}
+                className="flex flex-col items-center justify-center gap-1.5 p-4 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-extrabold rounded-xl transition-all shadow-md cursor-pointer text-center"
+              >
+                <CheckCircle className="w-6 h-6 mb-0.5" />
+                <span className="text-sm uppercase tracking-wider">Final</span>
+                <span className="text-[10px] font-normal text-indigo-100 leading-tight">Diagnóstico definitivo</span>
+              </button>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDiagTypeModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer"
+              >
+                Cancelar
               </button>
             </div>
           </div>
