@@ -527,84 +527,109 @@ export default function Servicios() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
+          {/* Table Header on Desktop */}
+          <div className="hidden md:grid grid-cols-4 gap-4 px-5 py-2 text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-widest select-none">
+            <div>Domicilio</div>
+            <div>Aparato</div>
+            <div>Marca / Modelo</div>
+            <div>Desperfecto / Falla</div>
+          </div>
+
           {paginatedList.map((srv) => {
             const client = clientMap.get(srv.clienteId);
             const equipo = equipoMap.get(srv.equipoId);
-            const isExpanded = expandedId === srv.id;
 
             // Format address
-            const addressStr = client ? [
-              client.calle ? `${client.calle} ${client.numero || ""}`.trim() : "",
-              client.torre ? `Torre ${client.torre}` : "",
-              client.piso ? `Piso ${client.piso}` : "",
-              client.depto ? `Depto ${client.depto}` : "",
-              client.barrio ? `Barrio ${client.barrio}` : "",
-              client.localidad || "Santo Tomé"
-            ].filter(Boolean).join(", ") : "Sin Domicilio";
+            const addressCalle = client?.calle 
+              ? `${client.calle} ${client.numero || ""}`.trim() 
+              : "Sin Domicilio";
+            const addressLoc = client?.localidad || "Santo Tomé";
 
             return (
               <div
                 key={srv.id}
                 onClick={() => navigate("detalle-servicio", srv.id, { servicio: srv, cliente: client || null, equipo: equipo || null })}
-                className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/80 rounded-2xl shadow-3xs overflow-hidden transition-all duration-300 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/10 cursor-pointer"
+                className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/85 rounded-xl shadow-3xs overflow-hidden transition-all duration-300 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/10 cursor-pointer"
               >
-                {/* Header Banner */}
-                <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 select-none bg-gradient-to-r from-slate-50/50 to-white dark:from-gray-850/40 dark:to-gray-900 hover:from-slate-100 hover:to-white dark:hover:from-gray-800 dark:hover:to-gray-900 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    {/* Unique Highlight Icon */}
-                    <div className={`p-2.5 rounded-xl text-xs font-bold shrink-0 ${getEstadoBadgeClass(srv.estado)}`}>
+                {/* Top header bar for Metadata */}
+                <div className="px-5 py-2.5 border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-850/20 flex items-center justify-between gap-2 select-none">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 rounded-lg border border-indigo-100/50 dark:border-indigo-900/30">
                       Orden #{srv.numeroServicio}
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {/* Address (Bold & Medium size) */}
-                        <span className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-gray-250 flex items-center gap-1.5">
-                          <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
-                          {addressStr}
-                        </span>
-                        
-                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(srv.estado)}`}>
-                          {getEstadoLabel(srv.estado)}
-                        </span>
-                        
-                        {srv.estado === "EN_ESPERA" && (
-                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider border ${
-                            srv.presupuestado 
-                              ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30" 
-                              : "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30"
-                          }`}>
-                            {srv.presupuestado ? "Presupuestado" : "No Presupuestado"}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    </span>
+                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(srv.estado)}`}>
+                      {getEstadoLabel(srv.estado)}
+                    </span>
+                    {srv.estado === "EN_ESPERA" && (
+                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider border ${
+                        srv.presupuestado 
+                          ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30" 
+                          : "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30"
+                      }`}>
+                        {srv.presupuestado ? "Presupuestado" : "No Presupuestado"}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Right hand side action indicator */}
-                  <div className="flex items-center gap-3 self-end md:self-auto">
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (window.confirm("¿Está seguro que desea eliminar esta orden de servicio del taller? Esta acción no se puede deshacer.")) {
-                            try {
-                              await ServiciosService.delete(srv.id!);
-                              await loadAllData();
-                            } catch (err) {
-                              console.error("Error deleting service:", err);
-                              alert("Error al eliminar el servicio.");
-                            }
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (window.confirm("¿Está seguro que desea eliminar esta orden de servicio del taller? Esta acción no se puede deshacer.")) {
+                          try {
+                            await ServiciosService.delete(srv.id!);
+                            await loadAllData();
+                          } catch (err) {
+                            console.error("Error deleting service:", err);
+                            alert("Error al eliminar el servicio.");
                           }
-                        }}
-                        className="p-1.5 text-red-600 hover:text-red-700 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/80 dark:hover:bg-red-950/40 rounded-lg transition-all cursor-pointer border border-red-100/40 dark:border-red-900/20 flex items-center justify-center hover:scale-105 active:scale-95 mr-1"
-                        title="Eliminar de Taller"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                        }
+                      }}
+                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md transition-all cursor-pointer"
+                      title="Eliminar de Taller"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Main information Grid mimicking cap.png */}
+                <div className="p-4 px-5 grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-white dark:bg-gray-900 hover:bg-slate-50/20 dark:hover:bg-gray-850/5 transition-colors">
+                  {/* Column 1: Domicilio */}
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-wider md:hidden mb-0.5">Domicilio</span>
+                    <span className="text-sm font-bold text-slate-800 dark:text-gray-200 truncate">
+                      {addressCalle}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-gray-400 truncate">
+                      {addressLoc}
+                    </span>
+                  </div>
+
+                  {/* Column 2: Aparato */}
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-wider md:hidden mb-0.5">Aparato</span>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-gray-300 truncate">
+                      {srv.aparato || "No especificado"}
+                    </span>
+                  </div>
+
+                  {/* Column 3: Marca / Modelo */}
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-wider md:hidden mb-0.5">Marca / Modelo</span>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-gray-300 truncate">
+                      {srv.marcaModelo || "No especificado"}
+                    </span>
+                  </div>
+
+                  {/* Column 4: Desperfecto */}
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-wider md:hidden mb-0.5">Desperfecto</span>
+                    <span className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 italic line-clamp-2 md:line-clamp-3" title={srv.desperfectoUsuario}>
+                      {srv.desperfectoUsuario || "Sin desperfecto reportado"}
+                    </span>
                   </div>
                 </div>
               </div>
