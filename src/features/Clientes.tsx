@@ -197,6 +197,7 @@ export default function Clientes() {
   const [formCalle, setFormCalle] = useState("");
   const [formNumero, setFormNumero] = useState("");
   const [formCiudad, setFormCiudad] = useState("");
+  const [formCiudadOtros, setFormCiudadOtros] = useState("");
   const [formDepto, setFormDepto] = useState("");
   const [formPiso, setFormPiso] = useState("");
   const [formTorre, setFormTorre] = useState("");
@@ -343,6 +344,7 @@ export default function Clientes() {
     setFormCalle("");
     setFormNumero("");
     setFormCiudad("");
+    setFormCiudadOtros("");
     setFormDepto("");
     setFormPiso("");
     setFormTorre("");
@@ -461,7 +463,7 @@ export default function Clientes() {
         telCel: formTelCel.trim() || "",
         calle,
         numero,
-        localidad: formCiudad.trim() || "",
+        localidad: (formCiudad === "Otros" ? formCiudadOtros : formCiudad).trim() || "",
         depto: formDepto.trim() || "",
         piso: formPiso.trim() || "",
         torre: formTorre.trim() || "",
@@ -545,7 +547,14 @@ export default function Clientes() {
       setFormTelCel(c.telCel || "");
       setFormCalle(c.calle || "");
       setFormNumero(c.numero || "");
-      setFormCiudad(c.localidad || "");
+      const isPredefined = ["Santa Fe", "Santo Tomé", "Sauce", "Colastiné Norte", "Rincon", "Recreo", "Colastiné Sur"].includes(c.localidad || "");
+      if (c.localidad && !isPredefined) {
+        setFormCiudad("Otros");
+        setFormCiudadOtros(c.localidad);
+      } else {
+        setFormCiudad(c.localidad || "");
+        setFormCiudadOtros("");
+      }
       setFormDepto(c.depto || "");
       setFormPiso(c.piso || "");
       setFormTorre(c.torre || "");
@@ -769,7 +778,7 @@ export default function Clientes() {
         telCel: formTelCel.trim() || "",
         calle,
         numero,
-        localidad: formCiudad.trim() || "",
+        localidad: (formCiudad === "Otros" ? formCiudadOtros : formCiudad).trim() || "",
         depto: formDepto.trim() || "",
         piso: formPiso.trim() || "",
         torre: formTorre.trim() || "",
@@ -986,6 +995,7 @@ export default function Clientes() {
     register, 
     handleSubmit, 
     reset, 
+    watch,
     formState: { errors, isSubmitting } 
   } = useForm({
     resolver: zodResolver(ClienteSchema),
@@ -996,6 +1006,7 @@ export default function Clientes() {
       telCelBis: "",
       telCelOtro: "",
       localidad: "",
+      localidadOtros: "",
       barrio: "",
       zona: "",
       calle: "",
@@ -1007,6 +1018,8 @@ export default function Clientes() {
       observaciones: ""
     }
   });
+
+  const watchedLocalidad = watch("localidad");
 
   const loadClientes = async () => {
     try {
@@ -1070,6 +1083,7 @@ export default function Clientes() {
       telCelBis: "",
       telCelOtro: "",
       localidad: "",
+      localidadOtros: "",
       barrio: "",
       zona: "",
       calle: "",
@@ -1085,13 +1099,18 @@ export default function Clientes() {
 
   const handleOpenEdit = (cliente: Cliente) => {
     setEditingCliente(cliente);
+    const isPredefined = ["Santa Fe", "Santo Tomé", "Sauce", "Colastiné Norte", "Rincon", "Recreo", "Colastiné Sur"].includes(cliente.localidad || "");
+    const finalLocalidad = isPredefined ? (cliente.localidad || "") : (cliente.localidad ? "Otros" : "");
+    const customLocalidadValue = !isPredefined ? (cliente.localidad || "") : "";
+
     reset({
       nombreApellido: cliente.nombreApellido,
       telFijo: cliente.telFijo || "",
       telCel: cliente.telCel || "",
       telCelBis: cliente.telCelBis || "",
       telCelOtro: cliente.telCelOtro || "",
-      localidad: cliente.localidad || "",
+      localidad: finalLocalidad,
+      localidadOtros: customLocalidadValue,
       barrio: cliente.barrio || "",
       zona: cliente.zona || "",
       calle: cliente.calle || "",
@@ -1108,6 +1127,10 @@ export default function Clientes() {
   const onSubmitForm = async (data: any) => {
     try {
       const finalData = { ...data };
+      if (finalData.localidad === "Otros") {
+        finalData.localidad = finalData.localidadOtros || "";
+      }
+      delete finalData.localidadOtros;
       if (!finalData.nombreApellido || finalData.nombreApellido.trim() === "") {
         if (finalData.calle?.trim() && finalData.numero?.trim()) {
           finalData.nombreApellido = `${finalData.calle.trim()} ${finalData.numero.trim()}`;
@@ -1370,8 +1393,23 @@ export default function Clientes() {
                     <option value="Rincon">Rincon</option>
                     <option value="Recreo">Recreo</option>
                     <option value="Colastiné Sur">Colastiné Sur</option>
+                    <option value="Otros">Otros</option>
                   </select>
                 </div>
+                {formCiudad === "Otros" && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                      Especificar Localidad
+                    </label>
+                    <input
+                      type="text"
+                      value={formCiudadOtros}
+                      onChange={(e) => setFormCiudadOtros(e.target.value)}
+                      placeholder="Ej. Esperanza"
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-855 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                     Torre
@@ -2645,8 +2683,22 @@ export default function Clientes() {
                     <option value="Rincon">Rincon</option>
                     <option value="Recreo">Recreo</option>
                     <option value="Colastiné Sur">Colastiné Sur</option>
+                    <option value="Otros">Otros</option>
                   </select>
                 </div>
+                {watchedLocalidad === "Otros" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                      Especificar Localidad
+                    </label>
+                    <input
+                      type="text"
+                      {...register("localidadOtros")}
+                      placeholder="Ej. Esperanza"
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
                     Barrio

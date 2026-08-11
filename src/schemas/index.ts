@@ -7,6 +7,7 @@ export const ClienteSchema = z.object({
   telCelBis: z.string().optional().or(z.literal("")),
   telCelOtro: z.string().optional().or(z.literal("")),
   localidad: z.string().optional().or(z.literal("")),
+  localidadOtros: z.string().optional().or(z.literal("")),
   barrio: z.string().optional().or(z.literal("")),
   zona: z.string().optional().or(z.literal("")),
   calle: z.string().optional().or(z.literal("")),
