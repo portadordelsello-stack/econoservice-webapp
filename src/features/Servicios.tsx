@@ -646,9 +646,11 @@ export default function Servicios() {
                       <td className="py-2.5 px-3 text-xs">
                         <div className="flex flex-col gap-1 items-start">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${getEstadoBadgeClass(srv.estado)}`}>
-                              {getEstadoLabel(srv.estado)}
-                            </span>
+                            {srv.estado !== "RECIBIDO" && (
+                              <span className={`text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${getEstadoBadgeClass(srv.estado)}`}>
+                                {getEstadoLabel(srv.estado)}
+                              </span>
+                            )}
                             {isSinDiag && (
                               <span className="text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider bg-rose-50 text-rose-800 border border-rose-250">
                                 Sin Diag.
