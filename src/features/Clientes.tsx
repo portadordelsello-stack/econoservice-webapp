@@ -175,7 +175,7 @@ export default function Clientes() {
       if (selectedCliente?.id === clienteToDelete) {
         setSelectedCliente(null);
       }
-      loadClientes();
+      await refreshSearchAndList();
       setClienteToDelete(null);
     } catch (err) {
       console.error("Error deleting client:", err);
@@ -524,7 +524,7 @@ export default function Clientes() {
       }
 
       setFormSuccess(true);
-      loadClientes();
+      await refreshSearchAndList();
     } catch (err: any) {
       console.error("Error creating custom client & service:", err);
       setFormError("Hubo un error al registrar el cliente. Intente nuevamente.");
@@ -752,9 +752,16 @@ export default function Clientes() {
         numero = numMatch[2].trim();
       }
 
-      const clientName = formNombreApellido.trim() || 
-        ((calle && numero) ? `${calle} ${numero}` : 
-        (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N"));
+      const currentClient = clientes.find(c => c.id === editingId);
+      const oldAddressName = currentClient 
+        ? `${currentClient.calle || ""} ${currentClient.numero || ""}`.trim() 
+        : "";
+      const isAutoName = !formNombreApellido.trim() || 
+                         (oldAddressName && formNombreApellido.trim() === oldAddressName);
+
+      const clientName = isAutoName
+        ? ((calle && numero) ? `${calle} ${numero}` : (formTelCel.trim() ? `Cel: ${formTelCel.trim()}` : "Cliente S/N"))
+        : formNombreApellido.trim();
 
       // 2. Update client details
       await ClientesService.update(editingId, {
@@ -771,7 +778,7 @@ export default function Clientes() {
 
       if (finalEquipos.length === 0) {
         setFormSuccess(true);
-        loadClientes();
+        await refreshSearchAndList();
         setFormSaving(false);
         return;
       }
@@ -957,7 +964,7 @@ export default function Clientes() {
       }
 
       setFormSuccess(true);
-      loadClientes();
+      await refreshSearchAndList();
       if (editingId) {
         const clientServices = await ServiciosService.getByCliente(editingId);
         setAllServices(clientServices);
@@ -1010,6 +1017,18 @@ export default function Clientes() {
       console.error("Error loading clientes:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshSearchAndList = async () => {
+    await loadClientes();
+    if (searchTerm.trim()) {
+      try {
+        const results = await ClientesService.search(searchTerm.trim());
+        setSearchResults(results);
+      } catch (err) {
+        console.error("Error refreshing search results:", err);
+      }
     }
   };
 
@@ -1106,7 +1125,7 @@ export default function Clientes() {
       }
       setIsFormOpen(false);
       reset();
-      loadClientes();
+      await refreshSearchAndList();
     } catch (err) {
       console.error("Error saving cliente:", err);
     }
