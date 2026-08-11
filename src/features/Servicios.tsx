@@ -32,7 +32,9 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Calendar,
-  X
+  X,
+  RotateCw,
+  Eye
 } from "lucide-react";
 
 const getEstadoBadgeClass = (estado: string) => {
