@@ -20,6 +20,7 @@ import {
   Calendar,
   History,
   AlertTriangle,
+  AlertCircle,
   Upload,
   FileDown,
   Paperclip,
@@ -148,9 +149,9 @@ export default function DetalleServicio() {
   const [filesList, setFilesList] = useState<{ name: string; url: string }[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // Diagnostic Type states (PREVIO vs FINAL)
+  // Diagnostic Type states (PREVIO vs FINAL vs SIN_DIAGNOSTICO)
   const [showDiagTypeModal, setShowDiagTypeModal] = useState(false);
-  const [editDiagnosticoTipo, setEditDiagnosticoTipo] = useState<"PREVIO" | "FINAL" | "">("");
+  const [editDiagnosticoTipo, setEditDiagnosticoTipo] = useState<"PREVIO" | "FINAL" | "SIN_DIAGNOSTICO" | "">("");
 
   // History Modal states
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -174,13 +175,16 @@ export default function DetalleServicio() {
       setEditTecnicoId(serv.tecnicoId || "");
       
       let rawDiag = serv.diagnostico || serv.serviciosRequeridos || "";
-      let dTipo: "PREVIO" | "FINAL" | "" = serv.diagnosticoTipo || "";
+      let dTipo: "PREVIO" | "FINAL" | "SIN_DIAGNOSTICO" | "" = serv.diagnosticoTipo || "SIN_DIAGNOSTICO";
       if (rawDiag.includes("[PREVIO]")) {
         dTipo = "PREVIO";
         rawDiag = rawDiag.replace(/^\[PREVIO\]\s*/, "");
       } else if (rawDiag.includes("[FINAL]")) {
         dTipo = "FINAL";
         rawDiag = rawDiag.replace(/^\[FINAL\]\s*/, "");
+      } else if (rawDiag.includes("[SIN_DIAGNOSTICO]")) {
+        dTipo = "SIN_DIAGNOSTICO";
+        rawDiag = rawDiag.replace(/^\[SIN_DIAGNOSTICO\]\s*/, "");
       }
       setEditDiagnostico(rawDiag);
       setEditDiagnosticoTipo(dTipo);
@@ -380,7 +384,7 @@ export default function DetalleServicio() {
 
       const activeDiagTipo = overrideDiagTipo !== undefined ? overrideDiagTipo : editDiagnosticoTipo;
       let rawText = overrideDiagText !== undefined ? overrideDiagText : editDiagnostico;
-      rawText = rawText.replace(/^\[(PREVIO|FINAL)\]\s*/, "").trim();
+      rawText = rawText.replace(/^\[(PREVIO|FINAL|SIN_DIAGNOSTICO)\]\s*/, "").trim();
 
       const formattedDiag = activeDiagTipo ? `[${activeDiagTipo}] ${rawText}` : rawText;
 
@@ -778,11 +782,30 @@ export default function DetalleServicio() {
                   Servicios Requeridos / Diagnóstico Técnico <span className="text-red-500">*</span>
                 </label>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
                     disabled={isConsulta}
-                    onClick={() => setEditDiagnosticoTipo("PREVIO")}
+                    onClick={() => {
+                      setEditDiagnosticoTipo("SIN_DIAGNOSTICO");
+                      setEditEstado("RECIBIDO");
+                    }}
+                    className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+                      editDiagnosticoTipo === "SIN_DIAGNOSTICO" || editDiagnosticoTipo === ""
+                        ? "bg-rose-600 text-white border-rose-700 shadow-3xs"
+                        : "bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-750"
+                    }`}
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    <span>Sin Diagnóstico</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isConsulta}
+                    onClick={() => {
+                      setEditDiagnosticoTipo("PREVIO");
+                      setEditEstado("EN_ESPERA");
+                    }}
                     className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
                       editDiagnosticoTipo === "PREVIO"
                         ? "bg-amber-500 text-white border-amber-600 shadow-3xs"
@@ -795,7 +818,10 @@ export default function DetalleServicio() {
                   <button
                     type="button"
                     disabled={isConsulta}
-                    onClick={() => setEditDiagnosticoTipo("FINAL")}
+                    onClick={() => {
+                      setEditDiagnosticoTipo("FINAL");
+                      setEditEstado("EN_ESPERA");
+                    }}
                     className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
                       editDiagnosticoTipo === "FINAL"
                         ? "bg-indigo-600 text-white border-indigo-700 shadow-3xs"

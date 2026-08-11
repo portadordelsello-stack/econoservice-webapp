@@ -11,7 +11,8 @@ import {
   FileText, 
   Save, 
   CheckCircle, 
-  AlertTriangle, 
+  AlertTriangle,
+  AlertCircle, 
   Cpu, 
   Layers, 
   Check, 
@@ -570,7 +571,14 @@ export default function Servicios() {
                       {getEstadoLabel(srv.estado)}
                     </span>
 
-                    {/* Diagnostic Tag Badge (Previo vs Final) */}
+                    {/* Diagnostic Tag Badge (Previo vs Final vs Sin Diagnóstico) */}
+                    {(srv.diagnosticoTipo === "SIN_DIAGNOSTICO" || (!srv.diagnosticoTipo && !srv.diagnostico?.includes("[PREVIO]") && !srv.diagnostico?.includes("[FINAL]") && !srv.serviciosRequeridos?.includes("[PREVIO]") && !srv.serviciosRequeridos?.includes("[FINAL]"))) && (
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1">
+                        <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
+                        Sin Diagnóstico
+                      </span>
+                    )}
+
                     {((srv.diagnostico && srv.diagnostico.includes("[PREVIO]")) || (srv.serviciosRequeridos && srv.serviciosRequeridos.includes("[PREVIO]")) || srv.diagnosticoTipo === "PREVIO") && (
                       <span className="text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5 text-amber-700" />
@@ -652,7 +660,7 @@ export default function Servicios() {
                   <div className="flex flex-col min-w-0">
                     <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Desperfecto</span>
                     <span className="text-xs sm:text-sm text-slate-700 italic line-clamp-2 md:line-clamp-3 font-medium" title={srv.serviciosRequeridos || srv.diagnostico || srv.desperfectoUsuario}>
-                      {(srv.serviciosRequeridos || srv.diagnostico || srv.desperfectoUsuario || "Sin desperfecto reportado").replace(/^\[(PREVIO|FINAL)\]\s*/, "")}
+                      {(srv.serviciosRequeridos || srv.diagnostico || srv.desperfectoUsuario || "Sin desperfecto reportado").replace(/^\[(PREVIO|FINAL|SIN_DIAGNOSTICO)\]\s*/, "")}
                     </span>
                   </div>
                 </div>

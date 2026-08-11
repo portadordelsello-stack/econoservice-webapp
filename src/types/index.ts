@@ -95,7 +95,7 @@ export interface Servicio {
   serviciosRequeridos?: string;
   serviciosConvenidos?: string;
   diagnostico?: string;
-  diagnosticoTipo?: "PREVIO" | "FINAL";
+  diagnosticoTipo?: "PREVIO" | "FINAL" | "SIN_DIAGNOSTICO";
   presupuesto?: number;
   presupuestoTexto?: string;
   presupuestado?: boolean;

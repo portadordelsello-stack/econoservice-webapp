@@ -341,7 +341,7 @@ export const EquiposService = {
 // ============================================================================
 const mapToFrontendServicio = (s: any): Servicio => {
   const diagStr = s.diagnostico || s.servicios_requeridos || "";
-  let diagnosticoTipo: "PREVIO" | "FINAL" | undefined = undefined;
+  let diagnosticoTipo: "PREVIO" | "FINAL" | "SIN_DIAGNOSTICO" = "SIN_DIAGNOSTICO";
   if (diagStr.includes("[PREVIO]")) {
     diagnosticoTipo = "PREVIO";
   } else if (diagStr.includes("[FINAL]")) {
