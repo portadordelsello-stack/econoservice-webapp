@@ -2246,7 +2246,7 @@ export default function Clientes() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (!equipoModalDesperfecto.trim()) {
+                      if (!isAdmin && !equipoModalDesperfecto.trim()) {
                         alert("Por favor, complete el desperfecto del usuario.");
                         return;
                       }
