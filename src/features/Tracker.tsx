@@ -368,7 +368,7 @@ export default function Tracker({ isEmbedded = false }: { isEmbedded?: boolean }
         ClientesService.getAll()
       ]);
       const list = all.filter(s => {
-        const isTargetState = s.estado === "LISTO_PARA_ENTREGA" || s.estado === "ENTREGA_EN_PROGRESO";
+        const isTargetState = s.estado === "LISTO_PARA_ENTREGA" || s.estado === "ENTREGA_EN_PROGRESO" || s.estado === "RECHAZADO";
         if (!isTargetState) return false;
 
         if (s.citaEntrega) {

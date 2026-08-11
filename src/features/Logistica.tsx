@@ -420,9 +420,9 @@ export default function Logistica() {
   groupedTodayWithdrawals.sort(sortGroupedByRetiradoAndTime);
   groupedOtherWithdrawals.sort(sortGroupedByTime);
 
-  // Extract all services that are ready for delivery or in progress
+  // Extract all services that are ready for delivery or in progress (including RECHAZADO status)
   const readyDeliveries = servicios.filter(s => 
-    (s.estado === "LISTO_PARA_ENTREGA" || s.estado === "ENTREGA_EN_PROGRESO" || s.terminado === true) &&
+    (s.estado === "LISTO_PARA_ENTREGA" || s.estado === "ENTREGA_EN_PROGRESO" || s.estado === "RECHAZADO" || s.terminado === true) &&
     s.entregado !== true
   );
 
