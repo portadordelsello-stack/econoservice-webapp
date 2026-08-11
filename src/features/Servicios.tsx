@@ -558,7 +558,7 @@ export default function Servicios() {
 
           {/* Excel Spreadsheet Table */}
           <div className="overflow-x-auto bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-800 shadow-sm scrollbar-thin">
-            <table className="w-full text-left border-collapse min-w-[950px] bg-[#FFFFEB] dark:bg-gray-900">
+            <table className="w-full text-left border-collapse min-w-[780px] bg-[#FFFFEB] dark:bg-gray-900">
               <thead>
                 {/* Excel coordinate letters */}
                 <tr className="bg-slate-100 dark:bg-gray-850 text-slate-400 dark:text-gray-500 font-mono text-[9px] uppercase tracking-wider select-none text-center divide-x divide-slate-200 dark:divide-gray-800 border-b border-slate-200 dark:border-gray-800">
@@ -568,19 +568,15 @@ export default function Servicios() {
                   <th className="py-1 px-3 font-bold">C</th>
                   <th className="py-1 px-3 font-bold">D</th>
                   <th className="py-1 px-3 font-bold">E</th>
-                  <th className="py-1 px-3 font-bold">F</th>
-                  <th className="py-1 px-3 font-bold w-24">G</th>
                 </tr>
                 {/* Excel visual columns */}
-                <tr className="bg-slate-50 dark:bg-gray-850/50 text-[10px] font-extrabold text-slate-505 dark:text-gray-400 uppercase tracking-wider select-none divide-x divide-slate-200 dark:divide-gray-800 border-b border-slate-300 dark:border-gray-800">
+                <tr className="bg-slate-50 dark:bg-gray-855/50 text-[10px] font-extrabold text-slate-505 dark:text-gray-400 uppercase tracking-wider select-none divide-x divide-slate-200 dark:divide-gray-800 border-b border-slate-300 dark:border-gray-800">
                   <th className="py-2.5 px-2 text-center font-mono font-bold bg-slate-100 dark:bg-gray-855 text-slate-450 w-12">#</th>
-                  <th className="py-2.5 px-3">Orden</th>
                   <th className="py-2.5 px-3">Domicilio / Cliente</th>
                   <th className="py-2.5 px-3">Aparato</th>
                   <th className="py-2.5 px-3">Marca / Modelo</th>
                   <th className="py-2.5 px-3">Desperfecto / Falla</th>
                   <th className="py-2.5 px-3">Estado / Diagnóstico</th>
-                  <th className="py-2.5 px-3 text-center">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-gray-800">
@@ -616,16 +612,13 @@ export default function Servicios() {
                       onClick={() => navigate("detalle-servicio", srv.id, { servicio: srv, cliente: client || null, equipo: equipo || null })}
                       className="group hover:bg-slate-100/50 dark:hover:bg-gray-850/20 transition-all cursor-pointer divide-x divide-slate-200 dark:divide-gray-800"
                     >
-                      <td className="py-2.5 px-2 text-center font-mono font-bold bg-slate-50 dark:bg-gray-850/50 text-slate-400 select-none text-[10px]">
+                      <td className="py-2.5 px-2 text-center font-mono font-bold bg-slate-50 dark:bg-gray-855/50 text-slate-400 select-none text-[10px]">
                         {rowNumber}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono font-extrabold text-indigo-600 dark:text-indigo-400 text-xs">
-                        #{srv.numeroServicio}
                       </td>
                       <td className="py-2.5 px-3 text-xs text-slate-800 dark:text-gray-200 font-semibold max-w-[220px] truncate">
                         <div className="flex flex-col">
                           <span className="font-extrabold text-slate-900 dark:text-white">{addressCalle}</span>
-                          <span className="text-[10px] text-slate-500 font-medium">{client?.nombreApellido || "Cliente S/N"}</span>
+                          <span className="text-[10px] text-slate-505 font-medium">{client?.nombreApellido || "Cliente S/N"}</span>
                         </div>
                       </td>
                       <td className="py-2.5 px-3 text-xs text-slate-700 dark:text-gray-300 font-bold max-w-[120px] truncate">
@@ -659,38 +652,6 @@ export default function Servicios() {
                               </span>
                             )}
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3 text-center" onClick={e => e.stopPropagation()}>
-                        <div className="inline-flex items-center gap-1.5 justify-center">
-                          <button
-                            type="button"
-                            onClick={() => navigate("detalle-servicio", srv.id, { servicio: srv, cliente: client || null, equipo: equipo || null })}
-                            className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/45 rounded-md transition-all cursor-pointer"
-                            title="Ver detalles"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                if (window.confirm("¿Está seguro que desea eliminar esta orden de servicio del taller? Esta acción no se puede deshacer.")) {
-                                  try {
-                                    await ServiciosService.delete(srv.id!);
-                                    await loadAllData();
-                                  } catch (err) {
-                                    console.error("Error deleting service:", err);
-                                    alert("Error al eliminar el servicio.");
-                                  }
-                                }
-                              }}
-                              className="p-1 text-slate-400 hover:text-red-650 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-all cursor-pointer"
-                              title="Eliminar de Taller"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
