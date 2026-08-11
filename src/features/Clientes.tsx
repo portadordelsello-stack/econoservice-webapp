@@ -1804,7 +1804,8 @@ export default function Clientes() {
               </div>
 
               {(() => {
-                const currentEqId = formEquipos[equipoModalIndex!]?.id;
+                const eq = formEquipos[equipoModalIndex!];
+                const currentEqId = eq?.id;
                 const eqServices = allServices
                   .filter(s => s.equipoId === currentEqId)
                   .sort((a, b) => {
@@ -1813,7 +1814,7 @@ export default function Clientes() {
                     return dateB - dateA;
                   });
 
-                if (eqServices.length === 0) {
+                if (eqServices.length === 0 && !eq?.newDesperfecto) {
                   return (
                     <p className="text-xs text-slate-400 py-2 italic text-center">
                       No hay órdenes de trabajo previas para este equipo.
@@ -1823,6 +1824,42 @@ export default function Clientes() {
 
                 return (
                   <div className="space-y-2">
+                    {/* Virtual Pending New Work Order Card */}
+                    {eq?.newDesperfecto && (
+                      <div className="bg-amber-50/50 dark:bg-amber-950/20 border-2 border-dashed border-amber-355 dark:border-amber-900/50 rounded-xl p-3.5 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-amber-700 dark:text-amber-400">
+                              NUEVA ORDEN (Pendiente de Guardar)
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                              {eq.newFechaRetiro ? eq.newFechaRetiro.split(" ")[0] : "Hoy"}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setModalIsEditingActiveOrder(false);
+                              setEquipoModalDesperfecto(eq.newDesperfecto || "");
+                              const parsed = parseFechaRetiro(eq.newFechaRetiro || "");
+                              setEquipoModalFecha(parsed.date);
+                              setEquipoModalHoraDesdeHH(parsed.desde ? parsed.desde.split(":")[0] || "" : "");
+                              setEquipoModalHoraDesdeMM(parsed.desde ? parsed.desde.split(":")[1] || "" : "");
+                              setEquipoModalHoraHastaHH(parsed.hasta ? parsed.hasta.split(":")[0] || "" : "");
+                              setEquipoModalHoraHastaMM(parsed.hasta ? parsed.hasta.split(":")[1] || "" : "");
+                              setEquipoModalPhotos(eq.newFotosDrive || []);
+                              setShowNewWorkOrderForm(true);
+                            }}
+                            className="text-[10px] font-extrabold text-indigo-650 hover:underline cursor-pointer"
+                          >
+                            Modificar
+                          </button>
+                        </div>
+                        <p className="text-xs text-slate-700 dark:text-gray-300 font-medium">
+                          {eq.newDesperfecto}
+                        </p>
+                      </div>
+                    )}
                     {eqServices.map((srv, idx) => {
                       const isExpanded = expandedHistoryServiceId === srv.id;
                       const isLastOrder = idx === 0;
@@ -2204,6 +2241,56 @@ export default function Clientes() {
                     {uploadError}
                   </p>
                 )}
+              {isEditMode && showNewWorkOrderForm && (
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-150 dark:border-gray-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!equipoModalDesperfecto.trim()) {
+                        alert("Por favor, complete el desperfecto del usuario.");
+                        return;
+                      }
+
+                      const formatTimePartLocal = (hh: string, mm: string) => {
+                        if (!hh.trim() && !mm.trim()) return "";
+                        const paddedHH = hh.trim() ? hh.trim().padStart(2, "0") : "00";
+                        const paddedMM = mm.trim() ? mm.trim().padStart(2, "0") : "00";
+                        return `${paddedHH}:${paddedMM}`;
+                      };
+
+                      const horaDesde = formatTimePartLocal(equipoModalHoraDesdeHH, equipoModalHoraDesdeMM);
+                      const horaHasta = formatTimePartLocal(equipoModalHoraHastaHH, equipoModalHoraHastaMM);
+
+                      if (equipoModalIndex !== null) {
+                        setFormEquipos(prev => {
+                          const next = [...prev];
+                          const eq = next[equipoModalIndex];
+                          if (eq) {
+                            if (modalIsEditingActiveOrder) {
+                              eq.desperfectoUsuario = equipoModalDesperfecto.trim();
+                              eq.fechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
+                              eq.fotosDrive = equipoModalPhotos;
+                            } else {
+                              eq.newDesperfecto = equipoModalDesperfecto.trim();
+                              eq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
+                              eq.newFotosDrive = equipoModalPhotos;
+                            }
+                          }
+                          return next;
+                        });
+                      }
+
+                      alert("Orden de trabajo cargada con éxito. Para registrarla permanentemente, presione el botón 'GUARDAR EQUIPO' de abajo.");
+                      setShowNewWorkOrderForm(false);
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Guardar Orden de Trabajo</span>
+                  </button>
+                </div>
+              )}
+              
               </div>
             </div>
           )}
