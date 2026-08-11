@@ -41,7 +41,9 @@ import {
   Settings,
   Package,
   Bell,
-  Sparkles
+  Sparkles,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 
 function MainLayout() {
@@ -56,6 +58,31 @@ function MainLayout() {
   };
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [branding, setBranding] = React.useState<BrandingConfig>(() => BrandingService.getLocalConfig());
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch (err) {
+        console.error("Error entering fullscreen:", err);
+      }
+    } else {
+      try {
+        await document.exitFullscreen();
+      } catch (err) {
+        console.error("Error exiting fullscreen:", err);
+      }
+    }
+  };
 
   React.useEffect(() => {
     let active = true;
@@ -185,39 +212,49 @@ function MainLayout() {
     <div className="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-gray-150 flex flex-col lg:flex-row font-sans">
       
       {/* MOBILE HEADER */}
-      <header className="lg:hidden flex items-center justify-between p-4 bg-[#0f172a] text-white border-b border-slate-800">
-        <div className="flex items-center gap-2 min-w-0">
-          {branding.logo || "/logo.png" ? (
-            <img 
-              src={branding.logo || "/logo.png"} 
-              alt="Logo" 
-              className="h-8 max-w-[100px] object-contain rounded-md" 
-              referrerPolicy="no-referrer" 
-            />
-          ) : (
-            <Wrench className="w-5 h-5 text-indigo-400 shrink-0" />
-          )}
-          <span className="font-extrabold text-base tracking-tight text-white truncate">
-            {branding.titulo}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <NotificationsCenter align="left" />
-          <button
-            onClick={toggleTheme}
-            className="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer"
-          >
-            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl shadow-md shadow-emerald-500/30 transition-all cursor-pointer active:scale-95"
-            aria-label="Abrir menú"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-      </header>
+      {!isFullscreen && (
+        <header className="lg:hidden flex items-center justify-between p-4 bg-[#0f172a] text-white border-b border-slate-800">
+          <div className="flex items-center gap-2 min-w-0">
+            {branding.logo || "/logo.png" ? (
+              <img 
+                src={branding.logo || "/logo.png"} 
+                alt="Logo" 
+                className="h-8 max-w-[80px] object-contain rounded-md" 
+                referrerPolicy="no-referrer" 
+              />
+            ) : (
+              <Wrench className="w-5 h-5 text-indigo-400 shrink-0" />
+            )}
+            <span className="font-extrabold text-base tracking-tight text-white truncate max-w-[80px] sm:max-w-none">
+              {branding.titulo}
+            </span>
+            <button
+              onClick={toggleFullscreen}
+              className="ml-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all flex items-center gap-1 shrink-0 cursor-pointer active:scale-95 shadow-xs hover:scale-105"
+              title="Pantalla Completa"
+            >
+              <Maximize2 className="w-3 h-3" />
+              <span>P. Completa</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <NotificationsCenter align="left" />
+            <button
+              onClick={toggleTheme}
+              className="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl shadow-md shadow-emerald-500/30 transition-all cursor-pointer active:scale-95"
+              aria-label="Abrir menú"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </header>
+      )}
 
       {/* SIDEBAR FOR DESKTOP & MOBILE WRAPPER */}
       <aside className={`
@@ -339,6 +376,15 @@ function MainLayout() {
         {currentView === "agente" && <Agente />}
       </main>
 
+      {isFullscreen && (
+        <button
+          onClick={toggleFullscreen}
+          className="fixed bottom-6 right-6 z-50 p-3.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-full shadow-lg shadow-rose-600/35 border border-rose-500 hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+          title="Salir de Pantalla Completa"
+        >
+          <Minimize2 className="w-5.5 h-5.5" />
+        </button>
+      )}
     </div>
   );
 }
