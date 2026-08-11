@@ -975,8 +975,51 @@ export default function Clientes() {
       setFormSuccess(true);
       await refreshSearchAndList();
       if (editingId) {
+        const equipments = await EquiposService.getByCliente(editingId);
         const clientServices = await ServiciosService.getByCliente(editingId);
         setAllServices(clientServices);
+
+        const mappedEquipos = equipments.map(eq => {
+          const eqServices = clientServices.filter(s => s.equipoId === eq.id)
+            .sort((a, b) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return dateB - dateA;
+            });
+
+          const latestSrv = eqServices.length > 0 ? eqServices[0] : null;
+          const fotosDrive = latestSrv ? (latestSrv.fotosDrive || []) : [];
+          const desperfectoUsuario = latestSrv ? (latestSrv.desperfectoUsuario || "") : "";
+          const ingresoTaller = latestSrv ? (latestSrv.ingresoTaller || false) : false;
+          
+          let fechaRetiro = "";
+          if (latestSrv) {
+            const logistica = latestSrv.infoLogistica || "";
+            const parts = logistica.split(" | ");
+            parts.forEach(part => {
+              if (part.startsWith("Retiro acordado: ")) {
+                const val = part.replace("Retiro acordado: ", "").trim();
+                if (val) {
+                  fechaRetiro = val;
+                }
+              }
+            });
+          }
+
+          return {
+            id: eq.id,
+            tipo: eq.tipo || "Lavarropas",
+            marca: eq.marca || "",
+            modelo: eq.modelo || "",
+            desperfectoUsuario,
+            fotosDrive,
+            fechaRetiro,
+            ingresoTaller: ingresoTaller !== false
+          };
+        });
+        
+        setFormEquipos(mappedEquipos);
+        setDeletedEquipoIds([]);
       }
     } catch (err: any) {
       console.error("Error editing custom client & service:", err);
