@@ -92,6 +92,7 @@ export default function Logistica() {
   const [deliveryInfo, setDeliveryInfo] = useState("");
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
   const [activeEntregaTab, setActiveEntregaTab] = useState<"pendientes" | "entregados">("pendientes");
+  const [deliveredSearchTerm, setDeliveredSearchTerm] = useState("");
   const [selectedGroupForModal, setSelectedGroupForModal] = useState<GroupedWithdrawal | null>(null);
   const [selectedDelivery, setSelectedDelivery] = useState<Servicio | null>(null);
 
@@ -426,9 +427,28 @@ export default function Logistica() {
   );
 
   // Extract all services that have been successfully delivered
-  const deliveredDeliveries = servicios.filter(s => 
+  const baseDelivered = servicios.filter(s => 
     s.entregado === true || s.estado === "ENTREGADO"
   );
+
+  const deliveredDeliveries = baseDelivered.filter(s => {
+    if (!deliveredSearchTerm.trim()) return true;
+    const query = deliveredSearchTerm.toLowerCase().trim();
+    
+    // Match order number
+    if (String(s.numeroServicio).includes(query)) return true;
+
+    // Match client info
+    const client = clientMap.get(s.clienteId);
+    if (client) {
+      const nameMatch = client.nombreApellido?.toLowerCase().includes(query);
+      const calleMatch = client.calle?.toLowerCase().includes(query);
+      const numeroMatch = client.numero?.toLowerCase().includes(query);
+      const localidadMatch = client.localidad?.toLowerCase().includes(query);
+      return nameMatch || calleMatch || numeroMatch || localidadMatch;
+    }
+    return false;
+  });
 
   const handleSaveDeliveryInfo = async (srvId: string) => {
     try {
@@ -1359,6 +1379,26 @@ export default function Logistica() {
             </div>
           ) : (
             <div className="space-y-6">
+              {activeEntregaTab === "entregados" && (
+                <div className="relative w-full max-w-md">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por dirección, número de orden o cliente..."
+                    value={deliveredSearchTerm}
+                    onChange={(e) => setDeliveredSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-12 py-2.5 bg-white dark:bg-gray-900 text-slate-850 dark:text-gray-150 border border-slate-200 dark:border-gray-800 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 placeholder:text-slate-400"
+                  />
+                  {deliveredSearchTerm && (
+                    <button
+                      onClick={() => setDeliveredSearchTerm("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-indigo-650 hover:text-indigo-750 dark:text-indigo-400 bg-slate-50 dark:bg-gray-800 px-2 py-1 rounded-md transition-all cursor-pointer"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+              )}
               {activeEntregaTab === "pendientes" ? (
                 readyDeliveries.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 px-4 bg-emerald-50/20 dark:bg-emerald-950/5 border border-dashed border-emerald-200/50 dark:border-emerald-900/20 rounded-2xl text-center space-y-4 max-w-2xl mx-auto w-full">
