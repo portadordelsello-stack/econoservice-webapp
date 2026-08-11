@@ -557,12 +557,13 @@ export default function Servicios() {
               <div
                 key={srv.id}
                 onClick={() => navigate("detalle-servicio", srv.id, { servicio: srv, cliente: client || null, equipo: equipo || null })}
-                className="bg-white dark:bg-gray-900 border border-slate-150 dark:border-gray-800/85 rounded-xl shadow-3xs overflow-hidden transition-all duration-300 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/10 cursor-pointer"
+                className="border border-slate-300 rounded-none shadow-3xs overflow-hidden transition-all duration-300 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/10 cursor-pointer"
+                style={{ backgroundColor: "#FFFFEB" }}
               >
                 {/* Top header bar for Metadata */}
-                <div className="px-5 py-2.5 border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-850/20 flex items-center justify-between gap-2 select-none">
+                <div className="px-5 py-2.5 border-b border-slate-200/60 bg-black/[0.02] flex items-center justify-between gap-2 select-none">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 rounded-lg border border-indigo-100/50 dark:border-indigo-900/30">
+                    <span className="text-[11px] font-extrabold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100">
                       Orden #{srv.numeroServicio}
                     </span>
                     <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(srv.estado)}`}>
@@ -571,8 +572,8 @@ export default function Servicios() {
                     {srv.estado === "EN_ESPERA" && (
                       <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider border ${
                         srv.presupuestado 
-                          ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30" 
-                          : "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                          : "bg-red-50 text-red-700 border-red-200"
                       }`}>
                         {srv.presupuestado ? "Presupuestado" : "No Presupuestado"}
                       </span>
@@ -594,7 +595,7 @@ export default function Servicios() {
                           }
                         }
                       }}
-                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md transition-all cursor-pointer"
+                      className="p-1 text-slate-500 hover:text-red-650 hover:bg-red-50 rounded-md transition-all cursor-pointer"
                       title="Eliminar de Taller"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -603,38 +604,38 @@ export default function Servicios() {
                 </div>
 
                 {/* Main information Grid mimicking cap.png */}
-                <div className="p-4 px-5 grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-white dark:bg-gray-900 hover:bg-slate-50/20 dark:hover:bg-gray-850/5 transition-colors">
+                <div className="p-4 px-5 grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-transparent hover:bg-black/[0.015] transition-colors">
                   {/* Column 1: Domicilio */}
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-wider md:hidden mb-0.5">Domicilio</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-gray-200 truncate">
+                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Domicilio</span>
+                    <span className="text-sm font-extrabold text-slate-900 truncate">
                       {addressCalle}
                     </span>
-                    <span className="text-xs text-slate-500 dark:text-gray-400 truncate">
+                    <span className="text-xs text-slate-600 truncate font-medium">
                       {addressLoc}
                     </span>
                   </div>
 
                   {/* Column 2: Aparato */}
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-wider md:hidden mb-0.5">Aparato</span>
-                    <span className="text-sm font-semibold text-slate-700 dark:text-gray-300 truncate">
+                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Aparato</span>
+                    <span className="text-sm font-semibold text-slate-800 truncate">
                       {srv.aparato || "No especificado"}
                     </span>
                   </div>
 
                   {/* Column 3: Marca / Modelo */}
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-wider md:hidden mb-0.5">Marca / Modelo</span>
-                    <span className="text-sm font-semibold text-slate-700 dark:text-gray-300 truncate">
+                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Marca / Modelo</span>
+                    <span className="text-sm font-semibold text-slate-800 truncate">
                       {srv.marcaModelo || "No especificado"}
                     </span>
                   </div>
 
                   {/* Column 4: Desperfecto */}
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-wider md:hidden mb-0.5">Desperfecto</span>
-                    <span className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 italic line-clamp-2 md:line-clamp-3" title={srv.desperfectoUsuario}>
+                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Desperfecto</span>
+                    <span className="text-xs sm:text-sm text-slate-700 italic line-clamp-2 md:line-clamp-3 font-medium" title={srv.desperfectoUsuario}>
                       {srv.desperfectoUsuario || "Sin desperfecto reportado"}
                     </span>
                   </div>
