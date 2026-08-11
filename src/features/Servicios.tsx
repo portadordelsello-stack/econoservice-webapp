@@ -564,8 +564,7 @@ export default function Servicios() {
           <div className="overflow-x-auto bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-800 shadow-sm scrollbar-thin">
             <table className="w-full text-left border-collapse min-w-[680px] bg-[#FFFFEB] dark:bg-gray-900">
               <thead>
-                {/* Excel coordinate letters */}
-                <tr className="bg-slate-100 dark:bg-gray-850 text-slate-400 dark:text-gray-500 font-mono text-[9px] uppercase tracking-wider select-none text-center divide-x divide-slate-200 dark:divide-gray-800 border-b border-slate-200 dark:border-gray-800">
+                               <tr className="bg-slate-100 dark:bg-gray-855 text-slate-400 dark:text-gray-500 font-mono text-[9px] uppercase tracking-wider select-none text-center divide-x divide-slate-200 dark:divide-gray-800 border-b border-slate-200 dark:border-gray-800">
                   <th className="py-1 px-2 font-bold w-12 bg-slate-100 dark:bg-gray-850"></th>
                   <th className="py-1 px-3 font-bold">A</th>
                   <th className="py-1 px-3 font-bold">B</th>
@@ -576,11 +575,11 @@ export default function Servicios() {
                 {/* Excel visual columns */}
                 <tr className="bg-slate-50 dark:bg-gray-855/50 text-[10px] font-extrabold text-slate-505 dark:text-gray-400 uppercase tracking-wider select-none divide-x divide-slate-200 dark:divide-gray-800 border-b border-slate-300 dark:border-gray-800">
                   <th className="py-2.5 px-2 text-center font-mono font-bold bg-slate-100 dark:bg-gray-855 text-slate-450 w-12">#</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Ingreso</th>
                   <th className="py-2.5 px-3">Domicilio / Cliente</th>
                   <th className="py-2.5 px-3">Marca / Modelo</th>
                   <th className="py-2.5 px-3">Desperfecto / Falla</th>
                   <th className="py-2.5 px-3">Estado / Diagnóstico</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap">Fecha Retiro</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-gray-800">
@@ -619,6 +618,19 @@ export default function Servicios() {
                       <td className="py-2.5 px-2 text-center font-mono font-bold bg-slate-50 dark:bg-gray-855/50 text-slate-400 select-none text-[10px]">
                         {rowNumber}
                       </td>
+                      <td className="py-2.5 px-3 text-xs text-slate-600 dark:text-gray-400 font-mono whitespace-nowrap">
+                        {(() => {
+                          const dateVal = srv.createdAt;
+                          if (!dateVal) return <span className="text-slate-300 dark:text-gray-600">—</span>;
+                          try {
+                            const iso = typeof dateVal === "string" ? dateVal : new Date(dateVal).toISOString();
+                            const [y, m, d] = iso.substring(0, 10).split("-");
+                            return <span className="font-bold text-slate-700 dark:text-gray-300">{d}/{m}/{y}</span>;
+                          } catch {
+                            return <span className="text-slate-300 dark:text-gray-600">—</span>;
+                          }
+                        })()}
+                      </td>
                       <td className="py-2.5 px-3 text-xs text-slate-800 dark:text-gray-200 font-semibold max-w-[175px] truncate">
                         <div className="flex flex-col">
                           <span className="font-extrabold text-slate-900 dark:text-white truncate">{addressCalle}</span>
@@ -654,19 +666,6 @@ export default function Servicios() {
                             )}
                           </div>
                         </div>
-                      </td>
-                      <td className="py-2.5 px-3 text-xs text-slate-600 dark:text-gray-400 font-mono whitespace-nowrap">
-                        {(() => {
-                          const dateVal = srv.createdAt;
-                          if (!dateVal) return <span className="text-slate-300 dark:text-gray-600">—</span>;
-                          try {
-                            const iso = typeof dateVal === "string" ? dateVal : new Date(dateVal).toISOString();
-                            const [y, m, d] = iso.substring(0, 10).split("-");
-                            return <span className="font-bold text-slate-700 dark:text-gray-300">{d}/{m}/{y}</span>;
-                          } catch {
-                            return <span className="text-slate-300 dark:text-gray-600">—</span>;
-                          }
-                        })()}
                       </td>
                     </tr>
                   );
