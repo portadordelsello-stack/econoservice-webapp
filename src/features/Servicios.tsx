@@ -228,7 +228,11 @@ export default function Servicios() {
     });
   };
 
-  const filteredList = getFilteredList();
+  const filteredList = getFilteredList().sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
+  });
   const totalPages = Math.max(1, Math.ceil(filteredList.length / itemsPerPage));
   const paginatedList = filteredList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -567,6 +571,7 @@ export default function Servicios() {
                   <th className="py-1 px-3 font-bold">B</th>
                   <th className="py-1 px-3 font-bold">C</th>
                   <th className="py-1 px-3 font-bold">D</th>
+                  <th className="py-1 px-3 font-bold">E</th>
                 </tr>
                 {/* Excel visual columns */}
                 <tr className="bg-slate-50 dark:bg-gray-855/50 text-[10px] font-extrabold text-slate-505 dark:text-gray-400 uppercase tracking-wider select-none divide-x divide-slate-200 dark:divide-gray-800 border-b border-slate-300 dark:border-gray-800">
@@ -575,6 +580,7 @@ export default function Servicios() {
                   <th className="py-2.5 px-3">Marca / Modelo</th>
                   <th className="py-2.5 px-3">Desperfecto / Falla</th>
                   <th className="py-2.5 px-3">Estado / Diagnóstico</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Fecha Retiro</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-gray-800">
@@ -613,10 +619,10 @@ export default function Servicios() {
                       <td className="py-2.5 px-2 text-center font-mono font-bold bg-slate-50 dark:bg-gray-855/50 text-slate-400 select-none text-[10px]">
                         {rowNumber}
                       </td>
-                      <td className="py-2.5 px-3 text-xs text-slate-800 dark:text-gray-200 font-semibold max-w-[220px] truncate">
+                      <td className="py-2.5 px-3 text-xs text-slate-800 dark:text-gray-200 font-semibold max-w-[175px] truncate">
                         <div className="flex flex-col">
-                          <span className="font-extrabold text-slate-900 dark:text-white">{addressCalle}</span>
-                          <span className="text-[10px] text-slate-505 font-medium">{client?.nombreApellido || "Cliente S/N"}</span>
+                          <span className="font-extrabold text-slate-900 dark:text-white truncate">{addressCalle}</span>
+                          <span className="text-[10px] text-slate-505 font-medium truncate">{client?.nombreApellido || "Cliente S/N"}</span>
                         </div>
                       </td>
                       <td className="py-2.5 px-3 text-xs text-slate-750 dark:text-gray-300 font-semibold max-w-[120px] truncate">
@@ -648,6 +654,19 @@ export default function Servicios() {
                             )}
                           </div>
                         </div>
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-slate-600 dark:text-gray-400 font-mono whitespace-nowrap">
+                        {(() => {
+                          const dateVal = srv.createdAt;
+                          if (!dateVal) return <span className="text-slate-300 dark:text-gray-600">—</span>;
+                          try {
+                            const iso = typeof dateVal === "string" ? dateVal : new Date(dateVal).toISOString();
+                            const [y, m, d] = iso.substring(0, 10).split("-");
+                            return <span className="font-bold text-slate-700 dark:text-gray-300">{d}/{m}/{y}</span>;
+                          } catch {
+                            return <span className="text-slate-300 dark:text-gray-600">—</span>;
+                          }
+                        })()}
                       </td>
                     </tr>
                   );

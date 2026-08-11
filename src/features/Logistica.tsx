@@ -891,6 +891,46 @@ export default function Logistica() {
                                 </button>
                               )}
 
+                              {!isRetirado && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (!window.confirm(`¿Confirmar "Reparado en Domicilio"?\n\nEl equipo fue reparado en el lugar y NO ingresa al taller. Pasará a ENTREGADOS.`)) return;
+                                    try {
+                                      const userUid = profile?.uid || user?.uid || "logistica";
+                                      const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Logística";
+                                      for (const srv of group.services) {
+                                        await ServiciosService.update(
+                                          srv.id!,
+                                          {
+                                            entregado: true,
+                                            terminado: true,
+                                            estado: "ENTREGADO" as any,
+                                            ingresoTaller: false
+                                          },
+                                          userUid,
+                                          userNombre,
+                                          "Reparado en domicilio: equipo reparado in-situ sin ingresar al taller"
+                                        );
+                                        await NotificationsService.create({
+                                          targetRole: "taller",
+                                          title: "Reparado en Domicilio",
+                                          message: `El equipo ${srv.aparato || ""} #${srv.numeroServicio || ""} fue reparado en domicilio sin ingresar al taller.`,
+                                          serviceId: srv.id!
+                                        });
+                                      }
+                                      await loadData();
+                                    } catch (err) {
+                                      console.error("Error marcando reparado en domicilio:", err);
+                                      alert("Error al actualizar el estado. Intente nuevamente.");
+                                    }
+                                  }}
+                                  className="inline-flex items-center justify-center gap-1.5 h-11 px-4.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold rounded-xl transition-all shadow-md shadow-teal-600/15 active:scale-95 cursor-pointer w-full sm:w-auto uppercase"
+                                >
+                                  <span>🔧 Reparado en Domicilio</span>
+                                </button>
+                              )}
+
                               <button
                                 onClick={() => navigate("clientes", client.id)}
                                 className="inline-flex items-center justify-center gap-1.5 h-11 px-4.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-95 cursor-pointer w-full sm:w-auto"

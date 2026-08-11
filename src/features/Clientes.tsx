@@ -884,7 +884,8 @@ export default function Clientes() {
           }
 
           // If there is a pending new work order, create it!
-          if (eq.newDesperfecto) {
+          // Use !== undefined so that admin-saved empty-string desperfecto still creates the order
+          if (eq.newDesperfecto !== undefined) {
             const newLogisticaFull = [
               eq.newFechaRetiro && eq.newFechaRetiro.trim() ? `Retiro acordado: ${eq.newFechaRetiro.trim()}` : "",
               formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
@@ -2284,55 +2285,7 @@ export default function Clientes() {
                     {uploadError}
                   </p>
                 )}
-              {isEditMode && showNewWorkOrderForm && (
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-150 dark:border-gray-800">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!isAdmin && !equipoModalDesperfecto.trim()) {
-                        alert("Por favor, complete el desperfecto del usuario.");
-                        return;
-                      }
 
-                      const formatTimePartLocal = (hh: string, mm: string) => {
-                        if (!hh.trim() && !mm.trim()) return "";
-                        const paddedHH = hh.trim() ? hh.trim().padStart(2, "0") : "00";
-                        const paddedMM = mm.trim() ? mm.trim().padStart(2, "0") : "00";
-                        return `${paddedHH}:${paddedMM}`;
-                      };
-
-                      const horaDesde = formatTimePartLocal(equipoModalHoraDesdeHH, equipoModalHoraDesdeMM);
-                      const horaHasta = formatTimePartLocal(equipoModalHoraHastaHH, equipoModalHoraHastaMM);
-
-                      if (equipoModalIndex !== null) {
-                        setFormEquipos(prev => {
-                          const next = [...prev];
-                          const eq = next[equipoModalIndex];
-                          if (eq) {
-                            if (modalIsEditingActiveOrder) {
-                              eq.desperfectoUsuario = equipoModalDesperfecto.trim();
-                              eq.fechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
-                              eq.fotosDrive = equipoModalPhotos;
-                            } else {
-                              eq.newDesperfecto = equipoModalDesperfecto.trim();
-                              eq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
-                              eq.newFotosDrive = equipoModalPhotos;
-                            }
-                          }
-                          return next;
-                        });
-                      }
-
-                      alert("Orden de trabajo cargada con éxito. Para registrarla permanentemente, presione el botón 'GUARDAR EQUIPO' de abajo.");
-                      setShowNewWorkOrderForm(false);
-                    }}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>Guardar Orden de Trabajo</span>
-                  </button>
-                </div>
-              )}
               
               </div>
             </div>
@@ -2381,7 +2334,7 @@ export default function Clientes() {
               </button>
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 const isNewEquipment = equipoModalIndex === null;
 
                 if (!isAdmin && !equipoModalMarca.trim()) {
@@ -2430,20 +2383,71 @@ export default function Clientes() {
                    newEq.desperfectoUsuario = equipoModalDesperfecto.trim();
                    newEq.fechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
                    newEq.fotosDrive = equipoModalPhotos;
-                   // Clear new order properties if editing active order
                    newEq.newDesperfecto = undefined;
-                   newEq.newFechaRetiro = undefined;
-                   newEq.newFotosDrive = undefined;
                  } else {
                    if (showNewWorkOrderForm) {
                      newEq.newDesperfecto = equipoModalDesperfecto.trim();
                      newEq.newFechaRetiro = formatFechaRetiro(equipoModalFecha, horaDesde, horaHasta);
                      newEq.newFotosDrive = equipoModalPhotos;
-                   } else {
-                     newEq.newDesperfecto = undefined;
-                     newEq.newFechaRetiro = undefined;
-                     newEq.newFotosDrive = undefined;
                    }
+                 }
+
+                 const _existingEq = equipoModalIndex !== null ? formEquipos[equipoModalIndex] : null;
+                 const _pendingDesperfecto = newEq.newDesperfecto !== undefined
+                   ? newEq.newDesperfecto
+                   : _existingEq?.newDesperfecto;
+                 const _pendingFechaRetiro = newEq.newFechaRetiro !== undefined
+                   ? newEq.newFechaRetiro
+                   : _existingEq?.newFechaRetiro;
+                 const _pendingFotosDrive = newEq.newFotosDrive !== undefined
+                   ? newEq.newFotosDrive
+                   : _existingEq?.newFotosDrive;
+
+                 if (_existingEq?.id && _pendingDesperfecto !== undefined && editingId) {
+                   const _selectedNS = [formNS1 ? "NS1" : "", formNS2 ? "NS2" : "", formNS3 ? "NS3" : ""].filter(Boolean).join(", ");
+                   const _logistica = [
+                     _pendingFechaRetiro ? `Retiro acordado: ${_pendingFechaRetiro}` : "",
+                     formNotasRetiro.trim() ? `Notas retiro: ${formNotasRetiro.trim()}` : "",
+                     _selectedNS ? `Config: ${_selectedNS}` : ""
+                   ].filter(Boolean).join(" | ");
+
+                   try {
+                     const newServId = await ServiciosService.create({
+                       clienteId: editingId,
+                       equipoId: _existingEq.id,
+                       fechaIngreso: new Date(),
+                       aparato: newEq.tipo || "Lavarropas",
+                       marcaModelo: `${brand} ${model}`.trim(),
+                       desperfectoUsuario: _pendingDesperfecto || "No especificado",
+                       infoLogistica: _logistica,
+                       notasInternas: formObservaciones.trim() || "",
+                       acepta: false, rechazaDevolver: false, garantia: false,
+                       esReclamoGarantia: false, ingresoTaller: false, pasaStock: false,
+                       entregado: false, terminado: false, factura: false, contado: false,
+                       fotosDrive: _pendingFotosDrive || [],
+                       createdBy: profile?.uid || "system"
+                     }, profile?.uid || "system", profile?.nombre || "Usuario");
+
+                     // Refresh allServices so the new order appears in history immediately
+                     const updatedServices = await ServiciosService.getByCliente(editingId);
+                     setAllServices(updatedServices);
+
+                     NotificationsService.create({
+                       targetRole: "logistica",
+                       title: "Nueva Orden de Trabajo",
+                       message: `Nueva orden (${brand} ${model}) registrada.`,
+                       serviceId: newServId
+                     }).catch(() => {});
+                   } catch (err) {
+                     console.error("Error saving work order:", err);
+                     alert("Error al guardar la orden. Intente nuevamente.");
+                     return; // Don't navigate away if DB save failed
+                   }
+
+                   // Clear pending fields from local state since DB save was successful
+                   newEq.newDesperfecto = undefined;
+                   newEq.newFechaRetiro = undefined;
+                   newEq.newFotosDrive = undefined;
                  }
                 
                 if (equipoModalIndex !== null) {
