@@ -98,6 +98,16 @@ export default function Servicios() {
   const [presupuestoFilter, setPresupuestoFilter] = useState<"todos" | "presupuestado" | "no_presupuestado">("todos");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsPortrait(window.innerHeight > window.innerWidth);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -535,138 +545,158 @@ export default function Servicios() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {/* Table Header on Desktop */}
-          <div className="hidden md:grid grid-cols-4 gap-4 px-5 py-2 text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-widest select-none">
-            <div>Domicilio</div>
-            <div>Aparato</div>
-            <div>Marca / Modelo</div>
-            <div>Desperfecto / Falla</div>
-          </div>
+        <div className="space-y-4">
+          {/* Mobile screen orientation warning */}
+          {isPortrait && (
+            <div className="md:hidden flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-150 dark:border-indigo-900/30 rounded-xl text-indigo-700 dark:text-indigo-400 text-xs font-semibold animate-pulse">
+              <RotateCw className="w-4 h-4 shrink-0 text-indigo-500 animate-spin" style={{ animationDuration: "4s" }} />
+              <span>Para una mejor experiencia con la planilla de Taller, te recomendamos girar tu celular horizontalmente.</span>
+            </div>
+          )}
 
-          {paginatedList.map((srv) => {
-            const client = clientMap.get(srv.clienteId);
-            const equipo = equipoMap.get(srv.equipoId);
+          {/* Excel Spreadsheet Table */}
+          <div className="overflow-x-auto bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-800 shadow-sm scrollbar-thin">
+            <table className="w-full text-left border-collapse min-w-[950px] bg-[#FFFFEB] dark:bg-gray-900">
+              <thead>
+                {/* Excel coordinate letters */}
+                <tr className="bg-slate-100 dark:bg-gray-850 text-slate-400 dark:text-gray-500 font-mono text-[9px] uppercase tracking-wider select-none text-center divide-x divide-slate-200 dark:divide-gray-800 border-b border-slate-200 dark:border-gray-800">
+                  <th className="py-1 px-2 font-bold w-12 bg-slate-100 dark:bg-gray-850"></th>
+                  <th className="py-1 px-3 font-bold">A</th>
+                  <th className="py-1 px-3 font-bold">B</th>
+                  <th className="py-1 px-3 font-bold">C</th>
+                  <th className="py-1 px-3 font-bold">D</th>
+                  <th className="py-1 px-3 font-bold">E</th>
+                  <th className="py-1 px-3 font-bold">F</th>
+                  <th className="py-1 px-3 font-bold w-24">G</th>
+                </tr>
+                {/* Excel visual columns */}
+                <tr className="bg-slate-50 dark:bg-gray-850/50 text-[10px] font-extrabold text-slate-505 dark:text-gray-400 uppercase tracking-wider select-none divide-x divide-slate-200 dark:divide-gray-800 border-b border-slate-300 dark:border-gray-800">
+                  <th className="py-2.5 px-2 text-center font-mono font-bold bg-slate-100 dark:bg-gray-855 text-slate-450 w-12">#</th>
+                  <th className="py-2.5 px-3">Orden</th>
+                  <th className="py-2.5 px-3">Domicilio / Cliente</th>
+                  <th className="py-2.5 px-3">Aparato</th>
+                  <th className="py-2.5 px-3">Marca / Modelo</th>
+                  <th className="py-2.5 px-3">Desperfecto / Falla</th>
+                  <th className="py-2.5 px-3">Estado / Diagnóstico</th>
+                  <th className="py-2.5 px-3 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-gray-800">
+                {paginatedList.map((srv, idx) => {
+                  const client = clientMap.get(srv.clienteId);
+                  const equipo = equipoMap.get(srv.equipoId);
 
-            // Format address
-            const addressCalle = client?.calle 
-              ? `${client.calle} ${client.numero || ""}`.trim() 
-              : "Sin Domicilio";
-            const addressLoc = client?.localidad || "Santo Tomé";
+                  const addressCalle = client?.calle 
+                    ? `${client.calle} ${client.numero || ""}`.trim() 
+                    : "Sin Domicilio";
+                  const addressLoc = client?.localidad || "Santo Tomé";
 
-            return (
-              <div
-                key={srv.id}
-                onClick={() => navigate("detalle-servicio", srv.id, { servicio: srv, cliente: client || null, equipo: equipo || null })}
-                className="border border-slate-300 rounded-none shadow-3xs overflow-hidden transition-all duration-300 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/10 cursor-pointer"
-                style={{ backgroundColor: "#FFFFEB" }}
-              >
-                {/* Top header bar for Metadata */}
-                <div className="px-5 py-2.5 border-b border-slate-200/60 bg-black/[0.02] flex items-center justify-between gap-2 select-none">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-extrabold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100">
-                      Orden #{srv.numeroServicio}
-                    </span>
-                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(srv.estado)}`}>
-                      {getEstadoLabel(srv.estado)}
-                    </span>
+                  const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
 
-                    {/* Diagnostic Tag Badge (Previo vs Final vs Sin Diagnóstico) */}
-                    {(srv.diagnosticoTipo === "SIN_DIAGNOSTICO" || (!srv.diagnosticoTipo && !srv.diagnostico?.includes("[PREVIO]") && !srv.diagnostico?.includes("[FINAL]") && !srv.serviciosRequeridos?.includes("[PREVIO]") && !srv.serviciosRequeridos?.includes("[FINAL]"))) && (
-                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1">
-                        <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
-                        Sin Diagnóstico
-                      </span>
-                    )}
+                  const isSinDiag = srv.diagnosticoTipo === "SIN_DIAGNOSTICO" || 
+                    (!srv.diagnosticoTipo && 
+                     !srv.diagnostico?.includes("[PREVIO]") && 
+                     !srv.diagnostico?.includes("[FINAL]") && 
+                     !srv.serviciosRequeridos?.includes("[PREVIO]") && 
+                     !srv.serviciosRequeridos?.includes("[FINAL]"));
 
-                    {((srv.diagnostico && srv.diagnostico.includes("[PREVIO]")) || (srv.serviciosRequeridos && srv.serviciosRequeridos.includes("[PREVIO]")) || srv.diagnosticoTipo === "PREVIO") && (
-                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
-                        <Clock className="w-2.5 h-2.5 text-amber-700" />
-                        Diagnóstico Previo
-                      </span>
-                    )}
+                  const isPrevio = srv.diagnosticoTipo === "PREVIO" || 
+                    srv.diagnostico?.includes("[PREVIO]") || 
+                    srv.serviciosRequeridos?.includes("[PREVIO]");
 
-                    {((srv.diagnostico && srv.diagnostico.includes("[FINAL]")) || (srv.serviciosRequeridos && srv.serviciosRequeridos.includes("[FINAL]")) || srv.diagnosticoTipo === "FINAL") && (
-                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-indigo-100 text-indigo-900 border border-indigo-300 flex items-center gap-1">
-                        <CheckCircle className="w-2.5 h-2.5 text-indigo-700" />
-                        Diagnóstico Final
-                      </span>
-                    )}
+                  const isFinal = srv.diagnosticoTipo === "FINAL" || 
+                    srv.diagnostico?.includes("[FINAL]") || 
+                    srv.serviciosRequeridos?.includes("[FINAL]");
 
-                    {srv.estado === "EN_ESPERA" && (
-                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider border ${
-                        srv.presupuestado 
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-                          : "bg-red-50 text-red-700 border-red-200"
-                      }`}>
-                        {srv.presupuestado ? "Presupuestado" : "No Presupuestado"}
-                      </span>
-                    )}
-                  </div>
-
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (window.confirm("¿Está seguro que desea eliminar esta orden de servicio del taller? Esta acción no se puede deshacer.")) {
-                          try {
-                            await ServiciosService.delete(srv.id!);
-                            await loadAllData();
-                          } catch (err) {
-                            console.error("Error deleting service:", err);
-                            alert("Error al eliminar el servicio.");
-                          }
-                        }
-                      }}
-                      className="p-1 text-slate-500 hover:text-red-650 hover:bg-red-50 rounded-md transition-all cursor-pointer"
-                      title="Eliminar de Taller"
+                  return (
+                    <tr
+                      key={srv.id}
+                      onClick={() => navigate("detalle-servicio", srv.id, { servicio: srv, cliente: client || null, equipo: equipo || null })}
+                      className="group hover:bg-slate-100/50 dark:hover:bg-gray-850/20 transition-all cursor-pointer divide-x divide-slate-200 dark:divide-gray-800"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Main information Grid mimicking cap.png */}
-                <div className="p-4 px-5 grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-transparent hover:bg-black/[0.015] transition-colors">
-                  {/* Column 1: Domicilio */}
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Domicilio</span>
-                    <span className="text-sm font-extrabold text-slate-900 truncate">
-                      {addressCalle}
-                    </span>
-                    <span className="text-xs text-slate-600 truncate font-medium">
-                      {addressLoc}
-                    </span>
-                  </div>
-
-                  {/* Column 2: Aparato */}
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Aparato</span>
-                    <span className="text-sm font-semibold text-slate-800 truncate">
-                      {srv.aparato || "No especificado"}
-                    </span>
-                  </div>
-
-                  {/* Column 3: Marca / Modelo */}
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Marca / Modelo</span>
-                    <span className="text-sm font-semibold text-slate-800 truncate">
-                      {srv.marcaModelo || "No especificado"}
-                    </span>
-                  </div>
-
-                  {/* Column 4: Desperfecto */}
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider md:hidden mb-0.5">Desperfecto</span>
-                    <span className="text-xs sm:text-sm text-slate-700 italic line-clamp-2 md:line-clamp-3 font-medium" title={srv.serviciosRequeridos || srv.diagnostico || srv.desperfectoUsuario}>
-                      {(srv.serviciosRequeridos || srv.diagnostico || srv.desperfectoUsuario || "Sin desperfecto reportado").replace(/^\[(PREVIO|FINAL|SIN_DIAGNOSTICO)\]\s*/, "")}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      <td className="py-2.5 px-2 text-center font-mono font-bold bg-slate-50 dark:bg-gray-850/50 text-slate-400 select-none text-[10px]">
+                        {rowNumber}
+                      </td>
+                      <td className="py-2.5 px-3 font-mono font-extrabold text-indigo-600 dark:text-indigo-400 text-xs">
+                        #{srv.numeroServicio}
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-slate-800 dark:text-gray-200 font-semibold max-w-[220px] truncate">
+                        <div className="flex flex-col">
+                          <span className="font-extrabold text-slate-900 dark:text-white">{addressCalle}</span>
+                          <span className="text-[10px] text-slate-500 font-medium">{client?.nombreApellido || "Cliente S/N"}</span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-slate-700 dark:text-gray-300 font-bold max-w-[120px] truncate">
+                        {srv.aparato || "No especificado"}
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-slate-750 dark:text-gray-300 font-semibold max-w-[120px] truncate">
+                        {srv.marcaModelo || "No especificado"}
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-slate-600 dark:text-gray-400 italic max-w-[250px] truncate font-medium" title={srv.serviciosRequeridos || srv.diagnostico || srv.desperfectoUsuario}>
+                        {(srv.serviciosRequeridos || srv.diagnostico || srv.desperfectoUsuario || "Sin desperfecto reportado").replace(/^\[(PREVIO|FINAL|SIN_DIAGNOSTICO)\]\s*/, "")}
+                      </td>
+                      <td className="py-2.5 px-3 text-xs">
+                        <div className="flex flex-col gap-1 items-start">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${getEstadoLabelBadgeClass(srv.estado)}`}>
+                              {getEstadoLabel(srv.estado)}
+                            </span>
+                            {isSinDiag && (
+                              <span className="text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider bg-rose-50 text-rose-800 border border-rose-250">
+                                Sin Diag.
+                              </span>
+                            )}
+                            {isPrevio && (
+                              <span className="text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200">
+                                Previo
+                              </span>
+                            )}
+                            {isFinal && (
+                              <span className="text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider bg-indigo-50 text-indigo-800 border border-indigo-200">
+                                Final
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 text-center" onClick={e => e.stopPropagation()}>
+                        <div className="inline-flex items-center gap-1.5 justify-center">
+                          <button
+                            type="button"
+                            onClick={() => navigate("detalle-servicio", srv.id, { servicio: srv, cliente: client || null, equipo: equipo || null })}
+                            className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/45 rounded-md transition-all cursor-pointer"
+                            title="Ver detalles"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (window.confirm("¿Está seguro que desea eliminar esta orden de servicio del taller? Esta acción no se puede deshacer.")) {
+                                  try {
+                                    await ServiciosService.delete(srv.id!);
+                                    await loadAllData();
+                                  } catch (err) {
+                                    console.error("Error deleting service:", err);
+                                    alert("Error al eliminar el servicio.");
+                                  }
+                                }
+                              }}
+                              className="p-1 text-slate-400 hover:text-red-650 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-all cursor-pointer"
+                              title="Eliminar de Taller"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
