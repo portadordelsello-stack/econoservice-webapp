@@ -182,10 +182,10 @@ function MainLayout() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-gray-150 flex flex-col md:flex-row font-sans">
+    <div className="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-gray-150 flex flex-col lg:flex-row font-sans">
       
       {/* MOBILE HEADER */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-[#0f172a] text-white border-b border-slate-800">
+      <header className="lg:hidden flex items-center justify-between p-4 bg-[#0f172a] text-white border-b border-slate-800">
         <div className="flex items-center gap-2 min-w-0">
           {branding.logo || "/logo.png" ? (
             <img 
@@ -221,7 +221,7 @@ function MainLayout() {
 
       {/* SIDEBAR FOR DESKTOP & MOBILE WRAPPER */}
       <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-[#0f172a] text-slate-300 border-r border-slate-800 flex flex-col justify-between transition-transform duration-300 md:translate-x-0 md:static md:h-screen shrink-0
+        fixed inset-y-0 left-0 z-40 w-64 bg-[#0f172a] text-slate-300 border-r border-slate-800 flex flex-col justify-between transition-transform duration-300 lg:translate-x-0 lg:static lg:h-screen shrink-0
         ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
         {/* Brand details */}
@@ -250,7 +250,7 @@ function MainLayout() {
           </div>
 
           {/* Nav links */}
-          <nav className="mt-8 space-y-3 md:space-y-1.5">
+          <nav className="mt-8 space-y-3 lg:space-y-1.5">
             {navigationLinks.map((link) => {
               // Check user role permission
               if (link.roles && !link.roles.includes(profile?.rol || "")) {
@@ -262,13 +262,13 @@ function MainLayout() {
                 <button
                   key={link.view}
                   onClick={() => handleNavLinkClick(link.view)}
-                  className={`w-full flex items-center gap-4 md:gap-3 px-5 py-4 md:px-4 md:py-2.5 text-sm md:text-xs font-semibold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                  className={`w-full flex items-center gap-4 lg:gap-3 px-5 py-4 lg:px-4 lg:py-2.5 text-sm lg:text-xs font-semibold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                     isActive
                       ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
                       : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
-                  <Icon className="w-6 h-6 md:w-4.5 md:h-4.5 shrink-0" />
+                  <Icon className="w-6 h-6 lg:w-4.5 lg:h-4.5 shrink-0" />
                   {link.label}
                 </button>
               );
@@ -296,12 +296,12 @@ function MainLayout() {
           </div>
 
           <div className="flex items-center justify-between gap-2 pt-1">
-            <div className="hidden md:block">
+            <div className="hidden lg:block">
               <NotificationsCenter align="left" />
             </div>
             <button
               onClick={toggleTheme}
-              className="hidden md:flex p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              className="hidden lg:flex p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
               title="Alternar Tema"
             >
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -321,7 +321,7 @@ function MainLayout() {
       {mobileMenuOpen && (
         <div 
           onClick={() => setMobileMenuOpen(false)}
-          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 md:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
         />
       )}
 
