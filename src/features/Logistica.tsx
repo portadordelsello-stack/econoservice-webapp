@@ -185,6 +185,35 @@ export default function Logistica() {
     }
   };
 
+  const handleUpdateServiceState = async (srvId: string, newState: EstadoServicio) => {
+    try {
+      setLoading(true);
+      const updateData: Partial<Servicio> = {
+        estado: newState
+      };
+      
+      if (newState === "ENTREGADO") {
+        updateData.entregado = true;
+      } else {
+        updateData.entregado = false;
+        // Send back to workshop/logistics: mark as in workshop (or ready to dispatch) and clear delivery timestamp
+        updateData.ingresoTaller = true;
+        updateData.citaEntrega = null;
+      }
+
+      const userUid = profile?.uid || user?.uid || "logistica";
+      const userNombre = profile?.nombre || profile?.nombreApellido || user?.displayName || "Logística";
+
+      await ServiciosService.update(srvId, updateData, userUid, userNombre, `Estado cambiado a ${newState} desde Historial de Entregados.`);
+      await loadData();
+    } catch (err) {
+      console.error("Error updating service status:", err);
+      alert("Error al actualizar el estado del servicio.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (view === "retiros" || view === "agenda-general" || view === "entregas" || view === "detalle-entrega") {
       loadData();
@@ -1657,9 +1686,23 @@ export default function Logistica() {
                               <span className="text-xs font-mono font-bold text-slate-700 dark:text-gray-300 bg-slate-100 dark:bg-gray-800 px-2 py-0.5 rounded">
                                 Orden #{srv.numeroServicio}
                               </span>
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/40">
-                                Entregado
-                              </span>
+                              {isAdmin ? (
+                                <select
+                                  value={srv.estado}
+                                  onChange={(e) => handleUpdateServiceState(srv.id!, e.target.value as EstadoServicio)}
+                                  className="px-2 py-0.5 bg-white dark:bg-gray-850 text-slate-850 dark:text-gray-250 border border-slate-200 dark:border-gray-800 rounded-lg text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                                >
+                                  <option value="ENTREGADO">Entregado</option>
+                                  <option value="RECIBIDO">Recibido (Taller)</option>
+                                  <option value="EN_ESPERA">Espera (Taller)</option>
+                                  <option value="ACEPTADO">Confirmado (Taller)</option>
+                                  <option value="LISTO_PARA_ENTREGA">Listo para Entrega</option>
+                                </select>
+                              ) : (
+                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/40">
+                                  Entregado
+                                </span>
+                              )}
                             </div>
 
                             <div className="space-y-1">
@@ -1780,10 +1823,24 @@ export default function Logistica() {
                                 {srv.aparato} {srv.marcaModelo ? `- ${srv.marcaModelo}` : ""}
                               </td>
                               <td className="py-3.5 px-4 text-xs">
-                                <div className="flex flex-col">
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100/30 dark:border-emerald-900/30 w-fit">
-                                    Entregado
-                                  </span>
+                                <div className="flex flex-col gap-1">
+                                  {isAdmin ? (
+                                    <select
+                                      value={srv.estado}
+                                      onChange={(e) => handleUpdateServiceState(srv.id!, e.target.value as EstadoServicio)}
+                                      className="px-2 py-0.5 bg-white dark:bg-gray-855 text-slate-800 dark:text-gray-200 border border-slate-200 dark:border-gray-800 rounded-lg text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 w-fit cursor-pointer"
+                                    >
+                                      <option value="ENTREGADO">Entregado</option>
+                                      <option value="RECIBIDO">Recibido (Taller)</option>
+                                      <option value="EN_ESPERA">Espera (Taller)</option>
+                                      <option value="ACEPTADO">Confirmado (Taller)</option>
+                                      <option value="LISTO_PARA_ENTREGA">Listo para Entrega</option>
+                                    </select>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100/30 dark:border-emerald-900/30 w-fit">
+                                      Entregado
+                                    </span>
+                                  )}
                                   <span className="text-[10px] text-slate-400 dark:text-gray-500 mt-0.5 font-semibold">
                                     {fechaEntregaFormatted}
                                   </span>
