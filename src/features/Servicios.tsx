@@ -496,7 +496,7 @@ export default function Servicios() {
           </div>
 
           {/* Search Input & Budget Filter */}
-          <div className="flex items-center gap-2.5 flex-1 max-w-lg">
+          <div className="flex items-center gap-2.5 flex-1 w-full lg:max-w-lg">
             {activeTab === "espera" && (
               <select
                 value={presupuestoFilter}
