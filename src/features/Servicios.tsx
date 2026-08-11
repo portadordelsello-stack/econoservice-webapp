@@ -196,6 +196,10 @@ export default function Servicios() {
       const deviceModel = equipo?.modelo?.toLowerCase() || "";
       const deviceType = srv.aparato?.toLowerCase() || "";
       const serviceNum = srv.numeroServicio?.toString() || "";
+      
+      const clientCalle = client?.calle?.toLowerCase() || "";
+      const clientNumero = client?.numero?.toString()?.toLowerCase() || "";
+      const clientFullAddress = `${clientCalle} ${clientNumero}`.trim();
 
       return (
         clientName.includes(query) ||
@@ -203,7 +207,10 @@ export default function Servicios() {
         deviceBrand.includes(query) ||
         deviceModel.includes(query) ||
         deviceType.includes(query) ||
-        serviceNum.includes(query)
+        serviceNum.includes(query) ||
+        clientCalle.includes(query) ||
+        clientNumero.includes(query) ||
+        clientFullAddress.includes(query)
       );
     });
   };
