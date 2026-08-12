@@ -728,12 +728,6 @@ export default function DetalleServicio() {
                   Observaciones: "{equipo.observaciones}"
                 </p>
               )}
-              {profile?.rol !== "tecnico" && servicio.infoLogistica && (
-                <p className="text-slate-500 dark:text-gray-400 font-semibold mt-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-slate-450" />
-                  <span>Retiro: {servicio.infoLogistica}</span>
-                </p>
-              )}
             </div>
           </div>
 
