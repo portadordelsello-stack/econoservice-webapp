@@ -700,19 +700,11 @@ export default function DetalleServicio() {
 
           {/* Datos del Equipo */}
           <div className="bg-slate-50/50 dark:bg-gray-850 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
+            <div className="flex items-center text-slate-400 mb-2">
               <div className="flex items-center gap-2">
                 <Cpu className="w-4 h-4 text-indigo-500" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Datos del Equipo</h4>
               </div>
-              <button
-                type="button"
-                onClick={handleLoadEquiposHistory}
-                title="Ver historial de reparaciones de este cliente"
-                className="p-1.5 hover:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-150 dark:hover:border-indigo-900/30 shadow-3xs"
-              >
-                <Wrench className="w-3.5 h-3.5" />
-              </button>
             </div>
             <div className="space-y-1.5 text-xs">
               <p className="text-sm font-bold text-slate-800 dark:text-white">
