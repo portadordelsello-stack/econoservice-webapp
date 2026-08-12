@@ -734,7 +734,9 @@ export default function DetalleServicio() {
           <div className="bg-slate-50/50 dark:bg-gray-850 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
             <div className="flex items-center gap-2 text-slate-400 mb-2">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Desperfecto Usuario</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">
+                Desperfecto Usuario (O.T. #{servicio.numeroServicio || "S/N"})
+              </h4>
             </div>
             <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/10 p-2.5 rounded-lg border border-amber-100/50 dark:border-amber-950/20 italic leading-relaxed">
               "{servicio.desperfectoUsuario || "No se ha detallado un desperfecto específico."}"
