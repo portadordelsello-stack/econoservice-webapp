@@ -700,11 +700,18 @@ export default function DetalleServicio() {
 
           {/* Datos del Equipo */}
           <div className="bg-slate-50/50 dark:bg-gray-850 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs">
-            <div className="flex items-center text-slate-400 mb-2">
+            <div className="flex items-center justify-between text-slate-400 mb-2">
               <div className="flex items-center gap-2">
                 <Cpu className="w-4 h-4 text-indigo-500" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Datos del Equipo</h4>
               </div>
+              <button
+                type="button"
+                onClick={() => navigate("clientes", servicio.clienteId, { autoOpenEquipoId: servicio.equipoId })}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-extrabold rounded-lg border border-indigo-200/50 dark:border-indigo-800/40 transition-all cursor-pointer shadow-3xs active:scale-95"
+              >
+                <span>Ver Equipo</span>
+              </button>
             </div>
             <div className="space-y-1.5 text-xs">
               <p className="text-sm font-bold text-slate-800 dark:text-white">
