@@ -158,6 +158,32 @@ export default function DetalleServicio() {
   const [historyServices, setHistoryServices] = useState<Servicio[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Desperfecto Usuario edit states
+  const [isEditingDesp, setIsEditingDesp] = useState(false);
+  const [despVal, setDespVal] = useState("");
+  const [savingDesp, setSavingDesp] = useState(false);
+
+  const handleSaveDesp = async () => {
+    if (!selectedId) return;
+    try {
+      setSavingDesp(true);
+      await ServiciosService.update(
+        selectedId,
+        { desperfectoUsuario: despVal.trim() },
+        profile?.uid || "system",
+        profile?.nombre || "Usuario",
+        "Desperfecto del usuario modificado desde el panel de taller"
+      );
+      setServicio(prev => prev ? { ...prev, desperfectoUsuario: despVal.trim() } : null);
+      setIsEditingDesp(false);
+    } catch (err) {
+      console.error("Error updating desperfecto:", err);
+      alert("Error al guardar el desperfecto.");
+    } finally {
+      setSavingDesp(false);
+    }
+  };
+
   const loadServiceDetails = async () => {
     if (!selectedId) return;
     try {
@@ -169,6 +195,7 @@ export default function DetalleServicio() {
         return;
       }
       setServicio(serv);
+      setDespVal(serv.desperfectoUsuario || "");
 
       // Sync form fields immediately
       setEditEstado(serv.estado);
@@ -731,75 +758,46 @@ export default function DetalleServicio() {
           </div>
 
           {/* Desperfecto reportado por el usuario */}
-          {(() => {
-            const [isEditingDesp, setIsEditingDesp] = useState(false);
-            const [despVal, setDespVal] = useState(servicio.desperfectoUsuario || "");
-            const [savingDesp, setSavingDesp] = useState(false);
-
-            const handleSaveDesp = async () => {
-              if (!selectedId) return;
-              try {
-                setSavingDesp(true);
-                await ServiciosService.update(
-                  selectedId,
-                  { desperfectoUsuario: despVal.trim() },
-                  profile?.uid || "system",
-                  profile?.nombre || "Usuario",
-                  "Desperfecto del usuario modificado desde el panel de taller"
-                );
-                setServicio(prev => prev ? { ...prev, desperfectoUsuario: despVal.trim() } : null);
-                setIsEditingDesp(false);
-              } catch (err) {
-                console.error("Error updating desperfecto:", err);
-                alert("Error al guardar el desperfecto.");
-              } finally {
-                setSavingDesp(false);
-              }
-            };
-
-            return (
-              <div className="bg-slate-50/50 dark:bg-gray-850 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs space-y-3">
-                <div className="flex items-center justify-between text-slate-400">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">
-                      Desperfecto Usuario
-                    </h4>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-900/40">
-                      O.T. #{servicio.numeroServicio || "S/N"}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={savingDesp}
-                    onClick={() => {
-                      if (isEditingDesp) {
-                        handleSaveDesp();
-                      } else {
-                        setIsEditingDesp(true);
-                      }
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-extrabold rounded-lg border border-indigo-200/50 dark:border-indigo-800/40 transition-all cursor-pointer shadow-3xs active:scale-95 disabled:opacity-50"
-                  >
-                    <span>{isEditingDesp ? (savingDesp ? "Guardando..." : "Guardar") : "Editar"}</span>
-                  </button>
-                </div>
-                {isEditingDesp ? (
-                  <textarea
-                    rows={2}
-                    value={despVal}
-                    onChange={(e) => setDespVal(e.target.value)}
-                    placeholder="Desperfecto reportado por el cliente..."
-                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                ) : (
-                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/10 p-2.5 rounded-lg border border-amber-100/50 dark:border-amber-950/20 italic leading-relaxed">
-                    "{servicio.desperfectoUsuario || "No se ha detallado un desperfecto específico."}"
-                  </p>
-                )}
+          <div className="bg-slate-50/50 dark:bg-gray-850 p-4 rounded-xl border border-slate-150 dark:border-gray-800/60 shadow-3xs space-y-3">
+            <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center gap-2 flex-wrap">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">
+                  Desperfecto Usuario
+                </h4>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-900/40">
+                  O.T. #{servicio.numeroServicio || "S/N"}
+                </span>
               </div>
-            );
-          })()}
+              <button
+                type="button"
+                disabled={savingDesp}
+                onClick={() => {
+                  if (isEditingDesp) {
+                    handleSaveDesp();
+                  } else {
+                    setIsEditingDesp(true);
+                  }
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-extrabold rounded-lg border border-indigo-200/50 dark:border-indigo-800/40 transition-all cursor-pointer shadow-3xs active:scale-95 disabled:opacity-50"
+              >
+                <span>{isEditingDesp ? (savingDesp ? "Guardando..." : "Guardar") : "Editar"}</span>
+              </button>
+            </div>
+            {isEditingDesp ? (
+              <textarea
+                rows={2}
+                value={despVal}
+                onChange={(e) => setDespVal(e.target.value)}
+                placeholder="Desperfecto reportado por el cliente..."
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              />
+            ) : (
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/10 p-2.5 rounded-lg border border-amber-100/50 dark:border-amber-950/20 italic leading-relaxed">
+                "{servicio.desperfectoUsuario || "No se ha detallado un desperfecto específico."}"
+              </p>
+            )}
+          </div>
 
         </div>
 
